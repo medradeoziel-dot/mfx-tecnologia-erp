@@ -1,0 +1,6 @@
+{
+  "name": "MFx Tecnologia Industrial - Sistema de OS e Clientes",
+  "description": "Sistema de gestão de ordens de serviço, clientes, consumíveis de corte a laser, plasma e oxicorte para MFx Tecnologia Industrial.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

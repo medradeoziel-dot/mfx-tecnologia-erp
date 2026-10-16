@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+/* Otimização para impressão da Folha A4 do Relatório de Serviço e Vendas */
+@media print {
+  /* Ocultar elementos da interface que não devem sair no papel */
+  header,
+  nav,
+  .no-print,
+  button {
+    display: none !important;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .print-area {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm 10mm 12mm;
+  }
+}
