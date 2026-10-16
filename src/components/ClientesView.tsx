@@ -45,7 +45,7 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
   const [nome, setNome] = useState('');
   const [nomeFantasia, setNomeFantasia] = useState('');
   const [inscricaoEstadual, setInscricaoEstadual] = useState('');
-  const [indicadorIe, setIndicadorIe] = useState<'1' | '2' | '9'>('1');
+  const [indicadorIe, setIndicadorIe] = useState<'1' | '2' | '9'>('2');
   const [logradouro, setLogradouro] = useState('');
   const [numero, setNumero] = useState('');
   const [complemento, setComplemento] = useState('');
@@ -61,10 +61,20 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
   // UI state
   const [loadingCnpj, setLoadingCnpj] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
+  const MENSAGEM_INICIAL = 'ℹ️ Digite o CNPJ para buscar os dados automaticamente.';
+  const [feedbackStatus, setFeedbackStatus] = useState<string>(MENSAGEM_INICIAL);
+  const [feedbackTipo, setFeedbackTipo] = useState<'info' | 'warning' | 'success' | 'danger'>('info');
   const [situacaoCadastral, setSituacaoCadastral] = useState<string | null>(null);
-  const [apiFeedback, setApiFeedback] = useState<{ tipo: 'sucesso' | 'erro' | 'info'; texto: string } | null>(null);
   const [termoBusca, setTermoBusca] = useState('');
   const [clienteEditandoId, setClienteEditandoId] = useState<string | null>(null);
+
+  // Função rápida para preencher "ISENTO" ao clicar
+  const definirIsento = () => {
+    setInscricaoEstadual('ISENTO');
+    setIndicadorIe('2'); // Contribuinte Isento
+    setFeedbackStatus('ℹ️ Inscrição Estadual definida como ISENTO (Indicador 2 - Contribuinte Isento).');
+    setFeedbackTipo('info');
+  };
 
   // Limpar formulário
   const limparFormulario = () => {
@@ -72,7 +82,7 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
     setNome('');
     setNomeFantasia('');
     setInscricaoEstadual('');
-    setIndicadorIe('1');
+    setIndicadorIe('2');
     setLogradouro('');
     setNumero('');
     setComplemento('');
@@ -85,7 +95,8 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
     setEmail('');
     setObservacoes('');
     setSituacaoCadastral(null);
-    setApiFeedback(null);
+    setFeedbackStatus(MENSAGEM_INICIAL);
+    setFeedbackTipo('info');
     setClienteEditandoId(null);
   };
 
@@ -96,7 +107,7 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
     setNome(cli.nome);
     setNomeFantasia(cli.nomeFantasia || '');
     setInscricaoEstadual(cli.inscricaoEstadual || '');
-    setIndicadorIe(cli.indicadorIe || '1');
+    setIndicadorIe(cli.indicadorIe || '2');
     setLogradouro(cli.logradouro);
     setNumero(cli.numero);
     setComplemento(cli.complemento || '');
@@ -109,10 +120,8 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
     setEmail(cli.email || '');
     setObservacoes(cli.observacoes || '');
     setSituacaoCadastral(null);
-    setApiFeedback({
-      tipo: 'info',
-      texto: `Editando cadastro de "${cli.nome}". Modifique os dados necessários e clique em Salvar Alterações.`,
-    });
+    setFeedbackStatus(`Editando cadastro de "${cli.nome}". Modifique os dados e clique em Salvar Cliente.`);
+    setFeedbackTipo('info');
 
     const formEl = document.getElementById('form_cliente_box');
     if (formEl) {
@@ -120,55 +129,69 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
     }
   };
 
-  // Função ONBLUR do campo Documento (CPF/CNPJ) consultando a BrasilAPI
-  const handleDocumentoBlur = async () => {
-    const limpo = cleanDigits(documento);
+  // Função inteligente para consultar CPF ou CNPJ automaticamente
+  const consultarDocumento = async (inputValor: string) => {
+    const doc = cleanDigits(inputValor);
 
-    // Se for CNPJ (14 dígitos), consulta automaticamente a BrasilAPI
-    if (limpo.length === 14) {
+    // Se for CPF (11 dígitos)
+    if (doc.length === 11) {
+      setFeedbackStatus('⚠️ CPF detectado. Preencha os dados manualmente.');
+      setFeedbackTipo('warning');
+      setIndicadorIe('9'); // Não Contribuinte
+      setInscricaoEstadual('ISENTO');
+      return;
+    }
+
+    // Se for CNPJ (14 dígitos)
+    if (doc.length === 14) {
       setLoadingCnpj(true);
-      setApiFeedback({ tipo: 'info', texto: 'Consultando dados fiscais e cadastrais na Receita Federal via BrasilAPI...' });
+      setFeedbackStatus('⏳ Consultando dados na Receita Federal...');
+      setFeedbackTipo('info');
 
       try {
-        const dados = await fetchCnpjData(limpo);
-        if (dados) {
-          setNome(dados.razao_social || '');
-          if (dados.nome_fantasia) setNomeFantasia(dados.nome_fantasia);
+        const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${doc}`);
 
-          // Se a API retornar Inscrição Estadual
-          if (dados.inscricoes_estaduais && dados.inscricoes_estaduais.length > 0) {
-            setInscricaoEstadual(dados.inscricoes_estaduais[0].inscricao_estadual || '');
-            setIndicadorIe('1'); // Contribuinte ICMS
-          }
+        if (response.ok) {
+          const data = await response.json();
 
-          if (dados.cep) setCep(formatCep(dados.cep));
-          if (dados.logradouro) setLogradouro(dados.logradouro);
-          if (dados.numero) setNumero(dados.numero);
-          if (dados.complemento) setComplemento(dados.complemento);
-          if (dados.bairro) setBairro(dados.bairro);
-          if (dados.municipio) setCidade(dados.municipio);
-          if (dados.uf) setEstado(dados.uf);
-          if (dados.ddd_telefone_1) setTelefone(formatPhone(dados.ddd_telefone_1));
-          if (dados.email) setEmail(dados.email.toLowerCase());
+          // Preenche Razão Social e Nome Fantasia
+          setNome(data.razao_social || '');
+          setNomeFantasia(data.nome_fantasia || '');
 
-          const situacao = dados.descricao_situacao_cadastral || dados.situacao_cadastral || 'ATIVA';
+          // Preenche Endereço completo
+          setCep(data.cep ? formatCep(data.cep) : '');
+          setLogradouro(data.logradouro || '');
+          setNumero(data.numero || '');
+          setComplemento(data.complemento || '');
+          setBairro(data.bairro || '');
+          setCidade(data.municipio || '');
+          setEstado(data.uf || 'SP');
+          setTelefone(data.ddd_telefone_1 ? formatPhone(data.ddd_telefone_1) : '');
+          setEmail(data.email ? data.email.toLowerCase() : '');
+
+          // Limpa o campo de IE caso a API federal não traga o dado estadual
+          setInscricaoEstadual('');
+          setIndicadorIe('2'); // Isento por padrão para indústrias/comércio
+
+          const situacao = data.descricao_situacao_cadastral || data.situacao_cadastral || 'ATIVA';
           setSituacaoCadastral(situacao);
 
-          setApiFeedback({
-            tipo: 'sucesso',
-            texto: `Dados corporativos carregados com sucesso! Razão Social: "${dados.razao_social}" | Situação Cadastral: ${situacao}.`,
-          });
+          setFeedbackStatus(`✅ Dados carregados com sucesso! Razão Social: "${data.razao_social}".`);
+          setFeedbackTipo('success');
+        } else {
+          setFeedbackStatus('❌ CNPJ não encontrado.');
+          setFeedbackTipo('danger');
         }
-      } catch (err: any) {
-        setApiFeedback({
-          tipo: 'erro',
-          texto: err.message || 'CNPJ não encontrado na base pública da BrasilAPI.',
-        });
+      } catch (error) {
+        console.error('Erro:', error);
+        setFeedbackStatus('❌ Erro ao consultar o CNPJ.');
+        setFeedbackTipo('danger');
       } finally {
         setLoadingCnpj(false);
       }
-    } else if (limpo.length > 0 && limpo.length < 11) {
-      setApiFeedback({ tipo: 'erro', texto: 'Documento incompleto. Digite 11 dígitos para CPF ou 14 dígitos para CNPJ.' });
+    } else if (doc.length > 0 && doc.length < 11) {
+      setFeedbackStatus('⚠️ Documento incompleto. Digite 11 dígitos para CPF ou 14 dígitos para CNPJ.');
+      setFeedbackTipo('warning');
     }
   };
 
@@ -184,10 +207,12 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
           if (dados.bairro) setBairro(dados.bairro);
           if (dados.cidade) setCidade(dados.cidade);
           if (dados.estado) setEstado(dados.estado);
-          setApiFeedback({ tipo: 'sucesso', texto: `Endereço localizado pelo CEP (${dados.cidade}/${dados.estado}).` });
+          setFeedbackStatus(`✅ Endereço localizado pelo CEP (${dados.cidade}/${dados.estado}).`);
+          setFeedbackTipo('success');
         }
       } catch (err: any) {
-        setApiFeedback({ tipo: 'erro', texto: 'CEP não encontrado. Preencha o endereço manualmente.' });
+        setFeedbackStatus('⚠️ CEP não encontrado. Preencha o endereço manualmente.');
+        setFeedbackTipo('warning');
       } finally {
         setLoadingCep(false);
       }
@@ -199,7 +224,8 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
     e.preventDefault();
 
     if (!documento || !nome || !logradouro || !cidade) {
-      setApiFeedback({ tipo: 'erro', texto: 'Por favor, preencha os campos obrigatórios (*).' });
+      setFeedbackStatus('❌ Por favor, preencha os campos obrigatórios (*).');
+      setFeedbackTipo('danger');
       return;
     }
 
@@ -233,7 +259,8 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
       }
 
       limparFormulario();
-      setApiFeedback({ tipo: 'sucesso', texto: `Cadastro do cliente "${nome}" atualizado com sucesso!` });
+      setFeedbackStatus(`✅ Cadastro do cliente "${nome}" atualizado com sucesso!`);
+      setFeedbackTipo('success');
     } else {
       const novoCliente: Cliente = {
         id: `cli-${Date.now()}`,
@@ -258,20 +285,15 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
 
       onAddCliente(novoCliente);
       limparFormulario();
-      setApiFeedback({ tipo: 'sucesso', texto: `Cliente "${nome}" cadastrado com sucesso no sistema da MFx Tecnologia!` });
+      setFeedbackStatus(`✅ Cliente "${nome}" cadastrado com sucesso no sistema da MFx Tecnologia!`);
+      setFeedbackTipo('success');
     }
   };
 
   // Botões de teste rápido com CNPJ para demonstrar BrasilAPI
   const preencherCnpjExemplo = (cnpjExemplo: string) => {
     setDocumento(cnpjExemplo);
-    setTimeout(() => {
-      const inputDoc = document.getElementById('campo_documento') as HTMLInputElement;
-      if (inputDoc) {
-        inputDoc.focus();
-        inputDoc.blur();
-      }
-    }, 50);
+    consultarDocumento(cnpjExemplo);
   };
 
   // Filtro de clientes
@@ -300,10 +322,10 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
             <Building2 className="w-6 h-6 text-red-600" />
-            Cadastro e Gestão de Clientes (Pronto para Faturamento e NF-e)
+            Cadastro e Gestão de Clientes - MFx Tecnologia
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
-            Insira o CPF ou CNPJ. Ao sair do campo (<code className="text-red-600 font-mono text-xs bg-red-50 px-1 py-0.5 rounded">onblur</code>), o sistema consulta a <strong>BrasilAPI pública</strong> e autocompleta Razão Social, Nome Fantasia, Inscrição Estadual, Endereço, CEP e Contato.
+            Digite o CPF ou CNPJ. Ao sair do campo (<code className="text-red-600 font-mono text-xs bg-red-50 px-1 py-0.5 rounded">onblur</code>), o sistema consulta a <strong>BrasilAPI pública</strong> e autocompleta Razão Social, Nome Fantasia, Inscrição Estadual, Endereço, CEP e Contato.
           </p>
         </div>
 
@@ -317,7 +339,7 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
             <button
               type="button"
               onClick={() => preencherCnpjExemplo('34375789000187')}
-              className="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 px-2.5 py-1 rounded text-[11px] font-mono font-medium transition"
+              className="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 px-2.5 py-1 rounded text-[11px] font-mono font-medium transition cursor-pointer"
               title="CNPJ Oficial da MFx Tecnologia Industrial"
             >
               MFx (34.375.789/0001-87)
@@ -325,7 +347,7 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
             <button
               type="button"
               onClick={() => preencherCnpjExemplo('00000000000191')}
-              className="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 px-2.5 py-1 rounded text-[11px] font-mono font-medium transition"
+              className="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 px-2.5 py-1 rounded text-[11px] font-mono font-medium transition cursor-pointer"
               title="Banco do Brasil"
             >
               BB (00.000.000/0001-91)
@@ -333,7 +355,7 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
             <button
               type="button"
               onClick={() => preencherCnpjExemplo('33000167000101')}
-              className="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 px-2.5 py-1 rounded text-[11px] font-mono font-medium transition"
+              className="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 px-2.5 py-1 rounded text-[11px] font-mono font-medium transition cursor-pointer"
               title="Petrobras"
             >
               Petrobras
@@ -342,366 +364,341 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
         </div>
       </div>
 
-      {/* Formulário de Cadastro / Edição */}
-      <div id="form_cliente_box" className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className={`px-6 py-4 flex items-center justify-between ${
-          clienteEditandoId ? 'bg-amber-900 text-amber-100' : 'bg-slate-900 text-white'
-        }`}>
-          <div className="font-bold text-sm tracking-wide uppercase flex items-center gap-2">
-            {clienteEditandoId ? (
-              <>
-                <Edit className="w-4 h-4 text-amber-300" />
-                <span>Modo de Edição: Atualizar Cliente</span>
-              </>
-            ) : (
-              <>
-                <Plus className="w-4 h-4 text-amber-400" />
-                <span>Formulário de Cadastro do Cliente (Pronto para Faturamento e NF-e)</span>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            {clienteEditandoId && (
-              <button
-                type="button"
-                onClick={limparFormulario}
-                className="text-xs bg-amber-800/80 hover:bg-amber-800 text-white px-2.5 py-1 rounded flex items-center gap-1 transition"
-              >
-                <X className="w-3.5 h-3.5" /> Cancelar Edição
-              </button>
-            )}
-            <div className="text-xs text-slate-300">
-              Campos com <span className="text-red-400 font-bold">*</span> são obrigatórios
-            </div>
-          </div>
+      {/* Card Principal: FORMULÁRIO DE CADASTRO DO CLIENTE (PRONTO PARA FATURAMENTO E NF-E) */}
+      <div id="form_cliente_box" className="card shadow-sm p-4 sm:p-6 bg-white rounded-xl border border-slate-200">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="mb-0 font-bold text-slate-900 text-base sm:text-lg flex items-center gap-2">
+            <span>➕ FORMULÁRIO DE CADASTRO DO CLIENTE (PRONTO PARA FATURAMENTO E NF-E)</span>
+          </h4>
+          {clienteEditandoId && (
+            <span className="text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded font-semibold flex items-center gap-1">
+              <Edit className="w-3.5 h-3.5" /> Editando Cliente
+            </span>
+          )}
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Alerta de Feedback da API */}
-          {apiFeedback && (
-            <div
-              className={`p-3.5 rounded-lg text-xs flex items-center gap-2 border ${
-                apiFeedback.tipo === 'sucesso'
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  : apiFeedback.tipo === 'erro'
-                  ? 'bg-red-50 text-red-800 border-red-200'
-                  : 'bg-blue-50 text-blue-800 border-blue-200'
-              }`}
-            >
-              {apiFeedback.tipo === 'sucesso' ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              ) : apiFeedback.tipo === 'erro' ? (
-                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-              ) : (
-                <Loader2 className="w-4 h-4 text-blue-600 animate-spin shrink-0" />
-              )}
-              <div className="flex-1 flex flex-wrap items-center justify-between gap-2">
-                <span>{apiFeedback.texto}</span>
-                {situacaoCadastral && (
-                  <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-mono font-bold text-[11px]">
-                    <BadgeCheck className="w-3 h-3 text-emerald-600" />
-                    Situação: {situacaoCadastral}
-                  </span>
-                )}
-              </div>
-            </div>
+        {/* Alerta de Feedback dinâmico */}
+        <div
+          id="feedback_status"
+          className={`alert py-2.5 px-4 mb-4 rounded-lg text-xs sm:text-sm font-medium border flex items-center justify-between gap-2 transition-all ${
+            feedbackTipo === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+              : feedbackTipo === 'warning'
+              ? 'bg-amber-50 text-amber-800 border-amber-300'
+              : feedbackTipo === 'danger'
+              ? 'bg-red-50 text-red-800 border-red-300'
+              : 'bg-slate-100 text-slate-700 border-slate-300'
+          }`}
+          role="alert"
+        >
+          <div className="flex items-center gap-2">
+            {loadingCnpj && <Loader2 className="w-4 h-4 animate-spin text-slate-600 shrink-0" />}
+            <span>{feedbackStatus}</span>
+          </div>
+          {situacaoCadastral && (
+            <span className="bg-emerald-600 text-white text-[11px] px-2 py-0.5 rounded font-mono font-bold shrink-0">
+              {situacaoCadastral}
+            </span>
           )}
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-            
-            {/* CPF / CNPJ (col-md-4) */}
-            <div className="md:col-span-4">
-              <label htmlFor="campo_documento" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                CPF ou CNPJ <span className="text-red-500">*</span>
-                {loadingCnpj && (
-                  <span className="inline-flex items-center gap-1 text-[11px] text-blue-600 font-normal ml-2">
-                    <Loader2 className="w-3 h-3 animate-spin" /> Consultando BrasilAPI...
-                  </span>
-                )}
-              </label>
-              <div className="relative">
-                <input
-                  id="campo_documento"
-                  type="text"
-                  value={documento}
-                  onChange={(e) => setDocumento(e.target.value)}
-                  onBlur={handleDocumentoBlur}
-                  placeholder="Ex: 34.375.789/0001-87"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 font-mono"
-                  required
-                />
-              </div>
-              <p className="text-[11px] text-slate-500 mt-1">
-                Dispara consulta automática na BrasilAPI ao sair do campo (<code className="text-red-600 font-mono text-[10px]">onblur</code>).
-              </p>
-            </div>
-
-            {/* Razão Social (Nome Completo) (col-md-8) */}
-            <div className="md:col-span-8">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Razão Social (Nome Completo) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                placeholder="Ex: Metalúrgica Corte & Conformação Paulista Ltda"
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 font-medium"
-                required
-              />
-            </div>
-
-            {/* Nome Fantasia (Opcional) (col-md-12) */}
-            <div className="md:col-span-12">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Nome Fantasia (Opcional)
-              </label>
-              <input
-                type="text"
-                value={nomeFantasia}
-                onChange={(e) => setNomeFantasia(e.target.value)}
-                placeholder="Ex: Metalúrgica Paulista"
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-              />
-            </div>
-
-            {/* NOVOS CAMPOS DE INSCRIÇÃO ESTADUAL E INDICADOR SEFAZ */}
-            {/* Inscrição Estadual (IE) (col-md-6) */}
-            <div className="md:col-span-6">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
-                <span>Inscrição Estadual (IE)</span>
-                <span className="text-slate-400 font-normal lowercase text-[11px]">Obrigatório p/ contribuintes</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={inscricaoEstadual}
-                  onChange={(e) => setInscricaoEstadual(e.target.value)}
-                  placeholder="Ex: 209.632.131.114 ou ISENTO"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 font-mono"
-                />
-              </div>
-              <p className="text-[10px] text-slate-400 mt-1">
-                Autopreenchido pela BrasilAPI quando retornado pela SEFAZ Estadual.
-              </p>
-            </div>
-
-            {/* Indicador de IE (SEFAZ) (col-md-6) */}
-            <div className="md:col-span-6">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
-                <span>Indicador de IE (SEFAZ)</span>
-                <span className="text-slate-400 font-normal lowercase text-[11px]">Enquadramento fiscal</span>
-              </label>
-              <select
-                value={indicadorIe}
-                onChange={(e) => setIndicadorIe(e.target.value as '1' | '2' | '9')}
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white"
-              >
-                <option value="1">1 - Contribuinte ICMS (Possui Inscrição Estadual)</option>
-                <option value="2">2 - Contribuinte Isento de Inscrição Estadual</option>
-                <option value="9">9 - Não Contribuinte (Pode não ter IE)</option>
-              </select>
-              <p className="text-[10px] text-slate-400 mt-1">
-                Define a tributação e emissão de NF-e mod. 55 / NFS-e.
-              </p>
-            </div>
-
-            {/* CEP (col-md-3) */}
-            <div className="md:col-span-3">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                CEP <span className="text-red-500">*</span>
-                {loadingCep && <span className="text-[11px] text-blue-600 ml-1">Buscando...</span>}
-              </label>
-              <input
-                type="text"
-                value={cep}
-                onChange={(e) => setCep(e.target.value)}
-                onBlur={handleCepBlur}
-                placeholder="17120-031"
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 font-mono"
-                required
-              />
-            </div>
-
-            {/* Endereço / Logradouro (col-md-7) */}
-            <div className="md:col-span-7">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Endereço (Logradouro) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={logradouro}
-                onChange={(e) => setLogradouro(e.target.value)}
-                placeholder="Ex: Rua Sargento Andiras"
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                required
-              />
-            </div>
-
-            {/* Número (col-md-2) */}
-            <div className="md:col-span-2">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Número <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={numero}
-                onChange={(e) => setNumero(e.target.value)}
-                placeholder="874"
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                required
-              />
-            </div>
-
-            {/* Complemento (col-md-4) */}
-            <div className="md:col-span-4">
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                Complemento
-              </label>
-              <input
-                type="text"
-                value={complemento}
-                onChange={(e) => setComplemento(e.target.value)}
-                placeholder="Sala, Galpão..."
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-              />
-            </div>
-
-            {/* Bairro (col-md-4) */}
-            <div className="md:col-span-4">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Bairro <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={bairro}
-                onChange={(e) => setBairro(e.target.value)}
-                placeholder="Centro / Distrito Industrial"
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                required
-              />
-            </div>
-
-            {/* Cidade (col-md-3) */}
-            <div className="md:col-span-3">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Cidade <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={cidade}
-                onChange={(e) => setCidade(e.target.value)}
-                placeholder="Ex: Agudos, Bauru..."
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                required
-              />
-            </div>
-
-            {/* UF (col-md-1) */}
-            <div className="md:col-span-1">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                UF <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                maxLength={2}
-                value={estado}
-                onChange={(e) => setEstado(e.target.value.toUpperCase())}
-                placeholder="SP"
-                className="w-full px-2 py-2 text-sm border border-slate-300 rounded-lg uppercase text-center font-bold focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                required
-              />
-            </div>
-
-            {/* Telefone Fixo (col-md-4) */}
-            <div className="md:col-span-4">
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1 flex items-center gap-1">
-                <Phone className="w-3.5 h-3.5" />
-                Telefone Fixo
-              </label>
-              <input
-                type="text"
-                value={telefone}
-                onChange={(e) => setTelefone(e.target.value)}
-                placeholder="(14) 3262-1080"
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-              />
-            </div>
-
-            {/* Celular / WhatsApp (col-md-4) */}
-            <div className="md:col-span-4">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center gap-1 text-emerald-700">
-                <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                Celular / WhatsApp <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={celular}
-                onChange={(e) => setCelular(e.target.value)}
-                placeholder="(14) 99845-7721"
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-medium"
-                required
-              />
-            </div>
-
-            {/* E-mail Comercial (NF-e) (col-md-4) */}
-            <div className="md:col-span-4">
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1 flex items-center gap-1">
-                <Mail className="w-3.5 h-3.5" />
-                E-mail Comercial (NF-e)
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="compras@empresa.com.br"
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-              />
-            </div>
-
-            {/* Observações / Máquinas Instaladas (Laser, Plasma, Oxicorte) (col-md-12) */}
-            <div className="md:col-span-12">
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                Observações / Máquinas Instaladas (Laser, Plasma, Oxicorte)
-              </label>
-              <textarea
-                rows={3}
-                value={observacoes}
-                onChange={(e) => setObservacoes(e.target.value)}
-                placeholder="Ex: Possui Máquina Laser Fibra 3kW Raycus, modelo da tocha de corte, horários de recebimento, etc."
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-              />
-            </div>
-
+        <form onSubmit={handleSubmit} className="row g-3 grid grid-cols-1 md:grid-cols-12 gap-3.5">
+          
+          {/* CPF OU CNPJ * (col-md-4) */}
+          <div className="col-md-4 md:col-span-4">
+            <label htmlFor="documento" className="form-label block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+              CPF OU CNPJ *
+            </label>
+            <input
+              type="text"
+              className="form-control w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 font-mono"
+              name="documento"
+              id="documento"
+              placeholder="Digite apenas números"
+              value={documento}
+              onChange={(e) => setDocumento(e.target.value)}
+              onBlur={(e) => consultarDocumento(e.target.value)}
+              required
+            />
           </div>
 
-          {/* Botões de Ação do Formulário */}
-          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-3 border-t border-slate-200">
+          {/* RAZÃO SOCIAL (NOME COMPLETO) * (col-md-8) */}
+          <div className="col-md-8 md:col-span-8">
+            <label htmlFor="nome" className="form-label block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+              RAZÃO SOCIAL (NOME COMPLETO) *
+            </label>
+            <input
+              type="text"
+              className="form-control w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 font-medium"
+              name="nome"
+              id="nome"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* NOME FANTASIA (OPCIONAL) (col-md-12) */}
+          <div className="col-md-12 md:col-span-12">
+            <label htmlFor="nome_fantasia" className="form-label block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+              NOME FANTASIA (OPCIONAL)
+            </label>
+            <input
+              type="text"
+              className="form-control w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              name="nome_fantasia"
+              id="nome_fantasia"
+              value={nomeFantasia}
+              onChange={(e) => setNomeFantasia(e.target.value)}
+            />
+          </div>
+
+          {/* CAMPO DE INSCRIÇÃO ESTADUAL LIMPO E FUNCIONAL */}
+          <div className="col-md-6 md:col-span-6">
+            <div className="d-flex justify-content-between align-items-center mb-1 flex justify-between items-center">
+              <label htmlFor="inscricao_estadual" className="form-label mb-0 block text-xs font-bold text-slate-700 uppercase tracking-wide">
+                INSCRIÇÃO ESTADUAL (IE)
+              </label>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary py-0.5 px-2 border border-slate-300 hover:bg-slate-100 rounded text-slate-600 font-medium text-[11px] transition cursor-pointer"
+                onClick={definirIsento}
+                style={{ fontSize: '11px' }}
+              >
+                Definir ISENTO
+              </button>
+            </div>
+            <input
+              type="text"
+              className="form-control w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 font-mono mt-1"
+              name="inscricao_estadual"
+              id="inscricao_estadual"
+              value={inscricaoEstadual}
+              onChange={(e) => setInscricaoEstadual(e.target.value)}
+            />
+          </div>
+
+          <div className="col-md-6 md:col-span-6">
+            <label htmlFor="indicador_ie" className="form-label block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+              INDICADOR DE IE (SEFAZ) <small className="text-slate-500 font-normal lowercase">enquadramento fiscal</small>
+            </label>
+            <select
+              className="form-select w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white"
+              name="indicador_ie"
+              id="indicador_ie"
+              value={indicadorIe}
+              onChange={(e) => setIndicadorIe(e.target.value as '1' | '2' | '9')}
+            >
+              <option value="1">1 - Contribuinte ICMS (Possui Inscrição Estadual)</option>
+              <option value="2">2 - Contribuinte Isento de Inscrição Estadual</option>
+              <option value="9">9 - Não Contribuinte (Pode não ter IE)</option>
+            </select>
+          </div>
+          {/* FIM DA SEÇÃO FISCAL */}
+
+          {/* CEP * (col-md-3) */}
+          <div className="col-md-3 md:col-span-3">
+            <label htmlFor="cep" className="form-label block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+              CEP *
+              {loadingCep && <span className="text-[11px] text-blue-600 ml-1 font-normal">Buscando...</span>}
+            </label>
+            <input
+              type="text"
+              className="form-control w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 font-mono"
+              name="cep"
+              id="cep"
+              value={cep}
+              onChange={(e) => setCep(e.target.value)}
+              onBlur={handleCepBlur}
+              placeholder="17120-031"
+              required
+            />
+          </div>
+
+          {/* ENDEREÇO (LOGRADOURO) * (col-md-7) */}
+          <div className="col-md-7 md:col-span-7">
+            <label htmlFor="logradouro" className="form-label block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+              ENDEREÇO (LOGRADOURO) *
+            </label>
+            <input
+              type="text"
+              className="form-control w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              name="logradouro"
+              id="logradouro"
+              value={logradouro}
+              onChange={(e) => setLogradouro(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* NÚMERO * (col-md-2) */}
+          <div className="col-md-2 md:col-span-2">
+            <label htmlFor="numero" className="form-label block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+              NÚMERO *
+            </label>
+            <input
+              type="text"
+              className="form-control w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              name="numero"
+              id="numero"
+              value={numero}
+              onChange={(e) => setNumero(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* COMPLEMENTO (col-md-4) */}
+          <div className="col-md-4 md:col-span-4">
+            <label htmlFor="complemento" className="form-label block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+              COMPLEMENTO
+            </label>
+            <input
+              type="text"
+              className="form-control w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              name="complemento"
+              id="complemento"
+              placeholder="Sala, Galpão..."
+              value={complemento}
+              onChange={(e) => setComplemento(e.target.value)}
+            />
+          </div>
+
+          {/* BAIRRO * (col-md-4) */}
+          <div className="col-md-4 md:col-span-4">
+            <label htmlFor="bairro" className="form-label block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+              BAIRRO *
+            </label>
+            <input
+              type="text"
+              className="form-control w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              name="bairro"
+              id="bairro"
+              value={bairro}
+              onChange={(e) => setBairro(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* CIDADE * (col-md-3) */}
+          <div className="col-md-3 md:col-span-3">
+            <label htmlFor="cidade" className="form-label block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+              CIDADE *
+            </label>
+            <input
+              type="text"
+              className="form-control w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              name="cidade"
+              id="cidade"
+              value={cidade}
+              onChange={(e) => setCidade(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* UF * (col-md-1) */}
+          <div className="col-md-1 md:col-span-1">
+            <label htmlFor="uf" className="form-label block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+              UF *
+            </label>
+            <input
+              type="text"
+              className="form-control w-full px-2 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 uppercase text-center font-bold"
+              name="uf"
+              id="uf"
+              maxLength={2}
+              value={estado}
+              onChange={(e) => setEstado(e.target.value.toUpperCase())}
+              required
+            />
+          </div>
+
+          {/* TELEFONE FIXO (col-md-4) */}
+          <div className="col-md-4 md:col-span-4">
+            <label htmlFor="telefone" className="form-label block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
+              <Phone className="w-3.5 h-3.5 text-slate-400" />
+              TELEFONE FIXO
+            </label>
+            <input
+              type="text"
+              className="form-control w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              name="telefone"
+              id="telefone"
+              value={telefone}
+              onChange={(e) => setTelefone(e.target.value)}
+            />
+          </div>
+
+          {/* CELULAR / WHATSAPP * (col-md-4) */}
+          <div className="col-md-4 md:col-span-4">
+            <label htmlFor="celular" className="form-label block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1 text-emerald-700">
+              <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+              CELULAR / WHATSAPP *
+            </label>
+            <input
+              type="text"
+              className="form-control w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-medium"
+              name="celular"
+              id="celular"
+              value={celular}
+              onChange={(e) => setCelular(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* E-MAIL COMERCIAL (NF-E) (col-md-4) */}
+          <div className="col-md-4 md:col-span-4">
+            <label htmlFor="email" className="form-label block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
+              <Mail className="w-3.5 h-3.5 text-slate-400" />
+              E-MAIL COMERCIAL (NF-E)
+            </label>
+            <input
+              type="email"
+              className="form-control w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              name="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          {/* OBSERVAÇÕES / MÁQUINAS INSTALADAS (LASER, PLASMA, OXICORTE) (col-md-12) */}
+          <div className="col-md-12 md:col-span-12">
+            <label htmlFor="observacao" className="form-label block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
+              OBSERVAÇÕES / MÁQUINAS INSTALADAS (LASER, PLASMA, OXICORTE)
+            </label>
+            <textarea
+              className="form-control w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              name="observacao"
+              id="observacao"
+              rows={3}
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              placeholder="Ex: Possui Máquina Laser Fibra 3kW Raycus, horários de recebimento, etc."
+            />
+          </div>
+
+          {/* Botões Limpar e Salvar Cliente (col-12 text-end) */}
+          <div className="col-12 md:col-span-12 text-end flex justify-end gap-2 pt-3 border-t border-slate-200">
             <button
-              type="button"
+              type="reset"
               onClick={limparFormulario}
-              className="w-full sm:w-auto px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 font-medium text-xs transition flex items-center justify-center gap-1.5"
+              className="btn btn-secondary px-4 py-2 border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg transition cursor-pointer flex items-center gap-1"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              {clienteEditandoId ? 'Cancelar Edição' : 'Limpar'}
+              Limpar
             </button>
-
             <button
               type="submit"
-              className={`w-full sm:w-auto px-6 py-2.5 rounded-lg font-bold text-xs shadow-sm transition flex items-center justify-center gap-2 ${
-                clienteEditandoId
-                  ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/20'
-                  : 'bg-red-600 hover:bg-red-700 text-white shadow-red-600/20'
-              }`}
+              className="btn btn-danger px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-1.5 cursor-pointer"
             >
               {clienteEditandoId ? (
                 <>
-                  <Edit className="w-4 h-4" />
-                  Salvar Alterações (Atualizar Cliente)
+                  <Edit className="w-3.5 h-3.5" />
+                  Salvar Alterações
                 </>
               ) : (
                 <>
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5" />
                   Salvar Cliente
                 </>
               )}

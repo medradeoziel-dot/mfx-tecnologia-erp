@@ -1,7 +1,7 @@
 export interface PhpFileDefinition {
   filename: string;
   description: string;
-  language: 'php' | 'sql' | 'markdown' | 'css';
+  language: 'php' | 'sql' | 'markdown' | 'css' | 'html';
   content: string;
 }
 
@@ -652,6 +652,265 @@ INSERT INTO \`clientes\` (\`documento\`, \`nome\`, \`nome_fantasia\`, \`logradou
 VALUES 
 ('52.148.963/0001-44', 'Metalúrgica Corte & Conformação Paulista Ltda', 'Metalúrgica Paulista', 'Avenida das Indústrias', '1450', 'Distrito Industrial', 'Bauru', 'SP', '17034-290', '(14) 3104-5000', '(14) 99712-4488', 'manutencao@metalurgicapaulista.com.br', 'Cliente possui 2 máquinas Laser Fibra 3kW Raycus.');
 `
+  },
+  {
+    filename: 'cadastro_cliente.html',
+    description: 'Formulário oficial de cadastro do cliente com consulta inteligente automática via BrasilAPI (CPF/CNPJ) e feedback dinâmico.',
+    language: 'html',
+    content: `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Cadastro e Gestão de Clientes - MFx Tecnologia</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script>
+        async function consultarDocumento(input) {
+            let doc = input.value.replace(/\\D/g, '');
+            
+            if (doc.length === 11) {
+                document.getElementById('feedback_status').innerHTML = "⚠️ CPF detectado. Preencha os dados manualmente.";
+                document.getElementById('indicador_ie').value = "9"; // Não Contribuinte
+                document.getElementById('inscricao_estadual').value = "ISENTO";
+                return;
+            }
+
+            if (doc.length === 14) {
+                document.getElementById('feedback_status').innerHTML = "⏳ Consultando dados na Receita Federal...";
+                
+                try {
+                    let response = await fetch(\`https://brasilapi.com.br/api/cnpj/v1/\${doc}\`);
+                    
+                    if (response.ok) {
+                        let data = await response.json();
+                        
+                        document.getElementById('nome').value = data.razao_social || '';
+                        document.getElementById('nome_fantasia').value = data.nome_fantasia || '';
+                        document.getElementById('cep').value = data.cep || '';
+                        document.getElementById('logradouro').value = data.logradouro || '';
+                        document.getElementById('numero').value = data.numero || '';
+                        document.getElementById('complemento').value = data.complemento || '';
+                        document.getElementById('bairro').value = data.bairro || '';
+                        document.getElementById('cidade').value = data.municipio || '';
+                        document.getElementById('uf').value = data.uf || '';
+                        document.getElementById('telefone').value = data.ddd_telefone_1 || '';
+                        document.getElementById('email').value = data.email || '';
+
+                        // Limpa o campo de IE caso a API federal não traga o dado estadual
+                        document.getElementById('inscricao_estadual').value = "";
+                        document.getElementById('indicador_ie').value = "2"; // Isento por padrão para indústrias/comércio
+
+                        document.getElementById('feedback_status').innerHTML = \`✅ Dados carregados com sucesso! Razão Social: "\${data.razao_social}".\`;
+                    } else {
+                        document.getElementById('feedback_status').innerHTML = "❌ CNPJ não encontrado.";
+                    }
+                } catch (error) {
+                    console.error("Erro:", error);
+                    document.getElementById('feedback_status').innerHTML = "❌ Erro ao consultar o CNPJ.";
+                }
+            }
+        }
+
+        function definirIsento() {
+            document.getElementById('inscricao_estadual').value = "ISENTO";
+            document.getElementById('indicador_ie').value = "2";
+        }
+    </script>
+</head>
+<body class="bg-light">
+
+<div class="container mt-4">
+    <div class="card shadow-sm p-4">
+        <h4 class="mb-3">➕ FORMULÁRIO DE CADASTRO DO CLIENTE (PRONTO PARA FATURAMENTO E NF-E)</h4>
+        
+        <div id="feedback_status" class="alert alert-secondary py-2 mb-3" role="alert">
+            ℹ️ Digite o CNPJ para buscar os dados automaticamente.
+        </div>
+
+        <form action="salvar_cliente.php" method="POST" class="row g-3">
+            
+            <div class="col-md-4">
+                <label class="form-label">CPF OU CNPJ *</label>
+                <input type="text" class="form-control" name="documento" id="documento" placeholder="Digite apenas números" onblur="consultarDocumento(this)" required>
+            </div>
+            
+            <div class="col-md-8">
+                <label class="form-label">RAZÃO SOCIAL (NOME COMPLETO) *</label>
+                <input type="text" class="form-control" name="nome" id="nome" required>
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label">NOME FANTASIA (OPCIONAL)</label>
+                <input type="text" class="form-control" name="nome_fantasia" id="nome_fantasia">
+            </div>
+
+            <!-- CAMPO DE INSCRIÇÃO ESTADUAL LIMPO E FUNCIONAL -->
+            <div class="col-md-6">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label mb-0">INSCRIÇÃO ESTADUAL (IE)</label>
+                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="definirIsento()" style="font-size: 11px;">Definir ISENTO</button>
+                </div>
+                <input type="text" class="form-control" name="inscricao_estadual" id="inscricao_estadual">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">INDICADOR DE IE (SEFAZ) <small class="text-muted">enquadramento fiscal</small></label>
+                <select class="form-select" name="indicador_ie" id="indicador_ie">
+                    <option value="1">1 - Contribuinte ICMS (Possui Inscrição Estadual)</option>
+                    <option value="2" selected>2 - Contribuinte Isento de Inscrição Estadual</option>
+                    <option value="9">9 - Não Contribuinte (Pode não ter IE)</option>
+                </select>
+            </div>
+            <!-- FIM DA SEÇÃO FISCAL -->
+
+            <div class="col-md-3">
+                <label class="form-label">CEP *</label>
+                <input type="text" class="form-control" name="cep" id="cep" required>
+            </div>
+
+            <div class="col-md-7">
+                <label class="form-label">ENDEREÇO (LOGRADOURO) *</label>
+                <input type="text" class="form-control" name="logradouro" id="logradouro" required>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">NÚMERO *</label>
+                <input type="text" class="form-control" name="numero" id="numero" required>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">COMPLEMENTO</label>
+                <input type="text" class="form-control" name="complemento" id="complemento" placeholder="Sala, Galpão...">
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">BAIRRO *</label>
+                <input type="text" class="form-control" name="bairro" id="bairro" required>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">CIDADE *</label>
+                <input type="text" class="form-control" name="cidade" id="cidade" required>
+            </div>
+
+            <div class="col-md-1">
+                <label class="form-label">UF *</label>
+                <input type="text" class="form-control" name="uf" id="uf" required>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">TELEFONE FIXO</label>
+                <input type="text" class="form-control" name="telefone" id="telefone">
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">CELULAR / WHATSAPP *</label>
+                <input type="text" class="form-control" name="celular" id="celular">
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">E-MAIL COMERCIAL (NF-E)</label>
+                <input type="email" class="form-control" name="email" id="email">
+            </div>
+
+            <div class="col-md-12">
+                <label class="form-label">OBSERVAÇÕES / MÁQUINAS INSTALADAS (LASER, PLASMA, OXICORTE)</label>
+                <textarea class="form-control" name="observacao" rows="3" placeholder="Ex: Possui Máquina Laser Fibra 3kW Raycus, horários de recebimento, etc."></textarea>
+            </div>
+
+            <div class="col-12 text-end">
+                <button type="reset" class="btn btn-secondary">Limpar</button>
+                <button type="submit" class="btn btn-danger">Salvar Cliente</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>`
+  },
+  {
+    filename: 'salvar_cliente.php',
+    description: 'Endpoint PHP de persistência para receber o formulário de cadastro e gravar no MySQL via PDO.',
+    language: 'php',
+    content: `<?php
+/**
+ * MFx Tecnologia Industrial - Sistema de Gestão de Clientes e OS
+ * Arquivo: salvar_cliente.php - Salva dados do cliente no banco MySQL
+ */
+require_once 'conexao.php';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $documento          = trim($_POST['documento'] ?? '');
+    $nome               = trim($_POST['nome'] ?? '');
+    $nome_fantasia      = trim($_POST['nome_fantasia'] ?? '');
+    $inscricao_estadual = trim($_POST['inscricao_estadual'] ?? '');
+    $indicador_ie       = trim($_POST['indicador_ie'] ?? '1');
+    $cep                = trim($_POST['cep'] ?? '');
+    $logradouro         = trim($_POST['logradouro'] ?? '');
+    $numero             = trim($_POST['numero'] ?? '');
+    $complemento        = trim($_POST['complemento'] ?? '');
+    $bairro             = trim($_POST['bairro'] ?? '');
+    $cidade             = trim($_POST['cidade'] ?? '');
+    $uf                 = strtoupper(trim($_POST['uf'] ?? 'SP'));
+    $telefone           = trim($_POST['telefone'] ?? '');
+    $celular            = trim($_POST['celular'] ?? '');
+    $email              = trim($_POST['email'] ?? '');
+    $observacao         = trim($_POST['observacao'] ?? '');
+
+    if (empty($documento) || empty($nome) || empty($logradouro) || empty($cidade)) {
+        die("<div style='font-family:sans-serif;padding:20px;background:#fee2e2;color:#991b1b;border-radius:8px;'>
+                <h3>⚠️ Campos obrigatórios não preenchidos</h3>
+                <p>Preencha Documento, Razão Social, Logradouro e Cidade.</p>
+                <a href='javascript:history.back()'>Voltar</a>
+             </div>");
+    }
+
+    try {
+        $stmt = $pdo->prepare("INSERT INTO clientes (documento, nome, nome_fantasia, inscricao_estadual, indicador_ie, cep, logradouro, numero, complemento, bairro, cidade, estado, telefone, celular, email, observacoes) 
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            $documento, $nome, $nome_fantasia, $inscricao_estadual, $indicador_ie,
+            $cep, $logradouro, $numero, $complemento, $bairro, $cidade, $uf,
+            $telefone, $celular, $email, $observacao
+        ]);
+
+        $novoId = $pdo->lastInsertId();
+
+        echo "<!DOCTYPE html>
+        <html lang='pt-BR'>
+        <head>
+            <meta charset='UTF-8'>
+            <title>Cliente Salvo - MFx Tecnologia</title>
+            <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>
+        </head>
+        <body class='bg-light p-4'>
+            <div class='container' style='max-width: 600px;'>
+                <div class='card shadow-sm p-4 text-center'>
+                    <div class='text-success fs-1 mb-2'>✅</div>
+                    <h4 class='text-success fw-bold'>Cliente Salvo com Sucesso!</h4>
+                    <p class='text-muted'>Os dados de <strong>" . htmlspecialchars($nome) . "</strong> foram salvos no banco de dados da MFx Tecnologia Industrial.</p>
+                    <div class='alert alert-light border py-2 text-start small mb-3'>
+                        <strong>ID:</strong> #{$novoId}<br>
+                        <strong>Documento:</strong> " . htmlspecialchars($documento) . "<br>
+                        <strong>Cidade/UF:</strong> " . htmlspecialchars($cidade) . "/" . htmlspecialchars($uf) . "<br>
+                        <strong>IE:</strong> " . htmlspecialchars($inscricao_estadual ?: 'ISENTO / Não informada') . "
+                    </div>
+                    <div class='d-flex justify-content-center gap-2'>
+                        <a href='cadastro_cliente.html' class='btn btn-outline-secondary'>Novo Cadastro</a>
+                        <a href='clientes.php' class='btn btn-danger'>Ver Lista de Clientes</a>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>";
+    } catch (PDOException $e) {
+        die("Erro ao salvar cliente: " . htmlspecialchars($e->getMessage()));
+    }
+} else {
+    header("Location: cadastro_cliente.html");
+    exit;
+}
+?>`
   },
   {
     filename: 'clientes.php',
