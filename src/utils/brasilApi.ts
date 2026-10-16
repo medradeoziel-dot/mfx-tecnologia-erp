@@ -1,7 +1,14 @@
+export interface InscricaoEstadualBrasilApi {
+  inscricao_estadual: string;
+  ativo?: boolean;
+  estado?: string;
+}
+
 export interface BrasilApiCnpjResponse {
   cnpj: string;
   razao_social: string;
   nome_fantasia?: string;
+  inscricoes_estaduais?: InscricaoEstadualBrasilApi[];
   logradouro: string;
   numero: string;
   complemento?: string;
@@ -13,6 +20,7 @@ export interface BrasilApiCnpjResponse {
   ddd_telefone_2?: string;
   email?: string;
   situacao_cadastral?: string;
+  descricao_situacao_cadastral?: string;
 }
 
 export interface BrasilApiCepResponse {

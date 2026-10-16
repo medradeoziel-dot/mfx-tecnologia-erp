@@ -3,6 +3,8 @@ export interface Cliente {
   documento: string; // CPF ou CNPJ
   nome: string; // Nome ou Razão Social
   nomeFantasia?: string;
+  inscricaoEstadual?: string; // Inscrição Estadual (IE)
+  indicadorIe?: '1' | '2' | '9'; // Indicador de IE na SEFAZ (1=Contribuinte, 2=Isento, 9=Não Contribuinte)
   logradouro: string;
   numero: string;
   complemento?: string;
@@ -42,7 +44,9 @@ export interface OrdemServico {
   numeroOS: string;
   clienteId: string;
   clienteNome: string;
+  clienteNomeFantasia?: string;
   clienteDocumento: string;
+  clienteInscricaoEstadual?: string;
   clienteTelefone: string;
   clienteCelular: string;
   clienteEmail: string;

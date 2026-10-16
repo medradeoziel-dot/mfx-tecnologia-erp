@@ -74,6 +74,12 @@ export default function App() {
     setClientes((prev) => [novoCliente, ...prev]);
   };
 
+  const handleUpdateCliente = (clienteAtualizado: Cliente) => {
+    setClientes((prev) =>
+      prev.map((c) => (c.id === clienteAtualizado.id ? clienteAtualizado : c))
+    );
+  };
+
   const handleDeleteCliente = (id: string) => {
     setClientes((prev) => prev.filter((c) => c.id !== id));
   };
@@ -238,6 +244,7 @@ export default function App() {
               <ClientesView
                 clientes={clientes}
                 onAddCliente={handleAddCliente}
+                onUpdateCliente={handleUpdateCliente}
                 onDeleteCliente={handleDeleteCliente}
                 onCriarOsParaCliente={handleCriarOsParaCliente}
               />

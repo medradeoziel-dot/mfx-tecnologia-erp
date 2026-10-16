@@ -578,6 +578,8 @@ CREATE TABLE IF NOT EXISTS \`clientes\` (
   \`documento\` VARCHAR(20) NOT NULL COMMENT 'CPF ou CNPJ',
   \`nome\` VARCHAR(150) NOT NULL COMMENT 'Nome ou Razão Social',
   \`nome_fantasia\` VARCHAR(150) NULL,
+  \`inscricao_estadual\` VARCHAR(30) NULL COMMENT 'Inscrição Estadual (IE)',
+  \`indicador_ie\` VARCHAR(2) NOT NULL DEFAULT '1' COMMENT '1=Contribuinte, 2=Isento, 9=Não Contribuinte',
   \`logradouro\` VARCHAR(150) NOT NULL,
   \`numero\` VARCHAR(30) NOT NULL,
   \`complemento\` VARCHAR(60) NULL,
@@ -667,28 +669,31 @@ $tipo_alerta = '';
 
 // Processamento de Inclusão via POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['acao'] === 'salvar_cliente') {
-    $documento   = trim($_POST['documento'] ?? '');
-    $nome        = trim($_POST['nome'] ?? '');
-    $logradouro  = trim($_POST['logradouro'] ?? '');
-    $numero      = trim($_POST['numero'] ?? '');
-    $complemento = trim($_POST['complemento'] ?? '');
-    $bairro      = trim($_POST['bairro'] ?? '');
-    $cidade      = trim($_POST['cidade'] ?? '');
-    $estado      = strtoupper(trim($_POST['estado'] ?? 'SP'));
-    $cep         = trim($_POST['cep'] ?? '');
-    $telefone    = trim($_POST['telefone'] ?? '');
-    $celular     = trim($_POST['celular'] ?? '');
-    $email       = trim($_POST['email'] ?? '');
-    $observacoes = trim($_POST['observacoes'] ?? '');
+    $documento          = trim($_POST['documento'] ?? '');
+    $nome               = trim($_POST['nome'] ?? '');
+    $nome_fantasia      = trim($_POST['nome_fantasia'] ?? '');
+    $inscricao_estadual = trim($_POST['inscricao_estadual'] ?? '');
+    $indicador_ie       = trim($_POST['indicador_ie'] ?? '1');
+    $cep                = trim($_POST['cep'] ?? '');
+    $logradouro         = trim($_POST['logradouro'] ?? '');
+    $numero             = trim($_POST['numero'] ?? '');
+    $complemento        = trim($_POST['complemento'] ?? '');
+    $bairro             = trim($_POST['bairro'] ?? '');
+    $cidade             = trim($_POST['cidade'] ?? '');
+    $estado             = strtoupper(trim($_POST['estado'] ?? 'SP'));
+    $telefone           = trim($_POST['telefone'] ?? '');
+    $celular            = trim($_POST['celular'] ?? '');
+    $email              = trim($_POST['email'] ?? '');
+    $observacoes        = trim($_POST['observacao'] ?? $_POST['observacoes'] ?? '');
 
     if (empty($documento) || empty($nome) || empty($logradouro) || empty($cidade)) {
         $mensagem = "Por favor, preencha os campos obrigatórios (Documento, Nome/Razão Social, Endereço e Cidade).";
         $tipo_alerta = "danger";
     } else {
         try {
-            $stmt = $pdo->prepare("INSERT INTO clientes (documento, nome, logradouro, numero, complemento, bairro, cidade, estado, cep, telefone, celular, email, observacoes) 
-                                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$documento, $nome, $logradouro, $numero, $complemento, $bairro, $cidade, $estado, $cep, $telefone, $celular, $email, $observacoes]);
+            $stmt = $pdo->prepare("INSERT INTO clientes (documento, nome, nome_fantasia, inscricao_estadual, indicador_ie, logradouro, numero, complemento, bairro, cidade, estado, cep, telefone, celular, email, observacoes) 
+                                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$documento, $nome, $nome_fantasia, $inscricao_estadual, $indicador_ie, $logradouro, $numero, $complemento, $bairro, $cidade, $estado, $cep, $telefone, $celular, $email, $observacoes]);
             $mensagem = "Cliente cadastrado com sucesso no sistema da MFx Tecnologia Industrial!";
             $tipo_alerta = "success";
         } catch (PDOException $e) {
@@ -774,91 +779,100 @@ $clientes = $stmtList->fetchAll();
                         <label for="documento" class="form-label fw-bold">
                             CPF ou CNPJ <span class="text-danger">*</span>
                             <span id="spinnerCnpj" class="spinner-border spinner-border-sm text-danger ms-2 spinner-api" role="status"></span>
+                            <span id="situacaoBadge" class="badge bg-success ms-2 d-none"></span>
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-light"><i class="fa-solid fa-id-card"></i></span>
-                            <input type="text" class="form-control" id="documento" name="documento" 
-                                   placeholder="Digite 14 dígitos (CNPJ) ou CPF" required onblur="consultarCnpjBrasilApi(this.value)">
+                            <input type="text" class="form-control font-monospace" id="documento" name="documento" 
+                                   placeholder="Ex: 34.375.789/0001-87" required onblur="consultarCNPJ(this)">
                         </div>
-                        <small class="text-muted" id="cnpjFeedback">Dica: Digite apenas os números e clique fora do campo.</small>
                     </div>
 
                     <div class="col-md-8">
-                        <label for="nome" class="form-label fw-bold">Nome Completo / Razão Social <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="nome" name="nome" placeholder="Razão Social da Indústria / Cliente" required>
+                        <label for="nome" class="form-label fw-bold">Razão Social (Nome Completo) <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="nome" name="nome" required>
                     </div>
 
-                    <div class="col-md-3">
-                        <label for="cep" class="form-label fw-bold">
-                            CEP <span class="text-danger">*</span>
-                            <span id="spinnerCep" class="spinner-border spinner-border-sm text-primary ms-1 spinner-api"></span>
-                        </label>
-                        <input type="text" class="form-control" id="cep" name="cep" placeholder="17120-031" required onblur="consultarCep(this.value)">
+                    <div class="col-md-12">
+                        <label for="nome_fantasia" class="form-label fw-bold">Nome Fantasia (Opcional)</label>
+                        <input type="text" class="form-control" id="nome_fantasia" name="nome_fantasia">
+                    </div>
+
+                    <!-- NOVOS CAMPOS DE INSCRIÇÃO ESTADUAL E INDICADOR SEFAZ -->
+                    <div class="col-md-6">
+                        <label for="inscricao_estadual" class="form-label fw-bold">Inscrição Estadual (IE) <small class="text-muted">Obrigatório p/ contribuintes</small></label>
+                        <input type="text" class="form-control font-monospace" name="inscricao_estadual" id="inscricao_estadual" placeholder="Ex: 209.632.131.114 ou ISENTO">
                     </div>
 
                     <div class="col-md-6">
-                        <label for="logradouro" class="form-label fw-bold">Endereço (Rua / Av.) <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="logradouro" name="logradouro" placeholder="Ex: Rua Sargento Andiras" required>
+                        <label for="indicador_ie" class="form-label fw-bold">Indicador de IE (SEFAZ) <small class="text-muted">Enquadramento fiscal</small></label>
+                        <select class="form-select" name="indicador_ie" id="indicador_ie">
+                            <option value="1">1 - Contribuinte ICMS (Possui Inscrição Estadual)</option>
+                            <option value="2">2 - Contribuinte Isento de Inscrição Estadual</option>
+                            <option value="9">9 - Não Contribuinte (Pode não ter IE)</option>
+                        </select>
                     </div>
+                    <!-- FIM DOS NOVOS CAMPOS -->
 
                     <div class="col-md-3">
-                        <label for="numero" class="form-label fw-bold">Número <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="numero" name="numero" placeholder="874" required>
+                        <label for="cep" class="form-label fw-bold">CEP <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control font-monospace" name="cep" id="cep" required onblur="consultarCEP(this)">
                     </div>
 
-                    <div class="col-md-3">
-                        <label for="complemento" class="form-label">Complemento</label>
-                        <input type="text" class="form-control" id="complemento" name="complemento" placeholder="Galpão, Sala...">
-                    </div>
-
-                    <div class="col-md-3">
-                        <label for="bairro" class="form-label fw-bold">Bairro <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="bairro" name="bairro" placeholder="Centro / Distrito Industrial" required>
-                    </div>
-
-                    <div class="col-md-4">
-                        <label for="cidade" class="form-label fw-bold">Cidade <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="cidade" name="cidade" placeholder="Ex: Agudos, Bauru..." required>
+                    <div class="col-md-7">
+                        <label for="logradouro" class="form-label fw-bold">Endereço (Logradouro) <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="logradouro" id="logradouro" required>
                     </div>
 
                     <div class="col-md-2">
-                        <label for="estado" class="form-label fw-bold">UF <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control text-uppercase" id="estado" name="estado" maxlength="2" value="SP" required>
+                        <label for="numero" class="form-label fw-bold">Número <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="numero" id="numero" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="complemento" class="form-label">Complemento</label>
+                        <input type="text" class="form-control" name="complemento" id="complemento" placeholder="Sala, Galpão...">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="bairro" class="form-label fw-bold">Bairro <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="bairro" id="bairro" required>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="cidade" class="form-label fw-bold">Cidade <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="cidade" id="cidade" required>
+                    </div>
+
+                    <div class="col-md-1">
+                        <label for="uf" class="form-label fw-bold">UF <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control text-uppercase" name="uf" id="uf" maxlength="2" value="SP" required>
                     </div>
 
                     <div class="col-md-4">
                         <label for="telefone" class="form-label">Telefone Fixo</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="fa-solid fa-phone"></i></span>
-                            <input type="text" class="form-control" id="telefone" name="telefone" placeholder="(14) 3262-1080">
-                        </div>
+                        <input type="text" class="form-control" name="telefone" id="telefone">
                     </div>
 
                     <div class="col-md-4">
                         <label for="celular" class="form-label fw-bold">Celular / WhatsApp <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text text-success"><i class="fa-brands fa-whatsapp"></i></span>
-                            <input type="text" class="form-control" id="celular" name="celular" placeholder="(14) 99845-7721" required>
-                        </div>
+                        <input type="text" class="form-control" name="celular" id="celular" required>
                     </div>
 
                     <div class="col-md-4">
-                        <label for="email" class="form-label">E-mail Comercial / NFe</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="fa-solid fa-envelope"></i></span>
-                            <input type="email" class="form-control" id="email" name="email" placeholder="compras@cliente.com.br">
-                        </div>
+                        <label for="email" class="form-label">E-mail Comercial (NF-e)</label>
+                        <input type="email" class="form-control" name="email" id="email">
                     </div>
 
-                    <div class="col-12">
-                        <label for="observacoes" class="form-label">Observações Técnicas / Equipamentos do Cliente</label>
-                        <textarea class="form-control" id="observacoes" name="observacoes" rows="2" placeholder="Ex: Possui mesa Laser 3kW Raycus, modelo da tocha, horário de recebimento..."></textarea>
+                    <div class="col-md-12">
+                        <label for="observacao" class="form-label">Observações / Máquinas Instaladas (Laser, Plasma, Oxicorte)</label>
+                        <textarea class="form-control" name="observacao" id="observacao" rows="3" placeholder="Ex: Possui Máquina Laser Fibra 3kW, horários de recebimento, etc."></textarea>
                     </div>
 
                     <div class="col-12 text-end pt-2">
-                        <button type="reset" class="btn btn-light border px-4 me-2">Limpar</button>
-                        <button type="submit" class="btn btn-danger px-4 fw-bold">
-                            <i class="fa-solid fa-floppy-disk"></i> Salvar Cliente
+                        <button type="reset" class="btn btn-secondary me-2">Limpar</button>
+                        <button type="submit" class="btn btn-danger fw-bold">
+                            <i class="fa-solid fa-floppy-disk me-1"></i> Salvar Cliente
                         </button>
                     </div>
                 </div>
@@ -868,63 +882,86 @@ $clientes = $stmtList->fetchAll();
 </div>
 
 <script>
-async function consultarCnpjBrasilApi(valor) {
-    const documentoLimpo = valor.replace(/\\D/g, '');
-    const feedback = document.getElementById('cnpjFeedback');
-    const spinner = document.getElementById('spinnerCnpj');
+// Função avançada para buscar CNPJ completo e dados fiscais
+async function consultarCNPJ(input) {
+    let cnpj = input.value.replace(/\\D/g, '');
+    if (cnpj.length !== 14) return;
 
-    if (documentoLimpo.length === 14) {
-        spinner.style.display = 'inline-block';
-        feedback.innerHTML = '<span class="text-primary"><i class="fa-solid fa-arrows-rotate fa-spin"></i> Consultando BrasilAPI...</span>';
+    let spinner = document.getElementById('spinnerCnpj');
+    let feedback = document.getElementById('cnpjFeedback');
+    let badge = document.getElementById('situacaoBadge');
 
-        try {
-            const resposta = await fetch(\`https://brasilapi.com.br/api/cnpj/v1/\${documentoLimpo}\`);
-            if (resposta.ok) {
-                const dados = await resposta.json();
-                document.getElementById('nome').value = dados.razao_social || dados.nome_fantasia || '';
-                if (dados.cep) document.getElementById('cep').value = dados.cep;
-                if (dados.logradouro) document.getElementById('logradouro').value = dados.logradouro;
-                if (dados.numero) document.getElementById('numero').value = dados.numero;
-                if (dados.complemento) document.getElementById('complemento').value = dados.complemento;
-                if (dados.bairro) document.getElementById('bairro').value = dados.bairro;
-                if (dados.municipio) document.getElementById('cidade').value = dados.municipio;
-                if (dados.uf) document.getElementById('estado').value = dados.uf;
-                if (dados.ddd_telefone_1) document.getElementById('telefone').value = dados.ddd_telefone_1;
-                if (dados.email) document.getElementById('email').value = dados.email.toLowerCase();
+    if (spinner) spinner.style.display = 'inline-block';
+    document.getElementById('nome').value = "Consultando dados na Receita Federal...";
 
-                feedback.innerHTML = '<span class="text-success"><i class="fa-solid fa-circle-check"></i> CNPJ carregado com sucesso!</span>';
-            } else {
-                feedback.innerHTML = '<span class="text-warning"><i class="fa-solid fa-triangle-exclamation"></i> CNPJ não localizado na BrasilAPI.</span>';
+    try {
+        // Usando BrasilAPI (Gratuita, rápida e muito estável)
+        let response = await fetch(\`https://brasilapi.com.br/api/cnpj/v1/\${cnpj}\`);
+        
+        if (response.ok) {
+            let data = await response.json();
+            
+            // Preenchimento automático dos dados corporativos e fiscais
+            document.getElementById('nome').value = data.razao_social || '';
+            document.getElementById('nome_fantasia').value = data.nome_fantasia || '';
+            
+            // Se a API retornar Inscrição Estadual (algumas bases trazem no cadastro estadual)
+            if (data.inscricoes_estaduais && data.inscricoes_estaduais.length > 0) {
+                document.getElementById('inscricao_estadual').value = data.inscricoes_estaduais[0].inscricao_estadual || '';
+                document.getElementById('indicador_ie').value = "1"; // Contribuinte ICMS
             }
-        } catch (erro) {
-            feedback.innerHTML = '<span class="text-danger"><i class="fa-solid fa-circle-xmark"></i> Falha ao conectar à BrasilAPI.</span>';
-        } finally {
-            spinner.style.display = 'none';
+
+            document.getElementById('cep').value = data.cep || '';
+            document.getElementById('logradouro').value = data.logradouro || '';
+            document.getElementById('numero').value = data.numero || '';
+            document.getElementById('complemento').value = data.complemento || '';
+            document.getElementById('bairro').value = data.bairro || '';
+            document.getElementById('cidade').value = data.municipio || '';
+            document.getElementById('uf').value = data.uf || '';
+            document.getElementById('telefone').value = data.ddd_telefone_1 || '';
+            document.getElementById('email').value = data.email ? data.email.toLowerCase() : '';
+
+            // Status da empresa (Ativa, Inapta, etc.)
+            let statusDesc = data.descricao_situacao_cadastral || data.situacao_cadastral || 'ATIVA';
+            if (badge) {
+                badge.textContent = "Situação: " + statusDesc;
+                badge.classList.remove('d-none');
+            }
+        } else {
+            alert('CNPJ não encontrado na base de dados.');
+            document.getElementById('nome').value = '';
         }
+    } catch (error) {
+        console.error("Erro na consulta do CNPJ:", error);
+        alert('Erro ao consultar o CNPJ. Verifique sua conexão.');
+        document.getElementById('nome').value = '';
+    } finally {
+        if (spinner) spinner.style.display = 'none';
     }
 }
 
-async function consultarCep(cep) {
-    const cepLimpo = cep.replace(/\\D/g, '');
-    const spinner = document.getElementById('spinnerCep');
+// Função para buscar endereço pelo CEP
+async function consultarCEP(input) {
+    let cep = input.value.replace(/\\D/g, '');
+    if (cep.length !== 8) return;
 
-    if (cepLimpo.length === 8) {
-        spinner.style.display = 'inline-block';
-        try {
-            const resposta = await fetch(\`https://brasilapi.com.br/api/cep/v2/\${cepLimpo}\`);
-            if (resposta.ok) {
-                const dados = await resposta.json();
-                if (dados.street) document.getElementById('logradouro').value = dados.street;
-                if (dados.neighborhood) document.getElementById('bairro').value = dados.neighborhood;
-                if (dados.city) document.getElementById('cidade').value = dados.city;
-                if (dados.state) document.getElementById('estado').value = dados.state;
-                document.getElementById('numero').focus();
-            }
-        } catch (e) {
-            console.warn('Erro ao consultar CEP:', e);
-        } finally {
-            spinner.style.display = 'none';
+    let spinner = document.getElementById('spinnerCep');
+    if (spinner) spinner.style.display = 'inline-block';
+
+    try {
+        let response = await fetch(\`https://brasilapi.com.br/api/cep/v2/\${cep}\`);
+        if (response.ok) {
+            let data = await response.json();
+            if (data.street) document.getElementById('logradouro').value = data.street;
+            if (data.neighborhood) document.getElementById('bairro').value = data.neighborhood;
+            if (data.city) document.getElementById('cidade').value = data.city;
+            if (data.state) document.getElementById('estado').value = data.state;
+            document.getElementById('numero').focus();
         }
+    } catch (e) {
+        console.warn('Erro ao consultar CEP:', e);
+    } finally {
+        if (spinner) spinner.style.display = 'none';
     }
 }
 </script>

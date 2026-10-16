@@ -171,10 +171,16 @@ export const ImprimirOsView: React.FC<ImprimirOsViewProps> = ({
             <div className="col-span-8">
               <span className="font-bold text-slate-600">Cliente / Razão:</span>{' '}
               <strong className="text-slate-950 text-[9px]">{os.clienteNome}</strong>
+              {os.clienteNomeFantasia && (
+                <span className="text-slate-500 text-[8px] ml-1">({os.clienteNomeFantasia})</span>
+              )}
             </div>
             <div className="col-span-4">
               <span className="font-bold text-slate-600">CNPJ / CPF:</span>{' '}
               <span className="font-mono font-bold text-slate-900">{os.clienteDocumento}</span>
+              {os.clienteInscricaoEstadual && (
+                <span className="text-[7.5px] text-slate-600 ml-1 font-mono">| IE: {os.clienteInscricaoEstadual}</span>
+              )}
             </div>
 
             <div className="col-span-8">
