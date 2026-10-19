@@ -19,116 +19,238 @@ export const MFX_COMPANY = {
   valorHoraPadrao: 100.00,
 };
 
+import { CategoriaItem, TipoItem, UnidadeMedida } from '../types';
+
 export interface ItemPredefinido {
-  categoria: 'Consumíveis' | 'Serviços Laser' | 'Serviços Oxicorte' | 'Serviços Plasma' | 'Peças & Acessórios';
+  tipo: TipoItem;
+  categoria: CategoriaItem;
   codigo: string;
   descricao: string;
+  unidade: UnidadeMedida;
   precoSugerido: number;
   prazoSugerido: string;
+  // Campos Fiscais
+  ncm?: string;
+  codigoLc116?: string;
+  codigoTributacaoMunicipal?: string;
+  aliquotaIss?: number;
+  cfop?: string;
+  csosn?: string;
+  origem?: '0' | '1' | '2';
 }
 
 export const CATALOGO_PREDEFINIDO: ItemPredefinido[] = [
-  // Consumíveis Laser Fibra
+  // 1. Consumíveis Laser Fibra (Produtos NF-e)
   {
+    tipo: 'produto',
     categoria: 'Consumíveis',
     codigo: 'MFX-LP30-15',
     descricao: 'Lente de Proteção Laser Fibra D30 x 1.5mm Quartzo Fundido 1064nm',
+    unidade: 'UN',
     precoSugerido: 120.00,
     prazoSugerido: 'Pronta Entrega',
+    ncm: '9027.90.99',
+    cfop: '5102',
+    csosn: '0102',
+    origem: '1', // Importada
   },
   {
+    tipo: 'produto',
     categoria: 'Consumíveis',
     codigo: 'MFX-BD-15',
     descricao: 'Bico Laser Duplo Cromado D32 H15 Calibre 1.5mm',
+    unidade: 'UN',
     precoSugerido: 85.00,
     prazoSugerido: 'Pronta Entrega',
+    ncm: '8466.93.30',
+    cfop: '5102',
+    csosn: '0102',
+    origem: '0', // Nacional
   },
   {
+    tipo: 'produto',
     categoria: 'Consumíveis',
     codigo: 'MFX-BS-20',
     descricao: 'Bico Laser Simples Cromado D32 H15 Calibre 2.0mm (Inox/Alumínio)',
+    unidade: 'UN',
     precoSugerido: 85.00,
     prazoSugerido: 'Pronta Entrega',
+    ncm: '8466.93.30',
+    cfop: '5102',
+    csosn: '0102',
+    origem: '0',
   },
   {
+    tipo: 'produto',
     categoria: 'Consumíveis',
     codigo: 'MFX-AC-28',
     descricao: 'Anel Cerâmico para Cabeçote de Corte Raytools / WSX D28mm',
+    unidade: 'UN',
     precoSugerido: 220.00,
     prazoSugerido: 'Pronta Entrega',
+    ncm: '8547.10.00',
+    cfop: '5102',
+    csosn: '0102',
+    origem: '1',
   },
   {
+    tipo: 'produto',
     categoria: 'Consumíveis',
     codigo: 'MFX-CC-01',
     descricao: 'Cabo Sensor Capacitivo SMA x BNC para Controle de Altura BCS100',
+    unidade: 'UN',
     precoSugerido: 340.00,
     prazoSugerido: 'Pronta Entrega',
+    ncm: '8544.42.00',
+    cfop: '5102',
+    csosn: '0102',
+    origem: '0',
   },
   
-  // Consumíveis Plasma & Oxicorte
+  // 2. Consumíveis Plasma & Oxicorte (Produtos NF-e)
   {
+    tipo: 'produto',
     categoria: 'Consumíveis',
     codigo: 'MFX-BP-105',
     descricao: 'Bico de Plasma Alta Definição 105A (Corte Aço Carbono)',
+    unidade: 'UN',
     precoSugerido: 95.00,
     prazoSugerido: 'Pronta Entrega',
+    ncm: '8466.93.30',
+    cfop: '5102',
+    csosn: '0102',
+    origem: '0',
   },
   {
+    tipo: 'produto',
     categoria: 'Consumíveis',
     codigo: 'MFX-EP-100',
     descricao: 'Eletrodo de Plasma Híbrido Cobre/Háfnio 100A',
+    unidade: 'UN',
     precoSugerido: 110.00,
     prazoSugerido: 'Pronta Entrega',
+    ncm: '8466.93.30',
+    cfop: '5102',
+    csosn: '0102',
+    origem: '0',
   },
   {
+    tipo: 'produto',
     categoria: 'Consumíveis',
     codigo: 'MFX-BO-1502',
     descricao: 'Bico de Corte Oxicorte 1502 GLP/Oxigênio nº 02 (Chapas 1/2" a 1")',
+    unidade: 'UN',
     precoSugerido: 68.00,
     prazoSugerido: 'Pronta Entrega',
+    ncm: '8468.90.00',
+    cfop: '5102',
+    csosn: '0102',
+    origem: '0',
   },
   {
+    tipo: 'produto',
     categoria: 'Consumíveis',
     codigo: 'MFX-VC-04',
     descricao: 'Válvula de Retenção Corta-Chama para Maçarico Oxicorte',
+    unidade: 'JG',
     precoSugerido: 145.00,
     prazoSugerido: 'Pronta Entrega',
+    ncm: '8481.30.00',
+    cfop: '5102',
+    csosn: '0102',
+    origem: '0',
   },
 
-  // Serviços Especializados
+  // 3. Mão de Obra e Serviços Especializados (Serviços NFS-e Municipal)
   {
+    tipo: 'servico',
     categoria: 'Serviços Laser',
     codigo: 'MFX-SRV-LASER-01',
-    descricao: 'Alinhamento Óptico do Feixe de Laser Fibra, Colimação e Foco',
+    descricao: 'Alinhamento Óptico do Feixe Laser Fibra, Colimação e Foco',
+    unidade: 'UN',
     precoSugerido: 650.00,
     prazoSugerido: 'Imediato (In-loco)',
+    codigoLc116: '14.01',
+    codigoTributacaoMunicipal: '1401-0/01-88',
+    aliquotaIss: 3.0,
+    cfop: '5933',
   },
   {
+    tipo: 'servico',
     categoria: 'Serviços Laser',
     codigo: 'MFX-SRV-LASER-02',
     descricao: 'Manutenção Preventiva de Cabeçote de Corte e Troca de Selos/Anéis',
+    unidade: 'UN',
     precoSugerido: 480.00,
     prazoSugerido: 'Imediato (In-loco)',
+    codigoLc116: '14.01',
+    codigoTributacaoMunicipal: '1401-0/01-88',
+    aliquotaIss: 3.0,
+    cfop: '5933',
   },
   {
+    tipo: 'servico',
+    categoria: 'Mão de Obra',
+    codigo: 'MFX-MO-HORA',
+    descricao: 'Hora Técnica de Manutenção Mecânica, Elétrica e CNC',
+    unidade: 'HR',
+    precoSugerido: 100.00,
+    prazoSugerido: 'Conforme Chamado',
+    codigoLc116: '14.01',
+    codigoTributacaoMunicipal: '1401-0/02-00',
+    aliquotaIss: 3.0,
+    cfop: '5933',
+  },
+  {
+    tipo: 'servico',
+    categoria: 'Mão de Obra',
+    codigo: 'MFX-MO-DIARIA',
+    descricao: 'Diária Técnica de Especialista em Campo / Retrofit CNC',
+    unidade: 'DIA',
+    precoSugerido: 800.00,
+    prazoSugerido: 'Agendamento Técnico',
+    codigoLc116: '14.01',
+    codigoTributacaoMunicipal: '1401-0/04-00',
+    aliquotaIss: 3.0,
+    cfop: '5933',
+  },
+  {
+    tipo: 'servico',
     categoria: 'Serviços Oxicorte',
     codigo: 'MFX-SRV-OXI-01',
     descricao: 'Revisão Geral do Maçarico de Oxicorte, Troca de Gaxetas e Calibração de Pressão',
+    unidade: 'UN',
     precoSugerido: 350.00,
     prazoSugerido: 'Imediato (In-loco)',
+    codigoLc116: '14.01',
+    codigoTributacaoMunicipal: '1401-0/03-55',
+    aliquotaIss: 2.5,
+    cfop: '5933',
   },
   {
+    tipo: 'servico',
     categoria: 'Serviços Plasma',
     codigo: 'MFX-SRV-PLAS-01',
     descricao: 'Diagnóstico de Arco Piloto e Revisão da Fonte Plasma CNC',
+    unidade: 'UN',
     precoSugerido: 550.00,
     prazoSugerido: 'Imediato (In-loco)',
+    codigoLc116: '14.01',
+    codigoTributacaoMunicipal: '1401-0/01-88',
+    aliquotaIss: 3.0,
+    cfop: '5933',
   },
   {
+    tipo: 'produto',
     categoria: 'Peças & Acessórios',
     codigo: 'MFX-CABO-COM',
     descricao: 'Cabo de Comunicação Industrial Blindado CNC RS232/Ethernet 15m',
+    unidade: 'PC',
     precoSugerido: 290.00,
     prazoSugerido: '2 a 3 dias úteis',
+    ncm: '8544.49.00',
+    cfop: '5102',
+    csosn: '0102',
+    origem: '0',
   },
 ];

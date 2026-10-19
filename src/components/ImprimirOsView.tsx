@@ -37,14 +37,16 @@ export const ImprimirOsView: React.FC<ImprimirOsViewProps> = ({
     );
   }
 
-  // Agrupamento dos itens por categoria
-  const categoriasMap: Record<string, ItemOS[]> = {};
-  os.itens.forEach((it) => {
-    if (!categoriasMap[it.categoria]) {
-      categoriasMap[it.categoria] = [];
-    }
-    categoriasMap[it.categoria].push(it);
-  });
+  // Separação fiscal dos itens: NFS-e (Mão de Obra / Serviços) x NF-e (Peças / Consumíveis)
+  const itensServicos = os.itens.filter(
+    (it) => it.tipoItem === 'servico' || it.categoria === 'Mão de Obra' || it.categoria.startsWith('Serviços')
+  );
+  const itensProdutos = os.itens.filter(
+    (it) => it.tipoItem === 'produto' || (!it.tipoItem && !it.categoria.startsWith('Serviços') && it.categoria !== 'Mão de Obra')
+  );
+
+  const subtotalServicos = itensServicos.reduce((acc, it) => acc + (it.valorTotal || 0), 0);
+  const subtotalProdutos = itensProdutos.reduce((acc, it) => acc + (it.valorTotal || 0), 0);
 
   const handlePrint = () => {
     window.print();
@@ -227,62 +229,121 @@ export const ImprimirOsView: React.FC<ImprimirOsViewProps> = ({
           </div>
         </div>
 
-        {/* BLOCO 2: TABELA DETALHADA DE ITENS DIVIDIDA POR CATEGORIAS */}
-        <div className="mb-2">
-          <table className="w-full border-collapse border border-slate-300 text-[8px]">
-            <thead>
-              <tr className="bg-slate-900 text-white font-bold uppercase text-[7.5px]">
-                <th className="border border-slate-900 py-1 px-1.5 text-center w-[12%]">Código</th>
-                <th className="border border-slate-900 py-1 px-2 text-left w-[46%]">Descrição do Consumível ou Serviço</th>
-                <th className="border border-slate-900 py-1 px-1.5 text-center w-[14%]">Prazo</th>
-                <th className="border border-slate-900 py-1 px-1 text-center w-[8%]">Qtd</th>
-                <th className="border border-slate-900 py-1 px-2 text-right w-[10%]">Vlr. Unit.</th>
-                <th className="border border-slate-900 py-1 px-2 text-right w-[10%]">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.keys(categoriasMap).length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-4 text-center text-slate-400">
-                    Nenhum item adicionado nesta Ordem de Serviço.
+        {/* BLOCO 2A: DEMONSTRATIVO FISCAL NFS-e (MÃO DE OBRA E PRESTAÇÃO DE SERVIÇOS) */}
+        {itensServicos.length > 0 && (
+          <div className="mb-2">
+            <div className="bg-purple-900 text-white font-bold uppercase text-[7.5px] px-2 py-0.5 flex justify-between items-center">
+              <span>🛠️ 1. Mão de Obra e Serviços Especializados (Emissão NFS-e - ISS Municipal Agudos-SP)</span>
+              <span className="text-[7px] text-purple-200">LC 116/2003 Item 14.01 • CFOP 5933</span>
+            </div>
+            <table className="w-full border-collapse border border-purple-200 text-[8px]">
+              <thead>
+                <tr className="bg-purple-50 text-purple-950 font-bold uppercase text-[7px] border-b border-purple-200">
+                  <th className="py-1 px-1.5 text-center w-[12%]">Código</th>
+                  <th className="py-1 px-2 text-left w-[42%]">Descrição do Serviço / Mão de Obra</th>
+                  <th className="py-1 px-1.5 text-center w-[12%]">Classif. LC 116</th>
+                  <th className="py-1 px-1 text-center w-[8%]">Unid.</th>
+                  <th className="py-1 px-1 text-center w-[8%]">Qtd</th>
+                  <th className="py-1 px-2 text-right w-[9%]">Unitário</th>
+                  <th className="py-1 px-2 text-right w-[9%]">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {itensServicos.map((item, idx) => (
+                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-purple-50/20'}>
+                    <td className="border-b border-purple-100 py-1 px-1.5 text-center font-mono font-bold text-slate-800">
+                      {item.codigo}
+                    </td>
+                    <td className="border-b border-purple-100 py-1 px-2 text-slate-900 font-medium">
+                      {item.descricao}
+                    </td>
+                    <td className="border-b border-purple-100 py-1 px-1.5 text-center font-mono text-[7.5px] text-purple-900">
+                      {item.codigoLc116 || '14.01'} {item.aliquotaIss ? `(ISS ${item.aliquotaIss}%)` : ''}
+                    </td>
+                    <td className="border-b border-purple-100 py-1 px-1 text-center font-mono font-bold text-slate-700">
+                      {item.unidade || 'HR'}
+                    </td>
+                    <td className="border-b border-purple-100 py-1 px-1 text-center font-mono font-bold text-slate-900">
+                      {formatNumber(item.quantidade, 1)}
+                    </td>
+                    <td className="border-b border-purple-100 py-1 px-2 text-right font-mono text-slate-800">
+                      {formatCurrency(item.precoUnitario)}
+                    </td>
+                    <td className="border-b border-purple-100 py-1 px-2 text-right font-mono font-bold text-purple-950">
+                      {formatCurrency(item.valorTotal)}
+                    </td>
+                  </tr>
+                ))}
+                <tr className="bg-purple-100/60 font-bold text-purple-950 text-[7.5px]">
+                  <td colSpan={6} className="py-1 px-2 text-right uppercase">
+                    Subtotal Mão de Obra e Serviços (NFS-e Municipal):
+                  </td>
+                  <td className="py-1 px-2 text-right font-mono text-purple-900 font-black">
+                    {formatCurrency(subtotalServicos)}
                   </td>
                 </tr>
-              ) : (
-                Object.entries(categoriasMap).map(([categoria, listaItens]) => (
-                  <React.Fragment key={categoria}>
-                    <tr className="bg-slate-100 font-bold text-slate-800">
-                      <td colSpan={6} className="py-1 px-2 border border-slate-300 text-[8px] uppercase tracking-wide bg-slate-100">
-                        • {categoria}
-                      </td>
-                    </tr>
-                    {listaItens.map((item, idx) => (
-                      <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
-                        <td className="border border-slate-300 py-1 px-1.5 text-center font-mono font-bold text-slate-800">
-                          {item.codigo}
-                        </td>
-                        <td className="border border-slate-300 py-1 px-2 text-slate-900">
-                          {item.descricao}
-                        </td>
-                        <td className="border border-slate-300 py-1 px-1.5 text-center text-slate-700">
-                          {item.prazoEntrega}
-                        </td>
-                        <td className="border border-slate-300 py-1 px-1 text-center font-mono font-bold text-slate-900">
-                          {formatNumber(item.quantidade, 0)}
-                        </td>
-                        <td className="border border-slate-300 py-1 px-2 text-right font-mono text-slate-800">
-                          {formatCurrency(item.precoUnitario)}
-                        </td>
-                        <td className="border border-slate-300 py-1 px-2 text-right font-mono font-bold text-slate-950">
-                          {formatCurrency(item.valorTotal)}
-                        </td>
-                      </tr>
-                    ))}
-                  </React.Fragment>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* BLOCO 2B: DEMONSTRATIVO FISCAL NF-e MOD. 55 (CONSUMÍVEIS E PEÇAS) */}
+        {itensProdutos.length > 0 && (
+          <div className="mb-2">
+            <div className="bg-slate-900 text-white font-bold uppercase text-[7.5px] px-2 py-0.5 flex justify-between items-center">
+              <span>📦 2. Fornecimento de Peças e Consumíveis (Emissão NF-e Mod. 55 - SEFAZ Estadual)</span>
+              <span className="text-[7px] text-slate-300">Simples Nacional • CSOSN 0102 • CFOP 5102</span>
+            </div>
+            <table className="w-full border-collapse border border-slate-300 text-[8px]">
+              <thead>
+                <tr className="bg-slate-100 text-slate-800 font-bold uppercase text-[7px] border-b border-slate-300">
+                  <th className="py-1 px-1.5 text-center w-[12%]">Código</th>
+                  <th className="py-1 px-2 text-left w-[42%]">Descrição do Consumível / Mercadoria</th>
+                  <th className="py-1 px-1.5 text-center w-[12%]">NCM</th>
+                  <th className="py-1 px-1 text-center w-[8%]">Unid.</th>
+                  <th className="py-1 px-1 text-center w-[8%]">Qtd</th>
+                  <th className="py-1 px-2 text-right w-[9%]">Unitário</th>
+                  <th className="py-1 px-2 text-right w-[9%]">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {itensProdutos.map((item, idx) => (
+                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                    <td className="border-b border-slate-200 py-1 px-1.5 text-center font-mono font-bold text-slate-800">
+                      {item.codigo}
+                    </td>
+                    <td className="border-b border-slate-200 py-1 px-2 text-slate-900 font-medium">
+                      {item.descricao}
+                    </td>
+                    <td className="border-b border-slate-200 py-1 px-1.5 text-center font-mono text-[7.5px] text-slate-700">
+                      {item.ncm || '8466.93.30'}
+                    </td>
+                    <td className="border-b border-slate-200 py-1 px-1 text-center font-mono font-bold text-slate-700">
+                      {item.unidade || 'UN'}
+                    </td>
+                    <td className="border-b border-slate-200 py-1 px-1 text-center font-mono font-bold text-slate-900">
+                      {formatNumber(item.quantidade, 0)}
+                    </td>
+                    <td className="border-b border-slate-200 py-1 px-2 text-right font-mono text-slate-800">
+                      {formatCurrency(item.precoUnitario)}
+                    </td>
+                    <td className="border-b border-slate-200 py-1 px-2 text-right font-mono font-bold text-slate-950">
+                      {formatCurrency(item.valorTotal)}
+                    </td>
+                  </tr>
+                ))}
+                <tr className="bg-amber-100/60 font-bold text-amber-950 text-[7.5px]">
+                  <td colSpan={6} className="py-1 px-2 text-right uppercase">
+                    Subtotal Peças e Consumíveis (NF-e Mod. 55):
+                  </td>
+                  <td className="py-1 px-2 text-right font-mono text-amber-900 font-black">
+                    {formatCurrency(subtotalProdutos)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {/* BLOCO 3: RESUMO DETALHADO DOS CUSTOS DE DESLOCAMENTO, HORAS E DESPESAS */}
         <div className="grid grid-cols-12 gap-2 mb-2">
@@ -290,7 +351,7 @@ export const ImprimirOsView: React.FC<ImprimirOsViewProps> = ({
           {/* Tabela de Custos Operacionais */}
           <div className="col-span-7 border border-slate-300 rounded-xs overflow-hidden">
             <div className="bg-slate-200 text-slate-800 text-[8px] font-black uppercase tracking-wider px-2 py-0.5 border-b border-slate-300">
-              Composição de Custos Operacionais & Deslocamento
+              Composição Operacional de Atendimento Técnico em Campo
             </div>
             <div className="p-1.5 text-[8px]">
               <table className="w-full">
@@ -305,7 +366,7 @@ export const ImprimirOsView: React.FC<ImprimirOsViewProps> = ({
                   </tr>
                   <tr className="border-b border-slate-200">
                     <td className="py-0.5 text-slate-700">
-                      Mão de Obra ({formatNumber(os.horasTrabalhadas, 1)} h técnicas × {formatCurrency(os.valorHoraTecnica)}/h):
+                      Mão de Obra Técnica ({formatNumber(os.horasTrabalhadas, 1)} h × {formatCurrency(os.valorHoraTecnica)}/h):
                     </td>
                     <td className="py-0.5 text-right font-mono font-bold text-slate-900">
                       {formatCurrency(os.totalHoras)}
@@ -328,7 +389,7 @@ export const ImprimirOsView: React.FC<ImprimirOsViewProps> = ({
                   )}
                   <tr className="bg-slate-100 font-bold border-t border-slate-300">
                     <td className="py-1 px-1 text-slate-900 uppercase text-[7.5px]">
-                      Subtotal Custos Operacionais:
+                      Subtotal Operacional Técnico:
                     </td>
                     <td className="py-1 px-1 text-right font-mono text-red-700 text-[8.5px]">
                       {formatCurrency(os.totalOperacional)}
@@ -339,15 +400,18 @@ export const ImprimirOsView: React.FC<ImprimirOsViewProps> = ({
             </div>
           </div>
 
-          {/* Caixa de Valor Total Geral */}
+          {/* Caixa de Valor Total Geral com Split Fiscal */}
           <div className="col-span-5 bg-slate-950 text-white rounded-xs p-2.5 flex flex-col justify-center text-right shadow-xs">
-            <div className="text-[8px] text-slate-300 uppercase tracking-wider">
-              Subtotal Itens / Consumíveis: <span className="font-mono font-bold text-white">{formatCurrency(os.totalItens)}</span>
+            <div className="text-[7.5px] text-purple-300 uppercase tracking-wider">
+              Subtotal NFS-e (Serviços): <span className="font-mono font-bold text-white">{formatCurrency(subtotalServicos)}</span>
             </div>
-            <div className="text-[8px] text-slate-300 uppercase tracking-wider mt-0.5">
+            <div className="text-[7.5px] text-amber-300 uppercase tracking-wider mt-0.5">
+              Subtotal NF-e (Produtos): <span className="font-mono font-bold text-white">{formatCurrency(subtotalProdutos)}</span>
+            </div>
+            <div className="text-[7.5px] text-slate-300 uppercase tracking-wider mt-0.5">
               Subtotal Operacional: <span className="font-mono font-bold text-white">{formatCurrency(os.totalOperacional)}</span>
             </div>
-            <div className="mt-2 pt-1 border-t border-slate-700">
+            <div className="mt-1.5 pt-1 border-t border-slate-700">
               <div className="text-[8.5px] uppercase font-black tracking-wider text-amber-400">
                 VALOR TOTAL DA OS (R$)
               </div>

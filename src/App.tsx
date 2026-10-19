@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Cliente, OrdemServico, StatusOS } from './types';
-import { CLIENTES_INICIAIS, ORDENS_SERVICO_INICIAIS } from './data/initialData';
+import { Cliente, OrdemServico, StatusOS, Compra, ItemEstoque } from './types';
+import { CLIENTES_INICIAIS, ORDENS_SERVICO_INICIAIS, ESTOQUE_INICIAL, COMPRAS_INICIAIS } from './data/initialData';
 import { ErpSidebar, ErpModuleType } from './components/ErpSidebar';
 import { ErpTopbar } from './components/ErpTopbar';
 import { ErpStatusBar } from './components/ErpStatusBar';
@@ -17,6 +17,8 @@ import { ListarOsView } from './components/ListarOsView';
 import { ImprimirOsView } from './components/ImprimirOsView';
 import { DashboardView } from './components/DashboardView';
 import { PhpSourceExportView } from './components/PhpSourceExportView';
+import { EstoqueView } from './components/EstoqueView';
+import { ComprasView } from './components/ComprasView';
 
 export default function App() {
   // Estado de Clientes com persistência em localStorage
@@ -39,6 +41,31 @@ export default function App() {
       console.warn('Erro ao carregar ordens do localStorage:', e);
     }
     return ORDENS_SERVICO_INICIAIS;
+  });
+
+  // Estado de Estoque de Produtos e Serviços com persistência
+  const [estoqueItens, setEstoqueItens] = useState<ItemEstoque[]>(() => {
+    try {
+      const salvo = localStorage.getItem('mfx_estoque_itens');
+      if (salvo) {
+        const parsed = JSON.parse(salvo);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar estoque do localStorage:', e);
+    }
+    return ESTOQUE_INICIAL;
+  });
+
+  // Estado de Compras / Notas Fiscais de Entrada com persistência
+  const [compras, setCompras] = useState<Compra[]>(() => {
+    try {
+      const salvo = localStorage.getItem('mfx_compras');
+      if (salvo) return JSON.parse(salvo);
+    } catch (e) {
+      console.warn('Erro ao carregar compras do localStorage:', e);
+    }
+    return COMPRAS_INICIAIS;
   });
 
   // Navegação do ERP: Módulo ativo e sub-visão
@@ -68,6 +95,45 @@ export default function App() {
       console.warn('Erro ao salvar ordens:', e);
     }
   }, [ordens]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mfx_estoque_itens', JSON.stringify(estoqueItens));
+    } catch (e) {
+      console.warn('Erro ao salvar estoque:', e);
+    }
+  }, [estoqueItens]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mfx_compras', JSON.stringify(compras));
+    } catch (e) {
+      console.warn('Erro ao salvar compras:', e);
+    }
+  }, [compras]);
+
+  // Ações de Compras e Atualização Automática de Estoque
+  const handleSalvarCompra = (novaCompra: Compra) => {
+    setCompras((prev) => [novaCompra, ...prev]);
+  };
+
+  const handleAtualizarEstoquePorCompra = (
+    atualizacoes: { codigo: string; quantidade: number; novoCusto?: number }[]
+  ) => {
+    setEstoqueItens((prev) =>
+      prev.map((item) => {
+        const at = atualizacoes.find((a) => a.codigo === item.codigo);
+        if (at) {
+          return {
+            ...item,
+            estoqueAtual: (item.estoqueAtual || 0) + at.quantidade,
+            dataAtualizacao: new Date().toISOString(),
+          };
+        }
+        return item;
+      })
+    );
+  };
 
   // Ações de Clientes
   const handleAddCliente = (novoCliente: Cliente) => {
@@ -306,9 +372,32 @@ export default function App() {
 
             {currentModule === 'codigo_php' && <PhpSourceExportView />}
 
-            {(currentModule === 'estoque' ||
-              currentModule === 'fiscal' ||
-              currentModule === 'compras' ||
+            {currentModule === 'estoque' && (
+              <EstoqueView
+                itens={estoqueItens}
+                onUpdateItens={setEstoqueItens}
+                onAbrirNovaOs={() => {
+                  setCurrentModule('os');
+                  setOsSubView('nova');
+                }}
+                onAbrirNovaOsComItem={() => {
+                  setCurrentModule('os');
+                  setOsSubView('nova');
+                }}
+              />
+            )}
+
+            {currentModule === 'compras' && (
+              <ComprasView
+                produtosEstoque={estoqueItens}
+                onAtualizarEstoque={handleAtualizarEstoquePorCompra}
+                compras={compras}
+                onSalvarCompra={handleSalvarCompra}
+                onIrParaEstoque={() => setCurrentModule('estoque')}
+              />
+            )}
+
+            {(currentModule === 'fiscal' ||
               currentModule === 'vendas' ||
               currentModule === 'orcamento' ||
               currentModule === 'financeiro' ||

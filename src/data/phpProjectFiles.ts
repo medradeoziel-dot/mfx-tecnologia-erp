@@ -633,13 +633,55 @@ CREATE TABLE IF NOT EXISTS \`ordens_servico\` (
   FOREIGN KEY (\`cliente_id\`) REFERENCES \`clientes\`(\`id\`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 3. Tabela de Itens da OS (Consumíveis, Peças e Serviços)
+-- 3. Tabela de Cadastro e Estoque de Produtos e Prestação de Serviços (Mão de Obra)
+CREATE TABLE IF NOT EXISTS \`produtos_servicos\` (
+  \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+  \`tipo\` ENUM('produto', 'servico') NOT NULL DEFAULT 'produto' COMMENT 'produto (NF-e Mod. 55) ou servico (NFS-e Municipal)',
+  \`codigo\` VARCHAR(40) NOT NULL UNIQUE,
+  \`descricao\` VARCHAR(255) NOT NULL,
+  \`categoria\` VARCHAR(60) NOT NULL DEFAULT 'Consumíveis',
+  \`unidade_medida\` VARCHAR(10) NOT NULL DEFAULT 'UN' COMMENT 'UN, HR, DIA, PC, JG, MT, CX',
+  \`preco_venda\` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  \`estoque_atual\` INT NOT NULL DEFAULT 0,
+  \`estoque_minimo\` INT NOT NULL DEFAULT 5,
+  
+  -- Campos Fiscais Exclusivos para Prestação de Serviços / Mão de Obra (NFS-e Municipal)
+  \`codigo_servico_lc116\` VARCHAR(20) NULL COMMENT 'Ex: 14.01 - Manutenção de máquinas e equipamentos',
+  \`descricao_lc116\` VARCHAR(255) NULL,
+  \`codigo_tributacao_municipal\` VARCHAR(40) NULL COMMENT 'CTISS / Código de Atividade do Município',
+  \`item_lc116\` VARCHAR(20) NULL COMMENT 'Item da Lista LC 116/2003',
+  \`aliquota_iss\` DECIMAL(5,2) NULL DEFAULT 3.00 COMMENT 'Alíquota de ISS (%) ex: 2%, 3%, 5%',
+  \`exigibilidade_iss\` VARCHAR(2) NULL DEFAULT '1' COMMENT '1=Exigível, 2=Não Incidência, 3=Isenção, 4=Imune, etc.',
+  \`retencao_iss\` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0=Não, 1=Sim',
+  \`cfop_servico\` VARCHAR(10) NULL DEFAULT '5933' COMMENT '5933 Municipal, 6933 Interestadual',
+  
+  -- Campos Fiscais Exclusivos para Produtos / Consumíveis (NF-e Mod. 55)
+  \`ncm\` VARCHAR(20) NULL COMMENT 'Nomenclatura Comum do Mercosul ex: 9027.90.99',
+  \`cst_csosn\` VARCHAR(10) NULL DEFAULT '0102' COMMENT '0102 Tributada sem permissão de crédito',
+  \`cfop_produto\` VARCHAR(10) NULL DEFAULT '5102' COMMENT '5102 Venda de mercadoria',
+  \`origem\` VARCHAR(2) NULL DEFAULT '0' COMMENT '0=Nacional, 1=Estrangeira Direta, 2=Estrangeira Mercado Interno',
+  
+  \`observacoes_fiscais\` TEXT NULL,
+  \`data_cadastro\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  \`data_atualizacao\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX \`idx_tipo\` (\`tipo\`),
+  INDEX \`idx_codigo\` (\`codigo\`),
+  INDEX \`idx_categoria\` (\`categoria\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 4. Tabela de Itens da OS (Consumíveis, Peças e Mão de Obra com Split Fiscal)
 CREATE TABLE IF NOT EXISTS \`itens_os\` (
   \`id\` INT AUTO_INCREMENT PRIMARY KEY,
   \`ordem_servico_id\` INT NOT NULL,
-  \`categoria\` ENUM('Consumíveis', 'Serviços Laser', 'Serviços Oxicorte', 'Serviços Plasma', 'Peças & Acessórios') NOT NULL DEFAULT 'Consumíveis',
+  \`tipo_item\` ENUM('produto', 'servico') NOT NULL DEFAULT 'produto',
+  \`categoria\` VARCHAR(60) NOT NULL DEFAULT 'Consumíveis',
   \`codigo\` VARCHAR(40) NOT NULL,
   \`descricao\` VARCHAR(255) NOT NULL,
+  \`unidade_medida\` VARCHAR(10) NOT NULL DEFAULT 'UN',
+  \`ncm\` VARCHAR(20) NULL,
+  \`codigo_servico_lc116\` VARCHAR(20) NULL,
+  \`aliquota_iss\` DECIMAL(5,2) NULL DEFAULT 3.00,
+  \`cfop\` VARCHAR(10) NULL,
   \`preco_unitario\` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   \`quantidade\` DECIMAL(10,2) NOT NULL DEFAULT 1.00,
   \`valor_total\` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
@@ -651,6 +693,61 @@ CREATE TABLE IF NOT EXISTS \`itens_os\` (
 INSERT INTO \`clientes\` (\`documento\`, \`nome\`, \`nome_fantasia\`, \`logradouro\`, \`numero\`, \`bairro\`, \`cidade\`, \`estado\`, \`cep\`, \`telefone\`, \`celular\`, \`email\`, \`observacoes\`)
 VALUES 
 ('52.148.963/0001-44', 'Metalúrgica Corte & Conformação Paulista Ltda', 'Metalúrgica Paulista', 'Avenida das Indústrias', '1450', 'Distrito Industrial', 'Bauru', 'SP', '17034-290', '(14) 3104-5000', '(14) 99712-4488', 'manutencao@metalurgicapaulista.com.br', 'Cliente possui 2 máquinas Laser Fibra 3kW Raycus.');
+
+-- Inserção de Produtos e Serviços Padrão com Especificações Fiscais
+INSERT INTO \`produtos_servicos\` 
+(\`tipo\`, \`codigo\`, \`descricao\`, \`categoria\`, \`unidade_medida\`, \`preco_venda\`, \`estoque_atual\`, \`estoque_minimo\`, \`ncm\`, \`cst_csosn\`, \`cfop_produto\`, \`origem\`, \`codigo_servico_lc116\`, \`codigo_tributacao_municipal\`, \`aliquota_iss\`, \`cfop_servico\`, \`observacoes_fiscais\`)
+VALUES
+-- Produtos (NF-e)
+('produto', 'MFX-LP30-15', 'Lente de Proteção Laser Fibra D30 x 1.5mm Quartzo Fundido 1064nm', 'Consumíveis', 'UN', 120.00, 34, 10, '9027.90.99', '0102', '5102', '1', NULL, NULL, NULL, NULL, 'Importação direta, quartzo JGS1.'),
+('produto', 'MFX-BD-15', 'Bico Laser Duplo Cromado D32 H15 Calibre 1.5mm', 'Consumíveis', 'UN', 85.00, 22, 8, '8466.93.30', '0102', '5102', '0', NULL, NULL, NULL, NULL, 'Bico duplo para oxigênio.'),
+('produto', 'MFX-BP-105', 'Bico de Plasma Alta Definição 105A', 'Consumíveis', 'UN', 95.00, 40, 12, '8466.93.30', '0102', '5102', '0', NULL, NULL, NULL, NULL, 'Compatível Powermax 105.'),
+('produto', 'MFX-EP-100', 'Eletrodo de Plasma Híbrido Cobre/Háfnio 100A', 'Consumíveis', 'UN', 110.00, 28, 10, '8466.93.30', '0102', '5102', '0', NULL, NULL, NULL, NULL, 'Inserto central de háfnio.'),
+-- Serviços e Mão de Obra (NFS-e Municipal)
+('servico', 'MFX-SRV-LASER-01', 'Alinhamento Óptico do Feixe Laser Fibra, Colimação e Foco', 'Serviços Laser', 'UN', 650.00, 0, 0, NULL, NULL, NULL, NULL, '14.01', '1401-0/01-88', 3.00, '5933', 'NFS-e Prefeitura Municipal de Agudos.'),
+('servico', 'MFX-MO-HORA', 'Hora Técnica de Manutenção Mecânica, Elétrica e CNC', 'Mão de Obra', 'HR', 100.00, 0, 0, NULL, NULL, NULL, NULL, '14.01', '1401-0/02-00', 3.00, '5933', 'Apuração por hora técnica em campo.'),
+('servico', 'MFX-MO-DIARIA', 'Diária Técnica de Especialista em Campo / Retrofit CNC', 'Mão de Obra', 'DIA', 800.00, 0, 0, NULL, NULL, NULL, NULL, '14.01', '1401-0/04-00', 3.00, '5933', 'Diária técnica de 8 horas.'),
+('servico', 'MFX-SRV-OXI-01', 'Revisão Geral do Maçarico de Oxicorte, Troca de Gaxetas e Calibração', 'Serviços Oxicorte', 'UN', 350.00, 0, 0, NULL, NULL, NULL, NULL, '14.01', '1401-0/03-55', 2.50, '5933', 'Revisão de maçarico pantográfico.');
+
+-- 5. Tabela de Compras / Notas Fiscais de Entrada (Entrada Física de Estoque)
+CREATE TABLE IF NOT EXISTS \`compras\` (
+  \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+  \`numero_nota\` VARCHAR(50) NOT NULL COMMENT 'Número da Nota Fiscal / Chave NF-e',
+  \`fornecedor\` VARCHAR(150) NOT NULL COMMENT 'Fornecedor / Razão Social',
+  \`data_compra\` DATE NOT NULL,
+  \`observacoes\` TEXT NULL,
+  \`valor_total\` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  \`data_cadastro\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX \`idx_fornecedor\` (\`fornecedor\`),
+  INDEX \`idx_data_compra\` (\`data_compra\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 6. Tabela de Itens da Compra (Detalhamento dos Insumos Adquiridos)
+CREATE TABLE IF NOT EXISTS \`itens_compra\` (
+  \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+  \`compra_id\` INT NOT NULL,
+  \`produto_id\` INT NULL,
+  \`codigo\` VARCHAR(40) NOT NULL,
+  \`descricao\` VARCHAR(255) NOT NULL,
+  \`unidade_medida\` VARCHAR(10) NOT NULL DEFAULT 'UN',
+  \`quantidade\` DECIMAL(10,2) NOT NULL DEFAULT 1.00,
+  \`preco_custo_unitario\` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  \`valor_total\` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  FOREIGN KEY (\`compra_id\`)\ REFERENCES \`compras\`(\`id\`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Inserção de Compras de Exemplo
+INSERT INTO \`compras\` (\`numero_nota\`, \`fornecedor\`, \`data_compra\`, \`observacoes\`, \`valor_total\`)
+VALUES 
+('NF-e 048.912', 'Raytools Laser Optics & Consumables Co.', '2026-10-14', 'Importação direta via despachante Santos. Consumíveis Raytools BM111.', 5850.00),
+('NF-e 119.450', 'Hypertherm do Brasil Sistemas Térmicos', '2026-10-18', 'Consumíveis originais para tochas Powermax 105A.', 4200.00);
+
+INSERT INTO \`itens_compra\` (\`compra_id\`, \`produto_id\`, \`codigo\`, \`descricao\`, \`unidade_medida\`, \`quantidade\`, \`preco_custo_unitario\`, \`valor_total\`)
+VALUES 
+(1, 1, 'MFX-LP30-15', 'Lente de Proteção Laser Fibra D30 x 1.5mm Quartzo Fundido 1064nm', 'UN', 30.00, 55.00, 1650.00),
+(1, 2, 'MFX-BD-15', 'Bico Laser Duplo Cromado D32 H15 Calibre 1.5mm', 'UN', 40.00, 42.50, 1700.00),
+(2, 3, 'MFX-BP-105', 'Bico de Plasma Alta Definição 105A', 'UN', 25.00, 52.00, 1300.00),
+(2, 4, 'MFX-EP-100', 'Eletrodo de Plasma Híbrido Cobre/Háfnio 100A', 'UN', 30.00, 58.00, 1740.00);
 `
   },
   {
@@ -2069,6 +2166,1228 @@ $ordens = $stmt->fetchAll();
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>`
+  },
+  {
+    filename: 'estoque.php',
+    description: 'Gestão Completa de Estoque e Catálogo de Serviços com diferenciação nativa entre Produtos (NF-e Mod. 55) e Mão de Obra (NFS-e Municipal / LC 116), campos fiscais dinâmicos e auto-cálculos.',
+    language: 'php',
+    content: `<?php
+/**
+ * MFx Tecnologia Industrial - Sistema de Gestão Empresarial (ERP)
+ * Arquivo: estoque.php - Gestão de Estoque, Consumíveis e Mão de Obra (NF-e / NFS-e)
+ */
+require_once 'conexao.php';
+
+$mensagem = '';
+$tipo_alerta = '';
+
+// 1. Processamento de Inclusão e Edição via POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao'])) {
+    $acao = $_POST['acao'];
+    
+    $tipo            = trim($_POST['tipo'] ?? 'produto');
+    $codigo          = strtoupper(trim($_POST['codigo'] ?? ''));
+    $descricao       = trim($_POST['descricao'] ?? '');
+    $categoria       = trim($_POST['categoria'] ?? 'Consumíveis');
+    $unidade_medida  = strtoupper(trim($_POST['unidade_medida'] ?? 'UN'));
+    $preco_venda     = (float)str_replace(',', '.', $_POST['preco_venda'] ?? '0');
+    $estoque_atual   = $tipo === 'produto' ? (int)($_POST['estoque_atual'] ?? 0) : 0;
+    $estoque_minimo  = $tipo === 'produto' ? (int)($_POST['estoque_minimo'] ?? 0) : 0;
+
+    // Campos Fiscais NFS-e (Mão de Obra / Serviços)
+    $codigo_servico_lc116        = $tipo === 'servico' ? trim($_POST['codigo_servico_lc116'] ?? '14.01') : null;
+    $descricao_lc116             = $tipo === 'servico' ? trim($_POST['descricao_lc116'] ?? '') : null;
+    $codigo_tributacao_municipal = $tipo === 'servico' ? trim($_POST['codigo_tributacao_municipal'] ?? '') : null;
+    $item_lc116                  = $tipo === 'servico' ? trim($_POST['item_lc116'] ?? '14.01') : null;
+    $aliquota_iss                = $tipo === 'servico' ? (float)str_replace(',', '.', $_POST['aliquota_iss'] ?? '3.00') : null;
+    $exigibilidade_iss           = $tipo === 'servico' ? trim($_POST['exigibilidade_iss'] ?? '1') : null;
+    $retencao_iss                = $tipo === 'servico' && isset($_POST['retencao_iss']) && $_POST['retencao_iss'] == '1' ? 1 : 0;
+    $cfop_servico                = $tipo === 'servico' ? trim($_POST['cfop_servico'] ?? '5933') : null;
+
+    // Campos Fiscais NF-e Mod. 55 (Produtos / Consumíveis)
+    $ncm                         = $tipo === 'produto' ? trim($_POST['ncm'] ?? '8466.93.30') : null;
+    $cst_csosn                   = $tipo === 'produto' ? trim($_POST['cst_csosn'] ?? '0102') : null;
+    $cfop_produto                = $tipo === 'produto' ? trim($_POST['cfop_produto'] ?? '5102') : null;
+    $origem                      = $tipo === 'produto' ? trim($_POST['origem'] ?? '0') : null;
+    $observacoes_fiscais         = trim($_POST['observacoes_fiscais'] ?? '');
+
+    if (empty($codigo) || empty($descricao)) {
+        $mensagem = "Preencha ao menos o Código e a Descrição do item.";
+        $tipo_alerta = "danger";
+    } else {
+        try {
+            if ($acao === 'salvar_item') {
+                $sql = "INSERT INTO produtos_servicos 
+                        (tipo, codigo, descricao, categoria, unidade_medida, preco_venda, estoque_atual, estoque_minimo,
+                         codigo_servico_lc116, descricao_lc116, codigo_tributacao_municipal, item_lc116, aliquota_iss, exigibilidade_iss, retencao_iss, cfop_servico,
+                         ncm, cst_csosn, cfop_produto, origem, observacoes_fiscais)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([
+                    $tipo, $codigo, $descricao, $categoria, $unidade_medida, $preco_venda, $estoque_atual, $estoque_minimo,
+                    $codigo_servico_lc116, $descricao_lc116, $codigo_tributacao_municipal, $item_lc116, $aliquota_iss, $exigibilidade_iss, $retencao_iss, $cfop_servico,
+                    $ncm, $cst_csosn, $cfop_produto, $origem, $observacoes_fiscais
+                ]);
+                $mensagem = "Item/Serviço cadastrado com sucesso no catálogo oficial da MFx!";
+                $tipo_alerta = "success";
+            } elseif ($acao === 'editar_item') {
+                $id = (int)($_POST['id'] ?? 0);
+                $sql = "UPDATE produtos_servicos SET 
+                        tipo = ?, codigo = ?, descricao = ?, categoria = ?, unidade_medida = ?, preco_venda = ?, estoque_atual = ?, estoque_minimo = ?,
+                        codigo_servico_lc116 = ?, descricao_lc116 = ?, codigo_tributacao_municipal = ?, item_lc116 = ?, aliquota_iss = ?, exigibilidade_iss = ?, retencao_iss = ?, cfop_servico = ?,
+                        ncm = ?, cst_csosn = ?, cfop_produto = ?, origem = ?, observacoes_fiscais = ?
+                        WHERE id = ?";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([
+                    $tipo, $codigo, $descricao, $categoria, $unidade_medida, $preco_venda, $estoque_atual, $estoque_minimo,
+                    $codigo_servico_lc116, $descricao_lc116, $codigo_tributacao_municipal, $item_lc116, $aliquota_iss, $exigibilidade_iss, $retencao_iss, $cfop_servico,
+                    $ncm, $cst_csosn, $cfop_produto, $origem, $observacoes_fiscais,
+                    $id
+                ]);
+                $mensagem = "Item/Serviço atualizado com sucesso!";
+                $tipo_alerta = "success";
+            }
+        } catch (PDOException $e) {
+            $mensagem = "Erro no banco de dados: " . $e->getMessage();
+            $tipo_alerta = "danger";
+        }
+    }
+}
+
+// 2. Processamento de Exclusão via GET
+if (isset($_GET['acao']) && $_GET['acao'] === 'excluir' && isset($_GET['id'])) {
+    $idExcluir = (int)$_GET['id'];
+    try {
+        $stmtDel = $pdo->prepare("DELETE FROM produtos_servicos WHERE id = ?");
+        $stmtDel->execute([$idExcluir]);
+        $mensagem = "Registro removido do catálogo com sucesso.";
+        $tipo_alerta = "warning";
+    } catch (PDOException $e) {
+        $mensagem = "Erro ao excluir: " . $e->getMessage();
+        $tipo_alerta = "danger";
+    }
+}
+
+// 3. Consultas de Métricas
+$totalProdutos = (int)$pdo->query("SELECT COUNT(*) FROM produtos_servicos WHERE tipo = 'produto'")->fetchColumn();
+$totalServicos = (int)$pdo->query("SELECT COUNT(*) FROM produtos_servicos WHERE tipo = 'servico'")->fetchColumn();
+$saldoFisico   = (int)$pdo->query("SELECT COALESCE(SUM(estoque_atual), 0) FROM produtos_servicos WHERE tipo = 'produto'")->fetchColumn();
+$valorEstoque  = (float)$pdo->query("SELECT COALESCE(SUM(estoque_atual * preco_venda), 0) FROM produtos_servicos WHERE tipo = 'produto'")->fetchColumn();
+
+// 4. Filtros e Busca da Tabela
+$filtro_tipo = $_GET['tipo'] ?? 'todos';
+$filtro_cat  = $_GET['categoria'] ?? 'todas';
+$busca       = trim($_GET['busca'] ?? '');
+
+$sql = "SELECT * FROM produtos_servicos WHERE 1=1";
+$params = [];
+
+if ($filtro_tipo === 'produto' || $filtro_tipo === 'servico') {
+    $sql .= " AND tipo = ?";
+    $params[] = $filtro_tipo;
+}
+
+if ($filtro_cat !== 'todas' && !empty($filtro_cat)) {
+    $sql .= " AND categoria = ?";
+    $params[] = $filtro_cat;
+}
+
+if (!empty($busca)) {
+    $sql .= " AND (codigo LIKE ? OR descricao LIKE ? OR ncm LIKE ? OR codigo_servico_lc116 LIKE ?)";
+    $params[] = "%$busca%";
+    $params[] = "%$busca%";
+    $params[] = "%$busca%";
+    $params[] = "%$busca%";
+}
+
+$sql .= " ORDER BY id DESC";
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+$itens = $stmt->fetchAll();
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFx Tecnologia - Catálogo de Estoque & Mão de Obra</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 Free -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        :root {
+            --mfx-dark: #0f172a;
+            --mfx-red: #dc2626;
+            --mfx-orange: #ea580c;
+        }
+        body { background-color: #f1f5f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .navbar-mfx { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-bottom: 3px solid var(--mfx-orange); }
+        .card-custom { border: none; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06); }
+        .badge-nfe { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: bold; }
+        .badge-nfse { background-color: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; font-weight: bold; }
+        .campo-destaque { background-color: #f8fafc; border: 1px solid #cbd5e1; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark navbar-mfx mb-4 shadow">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="index.php">
+            <span class="badge bg-danger p-2"><i class="fa-solid fa-fire"></i> MFx</span>
+            <span>Tecnologia Industrial</span>
+        </a>
+        <div class="navbar-nav ms-auto gap-2">
+            <a class="nav-link" href="index.php"><i class="fa-solid fa-house"></i> Início</a>
+            <a class="nav-link" href="clientes.php"><i class="fa-solid fa-users"></i> Clientes</a>
+            <a class="nav-link active" href="estoque.php"><i class="fa-solid fa-boxes-stacked"></i> Estoque & Serviços</a>
+            <a class="nav-link" href="nova_os.php"><i class="fa-solid fa-plus-circle"></i> Nova OS</a>
+            <a class="nav-link" href="listar_os.php"><i class="fa-solid fa-file-lines"></i> Ordens de Serviço</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid px-4 my-4">
+    
+    <!-- Topo: Título e Botões de Ação -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-warning text-dark font-monospace text-uppercase">Módulo de Estoque e Serviços</span>
+                <span class="text-muted small">MFx Tecnologia Industrial</span>
+            </div>
+            <h3 class="fw-bold text-dark mb-0">
+                <i class="fa-solid fa-boxes-stacked text-warning"></i> Catálogo de Produtos, Consumíveis & Mão de Obra
+            </h3>
+            <p class="text-muted small mb-0">Diferenciação automática entre NF-e Mod. 55 (Produtos) e NFS-e Municipal (Serviços e Mão de Obra).</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-purple fw-bold btn-sm shadow-sm" style="color: #6b21a8; border-color: #6b21a8;" onclick="abrirModal('servico')">
+                <i class="fa-solid fa-wrench me-1"></i> + Mão de Obra (NFS-e)
+            </button>
+            <button class="btn btn-warning fw-bold btn-sm shadow-sm" onclick="abrirModal('produto')">
+                <i class="fa-solid fa-box-open me-1"></i> + Produto / Peça (NF-e)
+            </button>
+            <a href="nova_os.php" class="btn btn-danger fw-bold btn-sm shadow-sm">
+                <i class="fa-solid fa-file-circle-plus me-1"></i> Abrir Nova OS
+            </a>
+        </div>
+    </div>
+
+    <?php if (!empty($mensagem)): ?>
+        <div class="alert alert-<?= $tipo_alerta; ?> alert-dismissible fade show" role="alert">
+            <i class="fa-solid <?= $tipo_alerta === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation'; ?> me-2"></i>
+            <?= htmlspecialchars($mensagem); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <!-- Métricas do Catálogo -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card card-custom p-3 bg-white border-start border-warning border-4">
+                <span class="text-muted small text-uppercase fw-bold">Produtos & Consumíveis (NF-e)</span>
+                <h4 class="fw-bold text-warning mb-0 mt-1"><?= $totalProdutos; ?> <small class="text-muted fs-6">(<?= $saldoFisico; ?> un)</small></h4>
+                <span class="text-muted" style="font-size: 11px;">Enquadramento NCM / CSOSN 0102</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-custom p-3 bg-white border-start border-primary border-4" style="border-left-color: #6b21a8 !important;">
+                <span class="text-muted small text-uppercase fw-bold">Mão de Obra & Serviços (NFS-e)</span>
+                <h4 class="fw-bold mb-0 mt-1" style="color: #6b21a8;"><?= $totalServicos; ?> <small class="text-muted fs-6">especialidades</small></h4>
+                <span class="text-muted" style="font-size: 11px;">LC 116 (14.01) / ISS Municipal</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-custom p-3 bg-white border-start border-success border-4">
+                <span class="text-muted small text-uppercase fw-bold">Valor em Estoque</span>
+                <h4 class="fw-bold text-success mb-0 mt-1">R$ <?= number_format($valorEstoque, 2, ',', '.'); ?></h4>
+                <span class="text-muted" style="font-size: 11px;">Consumíveis a pronta entrega</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-custom p-3 text-white" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+                <span class="small text-uppercase fw-bold text-warning">Regras Fiscais MFx</span>
+                <div class="small mt-1 text-light">
+                    • NFS-e: LC 116 / ISS Agudos 3%<br>
+                    • NF-e: NCM Peças / CSOSN 0102
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela e Filtros -->
+    <div class="card card-custom">
+        <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+            
+            <!-- Segmented Control Filtro Tipo -->
+            <div class="btn-group btn-group-sm" role="group">
+                <a href="estoque.php?tipo=todos" class="btn btn-outline-secondary <?= $filtro_tipo === 'todos' ? 'active' : ''; ?>">Todos (<?= $totalProdutos + $totalServicos; ?>)</a>
+                <a href="estoque.php?tipo=produto" class="btn btn-outline-warning <?= $filtro_tipo === 'produto' ? 'active' : ''; ?>">Produtos NF-e (<?= $totalProdutos; ?>)</a>
+                <a href="estoque.php?tipo=servico" class="btn btn-outline-purple <?= $filtro_tipo === 'servico' ? 'active' : ''; ?>" style="color: #6b21a8; border-color: #6b21a8;">Mão de Obra NFS-e (<?= $totalServicos; ?>)</a>
+            </div>
+
+            <!-- Busca -->
+            <form method="GET" action="estoque.php" class="d-flex gap-2">
+                <input type="hidden" name="tipo" value="<?= htmlspecialchars($filtro_tipo); ?>">
+                <input type="text" name="busca" class="form-control form-control-sm" placeholder="Buscar código, descrição, NCM ou LC 116..." value="<?= htmlspecialchars($busca); ?>">
+                <button type="submit" class="btn btn-sm btn-dark"><i class="fa-solid fa-search"></i></button>
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 12%;">Tipo Fiscal</th>
+                        <th style="width: 12%;">Código</th>
+                        <th style="width: 30%;">Descrição do Item / Prestação de Serviço</th>
+                        <th style="width: 14%;">Categoria</th>
+                        <th style="width: 6%;" class="text-center">Unid.</th>
+                        <th style="width: 16%;">Enquadramento Fiscal</th>
+                        <th style="width: 8%;" class="text-center">Saldo</th>
+                        <th style="width: 10%;" class="text-end">Preço Venda</th>
+                        <th style="width: 6%;" class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($itens)): ?>
+                        <tr><td colspan="9" class="text-center py-5 text-muted">Nenhum produto ou serviço encontrado.</td></tr>
+                    <?php else: ?>
+                        <?php foreach ($itens as $it): 
+                            $isSrv = $it['tipo'] === 'servico';
+                        ?>
+                            <tr>
+                                <td>
+                                    <?php if ($isSrv): ?>
+                                        <span class="badge badge-nfse"><i class="fa-solid fa-wrench"></i> NFS-e Srv</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-nfe"><i class="fa-solid fa-box"></i> NF-e Peça</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="font-monospace fw-bold text-dark"><?= htmlspecialchars($it['codigo']); ?></td>
+                                <td>
+                                    <div class="fw-semibold text-dark"><?= htmlspecialchars($it['descricao']); ?></div>
+                                    <?php if (!empty($it['observacoes_fiscais'])): ?>
+                                        <small class="text-muted fst-italic"><?= htmlspecialchars($it['observacoes_fiscais']); ?></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td><span class="badge bg-light text-dark border"><?= htmlspecialchars($it['categoria']); ?></span></td>
+                                <td class="text-center font-monospace fw-bold"><?= htmlspecialchars($it['unidade_medida']); ?></td>
+                                <td>
+                                    <?php if ($isSrv): ?>
+                                        <span class="font-monospace text-purple fw-bold" style="color: #6b21a8;">LC 116: <?= htmlspecialchars($it['codigo_servico_lc116'] ?: '14.01'); ?></span>
+                                        <span class="badge bg-purple-subtle text-purple border" style="font-size: 10px;">ISS <?= number_format($it['aliquota_iss'] ?: 3, 1, ',', '.'); ?>%</span><br>
+                                        <small class="text-muted">CFOP: <?= htmlspecialchars($it['cfop_servico'] ?: '5933'); ?></small>
+                                    <?php else: ?>
+                                        <span class="font-monospace text-dark fw-bold">NCM: <?= htmlspecialchars($it['ncm'] ?: '8466.93.30'); ?></span>
+                                        <span class="badge bg-warning-subtle text-dark border" style="font-size: 10px;">CSOSN <?= htmlspecialchars($it['cst_csosn'] ?: '0102'); ?></span><br>
+                                        <small class="text-muted">CFOP: <?= htmlspecialchars($it['cfop_produto'] ?: '5102'); ?></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-center font-monospace">
+                                    <?php if ($isSrv): ?>
+                                        <span class="text-muted fst-italic small">Mão de Obra</span>
+                                    <?php else: ?>
+                                        <strong><?= $it['estoque_atual']; ?></strong>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-end font-monospace fw-bold text-dark">R$ <?= number_format($it['preco_venda'], 2, ',', '.'); ?></td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick='editarItem(<?= json_encode($it); ?>)' title="Editar"><i class="fa-solid fa-pen"></i></button>
+                                    <a href="estoque.php?acao=excluir&id=<?= $it['id']; ?>" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="return confirm('Deseja excluir este item?');" title="Excluir"><i class="fa-solid fa-trash"></i></a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Cadastro / Edição Dinâmico -->
+<div class="modal fade" id="modalItem" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="estoque.php" id="formItem">
+                <input type="hidden" name="acao" id="formAcao" value="salvar_item">
+                <input type="hidden" name="id" id="itemId" value="">
+
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="modalTitulo"><i class="fa-solid fa-boxes-stacked me-2"></i> Cadastro de Item / Serviço</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    
+                    <!-- 1. Diferenciação Dinâmica Entre Produto e Serviço -->
+                    <div class="card p-3 mb-3 bg-light border">
+                        <label class="form-label fw-bold text-uppercase small">1. Tipo de Item *</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="form-check p-3 bg-white border rounded">
+                                    <input class="form-check-input" type="radio" name="tipo" id="tipoProduto" value="produto" checked onchange="toggleTipoItem()">
+                                    <label class="form-check-label fw-bold text-dark" for="tipoProduto">
+                                        <i class="fa-solid fa-box text-warning me-1"></i> Produto / Consumível
+                                    </label>
+                                    <div class="small text-muted">Lentes, bicos, cabos, eletrodos (NF-e Mod. 55)</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check p-3 bg-white border rounded">
+                                    <input class="form-check-input" type="radio" name="tipo" id="tipoServico" value="servico" onchange="toggleTipoItem()">
+                                    <label class="form-check-label fw-bold" for="tipoServico" style="color: #6b21a8;">
+                                        <i class="fa-solid fa-wrench me-1"></i> Serviço / Mão de Obra
+                                    </label>
+                                    <div class="small text-muted">Manutenções, alinhamentos, horas técnicas (NFS-e)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Dados Gerais -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Código do Item *</label>
+                            <input type="text" class="form-control font-monospace text-uppercase" name="codigo" id="codigo" required placeholder="Ex: MFX-LP30-15">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold small">Descrição Completa *</label>
+                            <input type="text" class="form-control" name="descricao" id="descricao" required placeholder="Ex: Lente de Proteção Laser D30 Quartzo">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Categoria</label>
+                            <select class="form-select" name="categoria" id="categoria">
+                                <option value="Consumíveis">Consumíveis</option>
+                                <option value="Mão de Obra">Mão de Obra</option>
+                                <option value="Serviços Laser">Serviços Laser</option>
+                                <option value="Serviços Oxicorte">Serviços Oxicorte</option>
+                                <option value="Serviços Plasma">Serviços Plasma</option>
+                                <option value="Peças & Acessórios">Peças & Acessórios</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Unidade de Medida *</label>
+                            <select class="form-select font-monospace fw-bold" name="unidade_medida" id="unidade_medida">
+                                <option value="UN">UN - Unidade</option>
+                                <option value="PC">PC - Peça</option>
+                                <option value="HR">HR - Hora Técnica</option>
+                                <option value="DIA">DIA - Diária Técnica</option>
+                                <option value="JG">JG - Jogo/Kit</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small">Preço de Venda (R$) *</label>
+                            <input type="number" step="0.01" class="form-control font-monospace fw-bold" name="preco_venda" id="preco_venda" required placeholder="0.00">
+                        </div>
+
+                        <!-- Saldo de Estoque (Apenas Produto) -->
+                        <div class="col-md-6 campo-produto">
+                            <label class="form-label small">Saldo Físico em Estoque</label>
+                            <input type="number" class="form-control font-monospace" name="estoque_atual" id="estoque_atual" value="10">
+                        </div>
+                        <div class="col-md-6 campo-produto">
+                            <label class="form-label small">Estoque Mínimo de Alerta</label>
+                            <input type="number" class="form-control font-monospace" name="estoque_minimo" id="estoque_minimo" value="5">
+                        </div>
+                    </div>
+
+                    <!-- 3. CAMPOS FISCAIS NFS-e (MÃO DE OBRA) -->
+                    <div id="secaoNfse" class="card p-3 mb-3 border-purple d-none" style="background-color: #faf5ff; border-color: #d8b4fe;">
+                        <h6 class="fw-bold text-uppercase" style="color: #6b21a8;"><i class="fa-solid fa-wrench me-1"></i> Parâmetros Fiscais de Serviços (NFS-e Municipal / LC 116)</h6>
+                        <div class="row g-2 small">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Código Serviço LC 116 *</label>
+                                <input type="text" class="form-control font-monospace" name="codigo_servico_lc116" id="codigo_servico_lc116" value="14.01" placeholder="14.01">
+                                <small class="text-muted">14.01 - Manutenção e conservação de máquinas</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Código Tributação Municipal (CTISS)</label>
+                                <input type="text" class="form-control font-monospace" name="codigo_tributacao_municipal" id="codigo_tributacao_municipal" value="1401-0/01-88">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Alíquota ISS (%) *</label>
+                                <input type="number" step="0.01" class="form-control font-monospace" name="aliquota_iss" id="aliquota_iss" value="3.00">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Exigibilidade do ISS</label>
+                                <select class="form-select" name="exigibilidade_iss" id="exigibilidade_iss">
+                                    <option value="1">1 - Exigível</option>
+                                    <option value="2">2 - Isento</option>
+                                    <option value="3">3 - Imune</option>
+                                    <option value="4">4 - Suspensa</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">CFOP para Serviços</label>
+                                <input type="text" class="form-control font-monospace" name="cfop_servico" id="cfop_servico" value="5933">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. CAMPOS FISCAIS NF-e (PRODUTOS) -->
+                    <div id="secaoNfe" class="card p-3 mb-3 border-warning bg-light">
+                        <h6 class="fw-bold text-uppercase text-dark"><i class="fa-solid fa-box me-1"></i> Parâmetros Fiscais de Produtos (NF-e Mod. 55 / SEFAZ)</h6>
+                        <div class="row g-2 small">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">NCM (8 dígitos) *</label>
+                                <input type="text" class="form-control font-monospace" name="ncm" id="ncm" value="8466.93.30" placeholder="Ex: 8466.93.30">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">CST / CSOSN</label>
+                                <select class="form-select font-monospace" name="cst_csosn" id="cst_csosn">
+                                    <option value="0102">0102 - Tributada s/ permissão crédito</option>
+                                    <option value="0101">0101 - Tributada c/ permissão crédito</option>
+                                    <option value="0500">0500 - ICMS cobrado ant. por ST</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">CFOP</label>
+                                <input type="text" class="form-control font-monospace" name="cfop_produto" id="cfop_produto" value="5102">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Origem da Mercadoria</label>
+                                <select class="form-select" name="origem" id="origem">
+                                    <option value="0">0 - Nacional</option>
+                                    <option value="1">1 - Estrangeira (Importação direta)</option>
+                                    <option value="2">2 - Estrangeira (Mercado interno)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Observações Fiscais</label>
+                                <input type="text" class="form-control" name="observacoes_fiscais" id="observacoes_fiscais" placeholder="Simples Nacional...">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger btn-sm fw-bold"><i class="fa-solid fa-floppy-disk me-1"></i> Salvar Registro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const modalItemEl = new bootstrap.Modal(document.getElementById('modalItem'));
+
+function toggleTipoItem() {
+    const isServico = document.getElementById('tipoServico').checked;
+    const secaoNfe = document.getElementById('secaoNfe');
+    const secaoNfse = document.getElementById('secaoNfse');
+    const camposProduto = document.querySelectorAll('.campo-produto');
+    const selUnidade = document.getElementById('unidade_medida');
+    const selCat = document.getElementById('categoria');
+
+    if (isServico) {
+        secaoNfe.classList.add('d-none');
+        secaoNfse.classList.remove('d-none');
+        camposProduto.forEach(el => el.classList.add('d-none'));
+        selUnidade.value = 'HR';
+        selCat.value = 'Mão de Obra';
+    } else {
+        secaoNfe.classList.remove('d-none');
+        secaoNfse.classList.add('d-none');
+        camposProduto.forEach(el => el.classList.remove('d-none'));
+        selUnidade.value = 'UN';
+        selCat.value = 'Consumíveis';
+    }
+}
+
+function abrirModal(tipo) {
+    document.getElementById('formItem').reset();
+    document.getElementById('formAcao').value = 'salvar_item';
+    document.getElementById('itemId').value = '';
+    document.getElementById('modalTitulo').innerHTML = '<i class="fa-solid fa-plus me-2"></i> Novo Cadastro';
+
+    if (tipo === 'servico') {
+        document.getElementById('tipoServico').checked = true;
+    } else {
+        document.getElementById('tipoProduto').checked = true;
+    }
+    toggleTipoItem();
+    modalItemEl.show();
+}
+
+function editarItem(it) {
+    document.getElementById('formAcao').value = 'editar_item';
+    document.getElementById('itemId').value = it.id;
+    document.getElementById('modalTitulo').innerHTML = '<i class="fa-solid fa-pen me-2"></i> Editar Registro #' + it.id;
+
+    if (it.tipo === 'servico') {
+        document.getElementById('tipoServico').checked = true;
+    } else {
+        document.getElementById('tipoProduto').checked = true;
+    }
+    toggleTipoItem();
+
+    document.getElementById('codigo').value = it.codigo || '';
+    document.getElementById('descricao').value = it.descricao || '';
+    document.getElementById('categoria').value = it.categoria || 'Consumíveis';
+    document.getElementById('unidade_medida').value = it.unidade_medida || 'UN';
+    document.getElementById('preco_venda').value = it.preco_venda || '0.00';
+    document.getElementById('estoque_atual').value = it.estoque_atual || '0';
+    document.getElementById('estoque_minimo').value = it.estoque_minimo || '5';
+
+    // Fiscais NFS-e
+    document.getElementById('codigo_servico_lc116').value = it.codigo_servico_lc116 || '14.01';
+    document.getElementById('codigo_tributacao_municipal').value = it.codigo_tributacao_municipal || '1401-0/01-88';
+    document.getElementById('aliquota_iss').value = it.aliquota_iss || '3.00';
+    document.getElementById('exigibilidade_iss').value = it.exigibilidade_iss || '1';
+    document.getElementById('cfop_servico').value = it.cfop_servico || '5933';
+
+    // Fiscais NF-e
+    document.getElementById('ncm').value = it.ncm || '8466.93.30';
+    document.getElementById('cst_csosn').value = it.cst_csosn || '0102';
+    document.getElementById('cfop_produto').value = it.cfop_produto || '5102';
+    document.getElementById('origem').value = it.origem || '0';
+    document.getElementById('observacoes_fiscais').value = it.observacoes_fiscais || '';
+
+    modalItemEl.show();
+}
+</script>
+</body>
+</html>`
+  },
+  {
+    filename: 'compras.php',
+    description: 'Lançamento Ágil de Compras e Entrada de Notas Fiscais (NF-e) para Manutenção e Venda de Máquinas (Laser, Plasma e Oxicorte), com inserção dinâmica de itens e atualização automática do saldo físico de estoque no MySQL.',
+    language: 'php',
+    content: `<?php
+/**
+ * MFx Tecnologia Industrial - Sistema Integrado de Gestão (ERP)
+ * Arquivo: compras.php - Lançamento de Compras e Entrada de Insumos / Peças
+ * Linhas: Laser Fibra, Plasma Alta Definição e Oxicorte CNC
+ */
+require_once 'conexao.php';
+
+$mensagem = '';
+$tipo_alerta = '';
+
+// 1. Processamento do Formulário de Compra via POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['acao'] === 'salvar_compra') {
+    $fornecedor    = trim($_POST['fornecedor'] ?? '');
+    $numero_nota   = trim($_POST['numero_nota'] ?? '');
+    $data_compra   = trim($_POST['data_compra'] ?? date('Y-m-d'));
+    $observacoes   = trim($_POST['observacoes'] ?? '');
+    
+    // Arrays de itens enviados dinamicamente
+    $produto_ids   = $_POST['item_produto_id'] ?? [];
+    $codigos       = $_POST['item_codigo'] ?? [];
+    $descricoes    = $_POST['item_descricao'] ?? [];
+    $unidades      = $_POST['item_unidade'] ?? [];
+    $quantidades   = $_POST['item_quantidade'] ?? [];
+    $precos_custo  = $_POST['item_preco_custo'] ?? [];
+
+    if (empty($fornecedor) || empty($numero_nota)) {
+        $mensagem = "Por favor, preencha o Fornecedor e o Número da Nota Fiscal de Compra.";
+        $tipo_alerta = "danger";
+    } elseif (empty($codigos)) {
+        $mensagem = "Adicione ao menos um produto/insumo à nota de compra.";
+        $tipo_alerta = "danger";
+    } else {
+        try {
+            $pdo->beginTransaction();
+
+            // Calcular valor total da compra e processar itens
+            $valor_total_compra = 0.00;
+            $total_pecas_entradas = 0;
+            $itens_processados = [];
+
+            for ($i = 0; $i < count($codigos); $i++) {
+                $cod = strtoupper(trim($codigos[$i]));
+                $desc = trim($descricoes[$i] ?? '');
+                $unid = strtoupper(trim($unidades[$i] ?? 'UN'));
+                $qtd = (float)str_replace(',', '.', $quantidades[$i] ?? '0');
+                $custo = (float)str_replace(',', '.', $precos_custo[$i] ?? '0');
+                $prod_id = !empty($produto_ids[$i]) ? (int)$produto_ids[$i] : null;
+
+                if ($qtd > 0 && !empty($cod)) {
+                    $subtotal = round($qtd * $custo, 2);
+                    $valor_total_compra += $subtotal;
+                    $total_pecas_entradas += $qtd;
+
+                    $itens_processados[] = [
+                        'produto_id'           => $prod_id,
+                        'codigo'               => $cod,
+                        'descricao'            => $desc,
+                        'unidade_medida'       => $unid,
+                        'quantidade'           => $qtd,
+                        'preco_custo_unitario' => $custo,
+                        'valor_total'          => $subtotal
+                    ];
+                }
+            }
+
+            if (empty($itens_processados)) {
+                throw new Exception("Nenhum item com quantidade válida foi informado.");
+            }
+
+            // Gravar cabeçalho da Compra na tabela 'compras'
+            $sqlCompra = "INSERT INTO compras (numero_nota, fornecedor, data_compra, observacoes, valor_total) 
+                          VALUES (?, ?, ?, ?, ?)";
+            $stmtCompra = $pdo->prepare($sqlCompra);
+            $stmtCompra->execute([$numero_nota, $fornecedor, $data_compra, $observacoes, $valor_total_compra]);
+            $compra_id = $pdo->lastInsertId();
+
+            // Gravar itens da compra e ATUALIZAR AUTOMATICAMENTE O SALDO FÍSICO DO ESTOQUE
+            $sqlItem = "INSERT INTO itens_compra (compra_id, produto_id, codigo, descricao, unidade_medida, quantidade, preco_custo_unitario, valor_total) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            $stmtItem = $pdo->prepare($sqlItem);
+
+            // Atualização de estoque por ID ou por Código
+            $stmtUpdateEstoqueId = $pdo->prepare("UPDATE produtos_servicos SET estoque_atual = estoque_atual + ? WHERE id = ?");
+            $stmtUpdateEstoqueCod = $pdo->prepare("UPDATE produtos_servicos SET estoque_atual = estoque_atual + ? WHERE codigo = ? AND tipo = 'produto'");
+
+            foreach ($itens_processados as $it) {
+                $stmtItem->execute([
+                    $compra_id,
+                    $it['produto_id'],
+                    $it['codigo'],
+                    $it['descricao'],
+                    $it['unidade_medida'],
+                    $it['quantidade'],
+                    $it['preco_custo_unitario'],
+                    $it['valor_total']
+                ]);
+
+                // Atualizar o saldo físico
+                if (!empty($it['produto_id'])) {
+                    $stmtUpdateEstoqueId->execute([$it['quantidade'], $it['produto_id']]);
+                } else {
+                    $stmtUpdateEstoqueCod->execute([$it['quantidade'], $it['codigo']]);
+                }
+            }
+
+            $pdo->commit();
+            $mensagem = "Compra <strong>" . htmlspecialchars($numero_nota) . "</strong> (" . htmlspecialchars($fornecedor) . ") registrada com sucesso! <strong>+" . number_format($total_pecas_entradas, 0, ',', '.') . " peças</strong> foram adicionadas imediatamente ao estoque físico da MFx Tecnologia.";
+            $tipo_alerta = "success";
+
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            $mensagem = "Erro ao processar lançamento de compra: " . $e->getMessage();
+            $tipo_alerta = "danger";
+        }
+    }
+}
+
+// 2. Consulta de Produtos Físicos Cadastrados para o Select
+$stmtProd = $pdo->query("SELECT id, codigo, descricao, categoria, unidade_medida, preco_venda, estoque_atual FROM produtos_servicos WHERE tipo = 'produto' ORDER BY codigo ASC");
+$produtosEstoque = $stmtProd->fetchAll();
+
+// 3. Consulta das Últimas Compras Realizadas (Histórico)
+$stmtHist = $pdo->query("
+    SELECT c.*, 
+           COUNT(i.id) AS total_itens_nota, 
+           COALESCE(SUM(i.quantidade), 0) AS total_pecas_nota
+    FROM compras c
+    LEFT JOIN itens_compra i ON c.id = i.compra_id
+    GROUP BY c.id
+    ORDER BY c.data_compra DESC, c.id DESC
+    LIMIT 8
+");
+$historicoCompras = $stmtHist->fetchAll();
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFx Tecnologia - Lançamento de Compras e Entrada de Estoque</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 Free -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        :root {
+            --mfx-dark: #0f172a;
+            --mfx-darker: #1e293b;
+            --mfx-orange: #ea580c;
+            --mfx-emerald: #059669;
+        }
+        body {
+            background-color: #f1f5f9;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: #334155;
+        }
+        .navbar-mfx {
+            background: linear-gradient(135deg, var(--mfx-dark) 0%, var(--mfx-darker) 100%);
+            border-bottom: 3px solid var(--mfx-orange);
+        }
+        .card-custom {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.05);
+            background: #ffffff;
+        }
+        .card-header-mfx {
+            background: #1e293b;
+            color: #ffffff;
+            font-weight: 700;
+            border-radius: 12px 12px 0 0 !important;
+        }
+        .table-compras th {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background-color: #1e293b;
+            color: #ffffff;
+        }
+        .badge-line {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .total-box {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #ffffff;
+            border-radius: 10px;
+            padding: 16px;
+        }
+        .total-destaque {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #34d399;
+            font-family: monospace;
+        }
+        .btn-preset {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #334155;
+            transition: all 0.15s;
+        }
+        .btn-preset:hover {
+            background: #ecfdf5;
+            border-color: #10b981;
+            color: #065f46;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar Oficial MFx -->
+<nav class="navbar navbar-expand-lg navbar-dark navbar-mfx mb-4 shadow">
+    <div class="container-fluid px-4">
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="index.php">
+            <span class="badge bg-danger p-2"><i class="fa-solid fa-fire"></i> MFx</span>
+            <span>Tecnologia Industrial</span>
+        </a>
+        <div class="navbar-nav ms-auto gap-2">
+            <a class="nav-link" href="index.php"><i class="fa-solid fa-house"></i> Início</a>
+            <a class="nav-link" href="estoque.php"><i class="fa-solid fa-boxes-stacked"></i> Estoque & Serviços</a>
+            <a class="nav-link active fw-bold text-warning" href="compras.php"><i class="fa-solid fa-cart-shopping"></i> Compras</a>
+            <a class="nav-link" href="nova_os.php"><i class="fa-solid fa-plus-circle"></i> Nova OS</a>
+            <a class="nav-link" href="listar_os.php"><i class="fa-solid fa-file-lines"></i> Ordens de Serviço</a>
+            <a class="nav-link" href="clientes.php"><i class="fa-solid fa-users"></i> Clientes</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container my-4">
+
+    <!-- Cabeçalho da Página com Título e Ações -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-success text-white">Módulo: Compras</span>
+                <span class="text-muted small">| Linhas Laser Fibra, Plasma HD e Oxicorte</span>
+            </div>
+            <h3 class="fw-bold text-dark mb-0">
+                <i class="fa-solid fa-boxes-packing text-success me-2"></i> Lançamento de Compras & Entrada de Insumos
+            </h3>
+            <p class="text-muted small mb-0">
+                Lançamento rápido de notas fiscais de compra com soma automática ao saldo físico de estoque no MySQL.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="estoque.php" class="btn btn-outline-dark btn-sm">
+                <i class="fa-solid fa-boxes-stacked me-1"></i> Ver Saldo de Estoque
+            </a>
+            <a href="nova_os.php" class="btn btn-outline-danger btn-sm">
+                <i class="fa-solid fa-plus me-1"></i> Lançar em OS
+            </a>
+        </div>
+    </div>
+
+    <!-- Mensagens de Alerta -->
+    <?php if (!empty($mensagem)): ?>
+        <div class="alert alert-<?= $tipo_alerta; ?> alert-dismissible fade show shadow-sm" role="alert">
+            <?= $mensagem; ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <!-- Formulário Principal de Lançamento de Compra -->
+    <form method="POST" action="compras.php" id="formCompra">
+        <input type="hidden" name="acao" value="salvar_compra">
+
+        <!-- 1. DADOS DA COMPRA (CABEÇALHO) -->
+        <div class="card card-custom mb-4">
+            <div class="card-header card-header-mfx py-3 d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-file-invoice me-2 text-warning"></i> 1. Dados da Compra / Nota Fiscal de Entrada</span>
+                <span class="badge bg-secondary font-monospace">NF-e Fornecedor</span>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    
+                    <!-- Fornecedor -->
+                    <div class="col-md-6">
+                        <label for="fornecedor" class="form-label fw-bold text-dark">
+                            Fornecedor / Razão Social <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="fornecedor" name="fornecedor" list="listaFornecedores" placeholder="Ex: Raytools Óptica & Laser Co." required>
+                        <datalist id="listaFornecedores">
+                            <option value="Raytools Laser Optics & Consumables Co.">
+                            <option value="Hypertherm do Brasil Sistemas Térmicos">
+                            <option value="WSX Laser Heads & Optical Components">
+                            <option value="Maxphotonics & Raycus Brasil">
+                            <option value="Oxicorte Brasil Peças & Tochas Industriais">
+                            <option value="Precitec Lentes & Sensores Brasil">
+                            <option value="Belms Bicos & Cerâmicas Laser">
+                        </datalist>
+                        
+                        <!-- Pílulas de seleção rápida de fornecedores -->
+                        <div class="d-flex flex-wrap gap-1 mt-2 align-items-center">
+                            <span class="text-muted small fw-bold">Rápido:</span>
+                            <button type="button" class="btn btn-preset" onclick="selecionarFornecedor('Raytools Laser Optics & Consumables Co.')">Raytools</button>
+                            <button type="button" class="btn btn-preset" onclick="selecionarFornecedor('Hypertherm do Brasil Sistemas Térmicos')">Hypertherm</button>
+                            <button type="button" class="btn btn-preset" onclick="selecionarFornecedor('WSX Laser Heads Industrial')">WSX</button>
+                            <button type="button" class="btn btn-preset" onclick="selecionarFornecedor('Oxicorte Brasil Peças & Tochas')">Oxicorte Brasil</button>
+                            <button type="button" class="btn btn-preset" onclick="selecionarFornecedor('Precitec Lentes & Sensores')">Precitec</button>
+                        </div>
+                    </div>
+
+                    <!-- Número da Nota Fiscal -->
+                    <div class="col-md-3">
+                        <label for="numero_nota" class="form-label fw-bold text-dark">
+                            Nº da Nota Fiscal / Chave <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control font-monospace fw-bold" id="numero_nota" name="numero_nota" placeholder="Ex: NF-e 049.920" required>
+                        <small class="text-muted">Número da NF-e impressa</small>
+                    </div>
+
+                    <!-- Data da Compra -->
+                    <div class="col-md-3">
+                        <label for="data_compra" class="form-label fw-bold text-dark">
+                            Data da Compra <span class="text-danger">*</span>
+                        </label>
+                        <input type="date" class="form-control font-monospace" id="data_compra" name="data_compra" value="<?= date('Y-m-d'); ?>" required>
+                        <small class="text-muted">Data da emissão da nota</small>
+                    </div>
+
+                    <!-- Observações -->
+                    <div class="col-md-12">
+                        <label for="observacoes" class="form-label small text-muted">Observações da Compra / Condições de Frete e Faturamento (Opcional)</label>
+                        <input type="text" class="form-control form-control-sm" id="observacoes" name="observacoes" placeholder="Ex: Pedido de importação via despachante Santos, 28/56 DDL, lote de reposição preventiva.">
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. LANÇAMENTO SIMPLES DE ITENS ADQUIRIDOS (ITENS DA NOTA) -->
+        <div class="card card-custom mb-4">
+            <div class="card-header card-header-mfx py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <i class="fa-solid fa-list-check me-2 text-warning"></i>
+                    <span>2. Itens Adquiridos (Consumíveis e Peças da NF-e)</span>
+                    <small class="text-light opacity-75 ms-2">O estoque físico será somado automaticamente</small>
+                </div>
+                <button type="button" class="btn btn-success btn-sm fw-bold" onclick="adicionarLinhaItem()">
+                    <i class="fa-solid fa-plus me-1"></i> + Adicionar Item à Compra
+                </button>
+            </div>
+
+            <!-- Inserção rápida por itens de alto giro -->
+            <div class="p-3 bg-light border-bottom">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="small fw-bold text-dark"><i class="fa-solid fa-bolt text-warning me-1"></i> Itens Frequentes (Clique para incluir):</span>
+                    <button type="button" class="btn btn-preset" onclick="adicionarPresetItem('MFX-LP30-15', 'Lente de Proteção Laser Fibra D30 x 1.5mm Quartzo', 'UN', 55.00)">+ Lente D30x1.5 (Laser)</button>
+                    <button type="button" class="btn btn-preset" onclick="adicionarPresetItem('MFX-BD-15', 'Bico Laser Duplo Cromado D32 H15 1.5mm', 'UN', 42.50)">+ Bico Laser Duplo 1.5mm</button>
+                    <button type="button" class="btn btn-preset" onclick="adicionarPresetItem('MFX-BP-105', 'Bico de Plasma Alta Definição 105A', 'UN', 52.00)">+ Bico Plasma 105A</button>
+                    <button type="button" class="btn btn-preset" onclick="adicionarPresetItem('MFX-EP-100', 'Eletrodo de Plasma Híbrido Cobre/Háfnio 100A', 'UN', 58.00)">+ Eletrodo Plasma 100A</button>
+                    <button type="button" class="btn btn-preset" onclick="adicionarPresetItem('MFX-BO-1502', 'Bico de Corte Oxicorte 1502 GLP/Oxigênio nº 02', 'UN', 38.00)">+ Bico Oxicorte 1502</button>
+                    <button type="button" class="btn btn-preset" onclick="adicionarPresetItem('MFX-CABO-SEN', 'Cabo Sensor de Altura Capacitivo SMA/BNC', 'UN', 250.00)">+ Cabo Sensor Laser</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 table-compras" id="tabelaItensCompra">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;" class="text-center">#</th>
+                            <th style="width: 280px;">Produto / Insumo Cadastrado</th>
+                            <th style="width: 140px;">Código MFx</th>
+                            <th>Descrição Completa na Nota</th>
+                            <th style="width: 80px;" class="text-center">Unid.</th>
+                            <th style="width: 110px;" class="text-center">Estoque Atual</th>
+                            <th style="width: 120px;" class="text-center">Qtd Comprada</th>
+                            <th style="width: 140px;" class="text-end">Custo Unit. (R$)</th>
+                            <th style="width: 140px;" class="text-end">Total Item (R$)</th>
+                            <th style="width: 50px;" class="text-center">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoItensCompra">
+                        <!-- Linhas geradas dinamicamente via JavaScript -->
+                    </tbody>
+                    <tfoot class="table-light fw-bold">
+                        <tr>
+                            <td colspan="6" class="text-end text-uppercase small">Subtotal da Nota Fiscal:</td>
+                            <td class="text-center font-monospace text-success fs-6" id="totalQtdPecas">0 un</td>
+                            <td class="text-end text-uppercase small">Valor Total da Compra:</td>
+                            <td class="text-end font-monospace text-success fs-5" id="valorTotalGeralTexto">R$ 0,00</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- 3. PAINEL DE CONCLUSÃO & ATUALIZAÇÃO DE ESTOQUE -->
+            <div class="p-4 bg-light border-top d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adicionarLinhaItem()">
+                        <i class="fa-solid fa-plus me-1"></i> + Adicionar Mais Um Item
+                    </button>
+                    <span class="text-muted small" id="contadorItens">1 item lançado</span>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-end d-none d-sm-block">
+                        <small class="text-muted text-uppercase d-block fw-bold">Total a Pagar na NF-e</small>
+                        <span class="fs-4 fw-bold text-dark font-monospace" id="badgeTotalDestaque">R$ 0,00</span>
+                    </div>
+
+                    <!-- BOTÃO DE CONCLUSÃO -->
+                    <button type="submit" class="btn btn-success btn-lg fw-bold px-4 py-2 shadow">
+                        <i class="fa-solid fa-boxes-packing me-2"></i> Salvar Compra e Atualizar Estoque
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </form>
+
+    <!-- HISTÓRICO DE COMPRAS RECENTES -->
+    <?php if (!empty($historicoCompras)): ?>
+        <div class="card card-custom mt-4">
+            <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-clock-rotate-left me-2 text-warning"></i> Histórico de Compras e Entradas Físicas de Estoque</span>
+                <span class="badge bg-secondary"><?= count($historicoCompras); ?> notas registradas</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase">
+                        <tr>
+                            <th>Nº da Nota</th>
+                            <th>Fornecedor</th>
+                            <th>Data</th>
+                            <th class="text-center">Itens Distintos</th>
+                            <th class="text-center">Peças Entradas</th>
+                            <th class="text-end">Valor Total</th>
+                            <th>Observações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        <?php foreach ($historicoCompras as $hc): ?>
+                            <tr>
+                                <td class="fw-bold font-monospace text-success"><?= htmlspecialchars($hc['numero_nota']); ?></td>
+                                <td class="fw-bold text-dark"><?= htmlspecialchars($hc['fornecedor']); ?></td>
+                                <td class="font-monospace text-muted"><?= date('d/m/Y', strtotime($hc['data_compra'])); ?></td>
+                                <td class="text-center font-monospace"><?= $hc['total_itens_nota']; ?></td>
+                                <td class="text-center font-monospace text-success fw-bold">+<?= number_format($hc['total_pecas_nota'], 0, ',', '.'); ?> un</td>
+                                <td class="text-end font-monospace fw-bold text-dark">R$ <?= number_format($hc['valor_total'], 2, ',', '.'); ?></td>
+                                <td class="text-muted"><?= htmlspecialchars($hc['observacoes'] ?? '-'); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    <?php endif; ?>
+
+</div>
+
+<!-- Dados JSON dos produtos em estoque para consulta pelo JS -->
+<script>
+const PRODUTOS_ESTOQUE = <?= json_encode($produtosEstoque, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+
+function selecionarFornecedor(nome) {
+    document.getElementById('fornecedor').value = nome;
+}
+
+let contadorLinhas = 0;
+
+function formatarMoeda(valor) {
+    return 'R$ ' + Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function adicionarLinhaItem(dados = {}) {
+    contadorLinhas++;
+    const tbody = document.getElementById('corpoItensCompra');
+    const tr = document.createElement('tr');
+    tr.id = 'linha_item_' + contadorLinhas;
+
+    const prodIdDef  = dados.produto_id || (PRODUTOS_ESTOQUE.length > 0 ? PRODUTOS_ESTOQUE[0].id : '');
+    const codigoDef  = dados.codigo || (PRODUTOS_ESTOQUE.length > 0 ? PRODUTOS_ESTOQUE[0].codigo : 'MFX-LP30-15');
+    const descDef    = dados.descricao || (PRODUTOS_ESTOQUE.length > 0 ? PRODUTOS_ESTOQUE[0].descricao : 'Lente de Proteção Laser D30');
+    const unidDef    = dados.unidade || (PRODUTOS_ESTOQUE.length > 0 ? PRODUTOS_ESTOQUE[0].unidade_medida : 'UN');
+    const qtdDef     = dados.quantidade || 10;
+    const custoDef   = dados.preco_custo || 55.00;
+    const totalDef   = (qtdDef * custoDef).toFixed(2);
+
+    // Encontrar saldo atual
+    const prodEncontrado = PRODUTOS_ESTOQUE.find(p => p.id == prodIdDef || p.codigo === codigoDef);
+    const saldoAtual = prodEncontrado ? prodEncontrado.estoque_atual : 0;
+
+    let optionsProdutos = '<option value="">-- Selecione ou digite manualmente --</option>';
+    PRODUTOS_ESTOQUE.forEach(p => {
+        const selected = (p.id == prodIdDef) ? 'selected' : '';
+        optionsProdutos += \`<option value="\${p.id}" data-codigo="\${p.codigo}" data-desc="\${p.descricao}" data-unid="\${p.unidade_medida}" data-saldo="\${p.estoque_atual}" data-preco="\${p.preco_venda}" \${selected}>\${p.codigo} - \${p.descricao.substring(0, 36)}... (Saldo: \${p.estoque_atual} \${p.unidade_medida})</option>\`;
+    });
+
+    tr.innerHTML = \`
+        <td class="text-center font-monospace text-muted fw-bold">\${tbody.children.length + 1}</td>
+        <td>
+            <select class="form-select form-select-sm" name="item_produto_id[]" onchange="selecionarProdutoLinha(\${contadorLinhas}, this)">
+                \${optionsProdutos}
+            </select>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm font-monospace fw-bold" name="item_codigo[]" id="item_codigo_\${contadorLinhas}" value="\${codigoDef}" required>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm" name="item_descricao[]" id="item_descricao_\${contadorLinhas}" value="\${descDef}" required>
+        </td>
+        <td>
+            <select class="form-select form-select-sm font-monospace text-center fw-bold" name="item_unidade[]" id="item_unidade_\${contadorLinhas}">
+                <option value="UN" \${unidDef === 'UN' ? 'selected' : ''}>UN</option>
+                <option value="PC" \${unidDef === 'PC' ? 'selected' : ''}>PC</option>
+                <option value="JG" \${unidDef === 'JG' ? 'selected' : ''}>JG</option>
+                <option value="CX" \${unidDef === 'CX' ? 'selected' : ''}>CX</option>
+                <option value="MT" \${unidDef === 'MT' ? 'selected' : ''}>MT</option>
+            </select>
+        </td>
+        <td class="text-center">
+            <span class="badge bg-secondary font-monospace" id="item_saldo_\${contadorLinhas}">\${saldoAtual} \${unidDef}</span>
+        </td>
+        <td>
+            <input type="number" min="1" step="1" class="form-control form-control-sm text-center font-monospace fw-bold border-success" name="item_quantidade[]" id="item_qtd_\${contadorLinhas}" value="\${qtdDef}" oninput="recalcularTotais()" required>
+        </td>
+        <td>
+            <input type="number" min="0" step="0.01" class="form-control form-control-sm text-end font-monospace fw-bold" name="item_preco_custo[]" id="item_custo_\${contadorLinhas}" value="\${custoDef}" oninput="recalcularTotais()" required>
+        </td>
+        <td class="text-end font-monospace fw-bold text-dark" id="item_total_\${contadorLinhas}">
+            \${formatarMoeda(totalDef)}
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-outline-danger btn-sm p-1" onclick="removerLinhaItem(\${contadorLinhas})" title="Remover item">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+        </td>
+    \`;
+
+    tbody.appendChild(tr);
+    recalcularTotais();
+}
+
+function selecionarProdutoLinha(linhaIdx, selectEl) {
+    const selectedOpt = selectEl.options[selectEl.selectedIndex];
+    if (selectedOpt && selectedOpt.value) {
+        const codigo = selectedOpt.getAttribute('data-codigo');
+        const desc = selectedOpt.getAttribute('data-desc');
+        const unid = selectedOpt.getAttribute('data-unid');
+        const saldo = selectedOpt.getAttribute('data-saldo');
+        const precoVenda = parseFloat(selectedOpt.getAttribute('data-preco')) || 0;
+
+        document.getElementById('item_codigo_' + linhaIdx).value = codigo;
+        document.getElementById('item_descricao_' + linhaIdx).value = desc;
+        document.getElementById('item_unidade_' + linhaIdx).value = unid;
+        document.getElementById('item_saldo_' + linhaIdx).textContent = saldo + ' ' + unid;
+
+        // Sugestão de custo padrão de 55% do preço de venda
+        const inputCusto = document.getElementById('item_custo_' + linhaIdx);
+        if (!inputCusto.value || parseFloat(inputCusto.value) === 0) {
+            inputCusto.value = (precoVenda * 0.55).toFixed(2);
+        }
+    }
+    recalcularTotais();
+}
+
+function adicionarPresetItem(codigo, descricao, unidade, custo) {
+    const prod = PRODUTOS_ESTOQUE.find(p => p.codigo === codigo);
+    adicionarLinhaItem({
+        produto_id: prod ? prod.id : '',
+        codigo: codigo,
+        descricao: descricao,
+        unidade: unidade,
+        quantidade: 20,
+        preco_custo: custo
+    });
+}
+
+function removerLinhaItem(linhaIdx) {
+    const linha = document.getElementById('linha_item_' + linhaIdx);
+    const tbody = document.getElementById('corpoItensCompra');
+    if (tbody.children.length <= 1) {
+        alert('A nota fiscal de compra deve conter ao menos um item.');
+        return;
+    }
+    if (linha) {
+        linha.remove();
+        recalcularTotais();
+    }
+}
+
+function recalcularTotais() {
+    const tbody = document.getElementById('corpoItensCompra');
+    let totalPecas = 0;
+    let valorTotal = 0;
+
+    const linhas = tbody.querySelectorAll('tr');
+    linhas.forEach((tr, index) => {
+        // Atualizar índice visual
+        const tdIdx = tr.querySelector('td:first-child');
+        if (tdIdx) tdIdx.textContent = (index + 1);
+
+        const inputQtd = tr.querySelector('[name="item_quantidade[]"]');
+        const inputCusto = tr.querySelector('[name="item_preco_custo[]"]');
+        const tdTotal = tr.querySelector('td:nth-last-child(2)');
+
+        if (inputQtd && inputCusto && tdTotal) {
+            const qtd = parseFloat(inputQtd.value) || 0;
+            const custo = parseFloat(inputCusto.value) || 0;
+            const subtotal = Math.round(qtd * custo * 100) / 100;
+
+            tdTotal.textContent = formatarMoeda(subtotal);
+            totalPecas += qtd;
+            valorTotal += subtotal;
+        }
+    });
+
+    document.getElementById('totalQtdPecas').textContent = '+' + totalPecas.toLocaleString('pt-BR') + ' un';
+    document.getElementById('valorTotalGeralTexto').textContent = formatarMoeda(valorTotal);
+    document.getElementById('badgeTotalDestaque').textContent = formatarMoeda(valorTotal);
+    document.getElementById('contadorItens').textContent = linhas.length + (linhas.length === 1 ? ' item lançado' : ' itens lançados');
+}
+
+// Inicializar com uma primeira linha padrão
+document.addEventListener('DOMContentLoaded', function() {
+    adicionarLinhaItem();
+});
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
