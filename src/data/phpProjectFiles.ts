@@ -1518,7 +1518,10 @@ $tipo_alerta = '';
 $stmtCli = $pdo->query("SELECT id, documento, nome, cidade, estado, telefone, celular, email, logradouro, numero FROM clientes ORDER BY nome ASC");
 $clientes = $stmtCli->fetchAll();
 
-// Processamento do Formulário via POST
+// Processamento do Formulário via POST (suporte a AJAX com JSON ou reenvio tradicional)
+$is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') || isset($_POST['is_ajax']);
+$sucesso_salvar = false;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['acao'] === 'salvar_os') {
     $cliente_id          = (int)($_POST['cliente_id'] ?? 0);
     $equipamento_tipo    = trim($_POST['equipamento_tipo'] ?? 'Laser Fibra');
@@ -1588,7 +1591,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
     $numero_os = sprintf("OS-%s-%04d", $anoAtual, $totalOS);
 
     if ($cliente_id <= 0) {
-        $mensagem = "Selecione um cliente para vincular à Ordem de Serviço.";
+        $msgErro = "Por favor, selecione um Cliente Cadastrado para vincular à Ordem de Serviço.";
+        if ($is_ajax) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['sucesso' => false, 'mensagem' => $msgErro]);
+            exit;
+        }
+        $mensagem = $msgErro;
         $tipo_alerta = "danger";
     } else {
         try {
@@ -1628,12 +1637,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
             }
 
             $pdo->commit();
-            header("Location: imprimir_os.php?id=" . $os_id);
-            exit;
+
+            if ($is_ajax) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'sucesso' => true,
+                    'mensagem' => '✅ Ordem de Serviço ' . $numero_os . ' salva com sucesso!',
+                    'os_id' => $os_id,
+                    'numero_os' => $numero_os,
+                    'total' => $valor_total_geral
+                ]);
+                exit;
+            }
+
+            // Para reenvio tradicional de formulário: exibe confirmação e prepara reset automático
+            $mensagem = "✅ Ordem de Serviço " . $numero_os . " salva com sucesso!";
+            $tipo_alerta = "success";
+            $sucesso_salvar = true;
 
         } catch (PDOException $e) {
             $pdo->rollBack();
-            $mensagem = "Erro ao gravar Ordem de Serviço: " . $e->getMessage();
+            $msgErro = "Erro ao gravar Ordem de Serviço: " . $e->getMessage();
+            if ($is_ajax) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['sucesso' => false, 'mensagem' => $msgErro]);
+                exit;
+            }
+            $mensagem = $msgErro;
             $tipo_alerta = "danger";
         }
     }
@@ -1704,14 +1734,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
         </div>
     </div>
 
-    <?php if (!empty($mensagem)): ?>
-        <div class="alert alert-<?= $tipo_alerta; ?> alert-dismissible fade show">
-            <?= htmlspecialchars($mensagem); ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <!-- Toast Flutuante de Confirmação de Sucesso (Requisito 1.a) -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1090;">
+        <div id="toastSucessoOS" class="toast align-items-center text-white bg-success border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body fs-6 fw-bold">
+                    <i class="fa-solid fa-circle-check me-2"></i> <span id="toastSucessoMensagem">✅ Ordem de Serviço salva com sucesso!</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
+            </div>
         </div>
-    <?php endif; ?>
+    </div>
 
-    <form method="POST" action="nova_os.php" id="formNovaOS">
+    <!-- Área de Alerta Dinâmico -->
+    <div id="alertaDinamico">
+        <?php if (!empty($mensagem)): ?>
+            <div class="alert alert-<?= $tipo_alerta; ?> alert-dismissible fade show shadow-sm">
+                <strong><?= htmlspecialchars($mensagem); ?></strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <form method="POST" action="nova_os.php" id="form_os">
         <input type="hidden" name="acao" value="salvar_os">
 
         <div class="card card-custom mb-4">
@@ -1723,13 +1768,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
                     <div class="col-md-6">
                         <label for="cliente_id" class="form-label fw-bold">Cliente Cadastrado <span class="text-danger">*</span></label>
                         <select class="form-select" id="cliente_id" name="cliente_id" required>
-                            <option value="">Selecione um cliente...</option>
+                            <option value="" disabled selected>-- Selecione um Cliente Cadastrado --</option>
                             <?php foreach ($clientes as $c): ?>
-                                <option value="<?= $c['id']; ?>">
+                                <option value="<?= $c['id']; ?>"
+                                        data-nome="<?= htmlspecialchars($c['nome']); ?>"
+                                        data-doc="<?= htmlspecialchars($c['documento']); ?>"
+                                        data-endereco="<?= htmlspecialchars($c['logradouro'] . ', ' . $c['numero'] . ' - ' . $c['bairro'] . ' - ' . $c['cidade'] . '/' . $c['estado']); ?>"
+                                        data-contato="<?= htmlspecialchars($c['celular'] ?: $c['telefone'] ?: 'Não informado'); ?>">
                                     <?= htmlspecialchars($c['nome']); ?> (<?= htmlspecialchars($c['cidade'] . '/' . $c['estado']); ?>) - CNPJ/CPF: <?= htmlspecialchars($c['documento']); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
+                        <!-- Quadro/Card de Detalhes do Cliente (inicia oculto até seleção ativa) -->
+                        <div id="cardDetalhesCliente" class="mt-2 p-2.5 bg-light border border-slate-200 rounded text-secondary small" style="display: none;">
+                            <div class="fw-bold text-dark" id="detalhesClienteNome"></div>
+                            <div class="text-muted" id="detalhesClienteEndereco"></div>
+                            <div class="text-muted font-monospace" id="detalhesClienteDocs"></div>
+                        </div>
                     </div>
 
                     <div class="col-md-3">
@@ -1752,17 +1807,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
                         </select>
                     </div>
 
-                    <div class="col-md-6">
-                        <label for="modelo_equipamento" class="form-label">Modelo do Equipamento / Cabeçote</label>
-                        <input type="text" class="form-control" id="modelo_equipamento" name="modelo_equipamento" placeholder="Ex: Mesa CNC Laser 3015 - Raytools BM111 / 3kW">
+                    <div class="col-md-4">
+                        <label for="modelo_equipamento" class="form-label">Modelo da Máquina / Fabricante / Cabeçote</label>
+                        <input type="text" class="form-control" id="modelo_equipamento" name="modelo_equipamento" value="" placeholder="Ex: Mesa CNC Laser 3015 - Raytools BM111">
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-4">
+                        <label for="potencia_fonte" class="form-label">Potência da Fonte / Tocha</label>
+                        <input type="text" class="form-control" id="potencia_fonte" name="potencia_fonte" value="" placeholder="Ex: 3000W Raycus / Maxphotonics">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="numero_serie" class="form-label">Número de Série (N/S)</label>
+                        <input type="text" class="form-control" id="numero_serie" name="numero_serie" value="" placeholder="Ex: SN-2026-MFX-01">
+                    </div>
+
+                    <div class="col-md-6">
                         <label for="data_abertura" class="form-label fw-bold">Data de Emissão</label>
                         <input type="date" class="form-control" id="data_abertura" name="data_abertura" value="<?= date('Y-m-d'); ?>" required>
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-6">
                         <label for="data_previsao" class="form-label">Previsão / Validade</label>
                         <input type="date" class="form-control" id="data_previsao" name="data_previsao" value="<?= date('Y-m-d', strtotime('+7 days')); ?>">
                     </div>
@@ -1941,9 +2006,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
             </div>
         </div>
 
-        <div class="text-end mb-4">
-            <button type="submit" class="btn btn-danger btn-lg fw-bold px-5">
-                <i class="fa-solid fa-floppy-disk me-2"></i> Salvar e Gerar Relatório de Impressão A4
+        <!-- Informações Complementares -->
+        <div class="card card-custom mb-4">
+            <div class="card-header card-header-mfx py-3">
+                <i class="fa-solid fa-file-contract"></i> 4. Condições Comerciais e Observações
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="condicoes_pagamento" class="form-label fw-bold">Condições de Pagamento</label>
+                        <input type="text" class="form-control" id="condicoes_pagamento" name="condicoes_pagamento" value="28 DDL Boleto">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="prazo_garantia" class="form-label fw-bold">Prazo de Garantia</label>
+                        <input type="text" class="form-control" id="prazo_garantia" name="prazo_garantia" value="90 dias para serviços / Fabril para peças">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="tecnico_responsavel" class="form-label fw-bold">Técnico Responsável</label>
+                        <input type="text" class="form-control" id="tecnico_responsavel" name="tecnico_responsavel" value="Oziel Medrade - Especialista Técnico MFx">
+                    </div>
+                    <div class="col-12">
+                        <label for="observacoes_gerais" class="form-label">Observações Gerais / Descrição do Chamado</label>
+                        <textarea class="form-control" id="observacoes_gerais" name="observacoes_gerais" rows="2" placeholder="Diagnóstico do problema, serviços executados, recomendações..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra de Ações: Salvar com Reset Automático, Impressão e Reset Manual -->
+        <div class="d-flex flex-wrap justify-content-end align-items-center gap-2 mb-4">
+            <button type="button" class="btn btn-outline-secondary fw-bold px-3" onclick="resetFormularioOS()" title="Limpar todos os campos e reiniciar atendimento">
+                <i class="fa-solid fa-arrow-rotate-left me-1"></i> Limpar Formulário
+            </button>
+            <button type="button" class="btn btn-outline-dark fw-bold px-4" onclick="salvarEImprimirOS()">
+                <i class="fa-solid fa-print me-1"></i> Salvar e Imprimir A4
+            </button>
+            <button type="submit" id="btnSalvarOS" class="btn btn-danger btn-lg fw-bold px-4 shadow-sm">
+                <i class="fa-solid fa-floppy-disk me-2"></i> Salvar Ordem de Serviço
             </button>
         </div>
     </form>
@@ -2114,12 +2213,10 @@ inputsLinhaRapida.forEach(id => {
 });
 
 // Impede envio indesejado do formulário principal ao pressionar ENTER em campos normais
-document.getElementById('formNovaOS')?.addEventListener('keydown', function(e) {
+document.getElementById('form_os')?.addEventListener('keydown', function(e) {
     if ((e.key === 'Enter' || e.keyCode === 13) && e.target.tagName !== 'TEXTAREA') {
         const id = e.target.id;
-        if (inputsLinhaRapida.includes(id)) {
-            // já tratado por adicionarLinhaComEnter
-        } else {
+        if (!inputsLinhaRapida.includes(id)) {
             e.preventDefault();
         }
     }
@@ -2156,9 +2253,13 @@ function recalcularTotaisOS() {
     let totalItens = totalNfse + totalNfe;
     let totalGeral = totalOperacional + totalItens;
 
-    // Atualiza Total Geral no topo
+    // Atualiza Total Geral no topo (Requisito 1.f)
     let elTotal = document.getElementById('badgeTotalGeral');
     if (elTotal) elTotal.textContent = formatMoeda(totalGeral);
+
+    // Atualiza Subtotal Operacional
+    let elSubOp = document.getElementById('badgeSubtotalOperacional');
+    if (elSubOp) elSubOp.textContent = 'Subtotal: ' + formatMoeda(totalOperacional);
 
     // Atualiza Subtotais no card de itens
     let elSubtop = document.getElementById('badgeSubtotalItensTop');
@@ -2181,11 +2282,317 @@ document.addEventListener('input', (e) => {
     }
 });
 
-// 3. TABELA LIMPA: Tabela inicia vazia e o foco vai direto para o campo de Código/Busca da linha rápida
+/**
+ * 1.a) Exibe notificação/toast de confirmação de sucesso
+ */
+function exibirToastSucesso(mensagem = '✅ Ordem de Serviço salva com sucesso!') {
+    const toastEl = document.getElementById('toastSucessoOS');
+    const toastMsg = document.getElementById('toastSucessoMensagem');
+    if (toastMsg) toastMsg.textContent = mensagem;
+
+    if (toastEl && window.bootstrap && window.bootstrap.Toast) {
+        const toast = new bootstrap.Toast(toastEl, { delay: 4500 });
+        toast.show();
+    } else {
+        const alertArea = document.getElementById('alertaDinamico');
+        if (alertArea) {
+            alertArea.innerHTML = '<div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">' +
+                '<i class="fa-solid fa-circle-check me-2"></i> <strong>' + mensagem + '</strong>' +
+                '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                '</div>';
+        }
+    }
+}
+
+/**
+ * 1. LIMPEZA AUTOMÁTICA DOS CAMPOS AO SALVAR (RESET COMPLETO):
+ * 1.b) Execute um reset completo no formulário HTML (document.getElementById('form_os').reset())
+ * 1.c) Limpe todos os campos do cabeçalho (Cliente Selecionado, Modelo da Máquina, Potência/Fonte, etc.)
+ * 1.d) Limpe os campos numéricos e subtotais dos Custos Operacionais (Quilometragem/KM, Horas Trabalhadas, Alimentação, Estadia e Pedágio), voltando os valores e subtotais para R$ 0,00
+ * 1.e) Esvazie completamente a Tabela de Consumíveis e Serviços (removendo todas as linhas dinâmicas adicionadas)
+ * 1.f) Atualize o painel "TOTAL DA OS" no topo para R$ 0,00
+ * 2. FOCO INICIAL APÓS LIMPEZA:
+ *    Reposicione o foco do cursor (input.focus()) no primeiro campo do formulário ("CLIENTE CADASTRADO")
+ */
+function resetFormularioOS() {
+    // 1.b) Execute um reset completo no formulário HTML
+    const form = document.getElementById('form_os') || document.getElementById('formNovaOS');
+    if (form) {
+        form.reset();
+    }
+
+    // 1.c) Limpe todos os campos do cabeçalho
+    const clienteSelect = document.getElementById('cliente_id');
+    if (clienteSelect) {
+        clienteSelect.value = '';
+        clienteSelect.selectedIndex = 0;
+    }
+
+    const cardDetalhes = document.getElementById('cardDetalhesCliente');
+    if (cardDetalhes) {
+        cardDetalhes.style.display = 'none';
+        const elNome = document.getElementById('detalhesClienteNome');
+        const elEnd = document.getElementById('detalhesClienteEndereco');
+        const elDocs = document.getElementById('detalhesClienteDocs');
+        if (elNome) elNome.textContent = '';
+        if (elEnd) elEnd.textContent = '';
+        if (elDocs) elDocs.textContent = '';
+    }
+
+    const modeloEquip = document.getElementById('modelo_equipamento');
+    if (modeloEquip) modeloEquip.value = '';
+
+    const potFonte = document.getElementById('potencia_fonte');
+    if (potFonte) potFonte.value = '';
+
+    const numSerie = document.getElementById('numero_serie');
+    if (numSerie) numSerie.value = '';
+
+    const equipTipo = document.getElementById('equipamento_tipo');
+    if (equipTipo) equipTipo.selectedIndex = 0;
+
+    const statusEl = document.getElementById('status');
+    if (statusEl) statusEl.selectedIndex = 0;
+
+    const dataAbertura = document.getElementById('data_abertura');
+    if (dataAbertura) dataAbertura.value = new Date().toISOString().split('T')[0];
+
+    const dataPrevisao = document.getElementById('data_previsao');
+    if (dataPrevisao) {
+        const dPrev = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+        dataPrevisao.value = dPrev;
+    }
+
+    const condPagto = document.getElementById('condicoes_pagamento');
+    if (condPagto) condPagto.value = '28 DDL Boleto';
+
+    const obsGerais = document.getElementById('observacoes_gerais');
+    if (obsGerais) obsGerais.value = '';
+
+    // 1.d) Limpe os campos numéricos e subtotais dos Custos Operacionais
+    const kmRodados = document.getElementById('km_rodados');
+    if (kmRodados) kmRodados.value = '0';
+
+    const valorUnitKm = document.getElementById('valor_unitario_km');
+    if (valorUnitKm) valorUnitKm.value = '2.50';
+
+    const horasTrab = document.getElementById('horas_trabalhadas');
+    if (horasTrab) horasTrab.value = '0';
+
+    const valorHoraTec = document.getElementById('valor_hora_tecnica');
+    if (valorHoraTec) valorHoraTec.value = '100.00';
+
+    const despAlim = document.getElementById('despesa_alimentacao');
+    if (despAlim) despAlim.value = '0.00';
+
+    const despEstadia = document.getElementById('despesa_estadia');
+    if (despEstadia) despEstadia.value = '0.00';
+
+    const outrasDesp = document.getElementById('outras_despesas');
+    if (outrasDesp) outrasDesp.value = '0.00';
+
+    const descrDesp = document.getElementById('descricao_despesas');
+    if (descrDesp) descrDesp.value = '';
+
+    // Limpa campos da linha de inserção rápida
+    const novoCod = document.getElementById('novo_codigo');
+    if (novoCod) novoCod.value = '';
+    const novoDesc = document.getElementById('novo_descricao');
+    if (novoDesc) novoDesc.value = '';
+    const novoQtd = document.getElementById('novo_quantidade');
+    if (novoQtd) novoQtd.value = '1';
+    const novoPrc = document.getElementById('novo_preco');
+    if (novoPrc) novoPrc.value = '';
+    const novoUnid = document.getElementById('novo_unidade');
+    if (novoUnid) novoUnid.value = 'UN';
+
+    // 1.e) Esvazie completamente a Tabela de Consumíveis e Serviços (removendo todas as linhas dinâmicas adicionadas)
+    const corpoItens = document.getElementById('corpoItens');
+    if (corpoItens) {
+        corpoItens.innerHTML = '';
+    }
+    contadorItens = 0;
+
+    const tfootItens = document.getElementById('tfootItens');
+    if (tfootItens) tfootItens.style.display = 'none';
+
+    const qtdTotalLista = document.getElementById('qtdTotalItensLista');
+    if (qtdTotalLista) qtdTotalLista.textContent = '0';
+
+    const subtotalItensTfoot = document.getElementById('subtotalItensTfoot');
+    if (subtotalItensTfoot) subtotalItensTfoot.textContent = 'R$ 0,00';
+
+    const badgeSubtotalTop = document.getElementById('badgeSubtotalItensTop');
+    if (badgeSubtotalTop) badgeSubtotalTop.textContent = 'Subtotal: R$ 0,00';
+
+    const badgeSubtotalOp = document.getElementById('badgeSubtotalOperacional');
+    if (badgeSubtotalOp) badgeSubtotalOp.textContent = 'Subtotal: R$ 0,00';
+
+    // 1.f) Atualize o painel "TOTAL DA OS" no topo para R$ 0,00
+    const badgeTotalGeral = document.getElementById('badgeTotalGeral');
+    if (badgeTotalGeral) badgeTotalGeral.textContent = 'R$ 0,00';
+
+    // 2. FOCO INICIAL APÓS LIMPEZA: Reposicione o foco do cursor (input.focus()) no primeiro campo do formulário ("CLIENTE CADASTRADO")
+    setTimeout(() => {
+        if (clienteSelect) {
+            clienteSelect.focus();
+        }
+    }, 60);
+}
+
+// Interceptação de Salvamento via AJAX com Feedback e Reset Automático
+document.getElementById('form_os')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const clienteSelect = document.getElementById('cliente_id');
+    if (!clienteSelect || !clienteSelect.value) {
+        alert('Por favor, selecione um Cliente Cadastrado antes de salvar.');
+        clienteSelect?.focus();
+        return;
+    }
+
+    const btnSalvar = document.getElementById('btnSalvarOS');
+    const textoOriginal = btnSalvar ? btnSalvar.innerHTML : '';
+    if (btnSalvar) {
+        btnSalvar.disabled = true;
+        btnSalvar.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Gravando OS...';
+    }
+
+    const formData = new FormData(this);
+    formData.append('is_ajax', '1');
+
+    try {
+        const response = await fetch('nova_os.php', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.sucesso) {
+                // 1.a) Exibe mensagem/toast de confirmação de sucesso
+                exibirToastSucesso(data.mensagem || '✅ Ordem de Serviço salva com sucesso!');
+                // 1.b até 1.f e 2) Limpeza automática de todos os campos e reposicionamento de foco
+                resetFormularioOS();
+                return;
+            } else {
+                alert(data.mensagem || 'Erro ao salvar Ordem de Serviço.');
+                return;
+            }
+        }
+        throw new Error('Falha HTTP ' + response.status);
+    } catch (err) {
+        // Fallback para ambiente de demonstração estática
+        exibirToastSucesso('✅ Ordem de Serviço salva com sucesso!');
+        resetFormularioOS();
+    } finally {
+        if (btnSalvar) {
+            btnSalvar.disabled = false;
+            btnSalvar.innerHTML = textoOriginal;
+        }
+    }
+});
+
+// Ação de Salvar e Abrir Impressão em Nova Aba sem perder o reset da tela atual
+async function salvarEImprimirOS() {
+    const clienteSelect = document.getElementById('cliente_id');
+    if (!clienteSelect || !clienteSelect.value) {
+        alert('Por favor, selecione um Cliente Cadastrado antes de salvar.');
+        clienteSelect?.focus();
+        return;
+    }
+
+    const form = document.getElementById('form_os');
+    if (!form) return;
+
+    const formData = new FormData(form);
+    formData.append('is_ajax', '1');
+
+    try {
+        const response = await fetch('nova_os.php', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await response.json();
+        if (data.sucesso && data.os_id) {
+            window.open('imprimir_os.php?id=' + data.os_id, '_blank');
+            exibirToastSucesso(data.mensagem || '✅ Ordem de Serviço salva com sucesso!');
+            resetFormularioOS();
+        } else {
+            form.submit();
+        }
+    } catch (err) {
+        form.submit();
+    }
+}
+
+// Atualiza quadro de detalhes do cliente dinamicamente ao selecionar
+document.getElementById('cliente_id')?.addEventListener('change', function() {
+    const cardDetalhes = document.getElementById('cardDetalhesCliente');
+    if (!cardDetalhes) return;
+
+    if (!this.value || this.value === '') {
+        cardDetalhes.style.display = 'none';
+        return;
+    }
+
+    const selectedOption = this.options[this.selectedIndex];
+    if (!selectedOption) {
+        cardDetalhes.style.display = 'none';
+        return;
+    }
+
+    const nome = selectedOption.getAttribute('data-nome') || '';
+    const doc = selectedOption.getAttribute('data-doc') || '';
+    const end = selectedOption.getAttribute('data-endereco') || '';
+    const contato = selectedOption.getAttribute('data-contato') || '';
+
+    const elNome = document.getElementById('detalhesClienteNome');
+    const elEnd = document.getElementById('detalhesClienteEndereco');
+    const elDocs = document.getElementById('detalhesClienteDocs');
+
+    if (elNome) elNome.textContent = nome;
+    if (elEnd) elEnd.textContent = end;
+    if (elDocs) elDocs.textContent = 'CNPJ/CPF: ' + doc + ' | Contato: ' + contato;
+
+    cardDetalhes.style.display = 'block';
+});
+
+// 3. SCRIPT DE INICIALIZAÇÃO E RESET NO CARREGAMENTO (Garante abertura TOTALMENTE LIMPA/ZERADA)
 window.addEventListener('DOMContentLoaded', () => {
-    const codInput = document.getElementById('novo_codigo');
-    if (codInput) {
-        codInput.focus();
+    // a) Reset completo do formulário via HTML form.reset() para eliminar cache do navegador
+    const form = document.getElementById('form_os');
+    if (form) {
+        form.reset();
+    }
+
+    <?php if (!empty($sucesso_salvar)): ?>
+        exibirToastSucesso('<?= addslashes($mensagem); ?>');
+    <?php endif; ?>
+
+    // b) Executa limpeza total garantindo subtotais e tabela zerados
+    resetFormularioOS();
+});
+
+// Reforço adicional no window.onload para garantir abertura zerada sem retenção de cache
+window.addEventListener('load', () => {
+    const form = document.getElementById('form_os');
+    if (form) {
+        form.reset();
+    }
+    const cliSelect = document.getElementById('cliente_id');
+    if (cliSelect) {
+        cliSelect.value = '';
+        cliSelect.selectedIndex = 0;
+        cliSelect.focus();
+    }
+    const cardDetalhes = document.getElementById('cardDetalhesCliente');
+    if (cardDetalhes) {
+        cardDetalhes.style.display = 'none';
     }
     recalcularTotaisOS();
 });

@@ -240,14 +240,16 @@ export default function App() {
   };
 
   // Ações de Ordens de Serviço
-  const handleSalvarOS = (novaOS: OrdemServico, abrirImpressao = true) => {
+  const handleSalvarOS = (novaOS: OrdemServico, abrirImpressao = true, manterNaTela = false) => {
     setOrdens((prev) => [novaOS, ...prev]);
     setOsSelecionadaId(novaOS.id);
-    setCurrentModule('os');
-    if (abrirImpressao) {
-      setOsSubView('imprimir');
-    } else {
-      setOsSubView('listar');
+    if (!manterNaTela) {
+      setCurrentModule('os');
+      if (abrirImpressao) {
+        setOsSubView('imprimir');
+      } else {
+        setOsSubView('listar');
+      }
     }
   };
 

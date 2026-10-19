@@ -29,7 +29,7 @@ import {
 interface NovaOsViewProps {
   clientes: Cliente[];
   clienteSelecionadoId?: string;
-  onSalvarOS: (novaOS: OrdemServico, abrirImpressao?: boolean) => void;
+  onSalvarOS: (novaOS: OrdemServico, abrirImpressao?: boolean, manterNaTela?: boolean) => void;
   onCancelar?: () => void;
 }
 
@@ -39,16 +39,16 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
   onSalvarOS,
   onCancelar,
 }) => {
-  // Cliente e Identificação
+  // Cliente e Identificação (inicia TOTALMENTE LIMPO / ZERADO)
   const [clienteId, setClienteId] = useState<string>(
-    clienteSelecionadoId || (clientes.length > 0 ? clientes[0].id : '')
+    clienteSelecionadoId || ''
   );
 
-  // Equipamento
+  // Equipamento (inicia limpo sem valores pré-definidos)
   const [equipamentoTipo, setEquipamentoTipo] = useState<'Laser Fibra' | 'Plasma' | 'Oxicorte' | 'Mesa CNC Multifunção' | 'Outro'>('Laser Fibra');
-  const [modeloEquipamento, setModeloEquipamento] = useState('Mesa CNC Laser Fibra 3015 - Cabeçote Raytools BM111');
+  const [modeloEquipamento, setModeloEquipamento] = useState('');
   const [numeroSerie, setNumeroSerie] = useState('');
-  const [potenciaFonte, setPotenciaFonte] = useState('3000W Raycus');
+  const [potenciaFonte, setPotenciaFonte] = useState('');
 
   // Status e Datas
   const [status, setStatus] = useState<StatusOS>('Orçamento');
@@ -79,14 +79,53 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
   const [novoItemPreco, setNovoItemPreco] = useState<string>('');
   const [novoItemCategoria, setNovoItemCategoria] = useState<CategoriaItem>('Consumíveis');
 
+  const clienteSelectRef = useRef<HTMLSelectElement>(null);
   const codigoInputRef = useRef<HTMLInputElement>(null);
   const quantidadeInputRef = useRef<HTMLInputElement>(null);
   const precoInputRef = useRef<HTMLInputElement>(null);
+  const [toastMensagem, setToastMensagem] = useState<string | null>(null);
 
-  // Foco inicial automático no campo de Código/Busca para começar a digitar sem clique
+  // Foco inicial automático no primeiro campo ("CLIENTE CADASTRADO")
   useEffect(() => {
-    codigoInputRef.current?.focus();
+    clienteSelectRef.current?.focus();
   }, []);
+
+  // 1. LIMPEZA AUTOMÁTICA DOS CAMPOS AO SALVAR (RESET COMPLETO):
+  const resetFormularioOS = () => {
+    // 1.c) Limpe todos os campos do cabeçalho
+    setClienteId('');
+    setModeloEquipamento('');
+    setPotenciaFonte('');
+    setNumeroSerie('');
+    setEquipamentoTipo('Laser Fibra');
+    setStatus('Orçamento');
+    setDataAbertura(new Date().toISOString().split('T')[0]);
+    setDataPrevisao(new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
+
+    // 1.d) Limpe os campos numéricos e subtotais dos Custos Operacionais voltando para R$ 0,00
+    setKmRodados(0);
+    setHorasTrabalhadas(0);
+    setDespesaAlimentacao(0);
+    setDespesaEstadia(0);
+    setOutrasDespesas(0);
+    setDescricaoDespesas('');
+
+    // 1.e) Esvazie completamente a Tabela de Consumíveis e Serviços
+    setItens([]);
+
+    // Linha rápida
+    setNovoItemCodigo('');
+    setNovoItemDescricao('');
+    setNovoItemQuantidade(1);
+    setNovoItemPreco('');
+
+    // 1.f) Painel "TOTAL DA OS" no topo é derivado e volta para R$ 0,00 automaticamente
+
+    // 2. FOCO INICIAL APÓS LIMPEZA: Reposicione o foco do cursor no primeiro campo ("CLIENTE CADASTRADO")
+    setTimeout(() => {
+      clienteSelectRef.current?.focus();
+    }, 60);
+  };
 
   // Informações Complementares
   const [condicoesPagamento, setCondicoesPagamento] = useState('28 DDL Boleto Bancário Faturado PJ');
@@ -226,9 +265,10 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
   };
 
   // Salvar Ordem de Serviço
-  const handleSalvar = (abrirImpressao: boolean) => {
+  const handleSalvar = (abrirImpressao: boolean = true, manterNaTela: boolean = false) => {
     if (!clienteId || !clienteAtual) {
       alert('Por favor, selecione um cliente cadastrado.');
+      clienteSelectRef.current?.focus();
       return;
     }
 
@@ -314,11 +354,39 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
       valorTotalGeral,
     };
 
-    onSalvarOS(novaOS, abrirImpressao);
+    onSalvarOS(novaOS, abrirImpressao, manterNaTela);
+
+    if (manterNaTela || !abrirImpressao) {
+      // 1.a) Exiba uma mensagem/toast de confirmação de sucesso
+      setToastMensagem(`✅ Ordem de Serviço ${numeroOS} salva com sucesso!`);
+      // 1.b até 1.f e 2) Limpeza automática de todos os campos e reposicionamento de foco
+      resetFormularioOS();
+      setTimeout(() => {
+        setToastMensagem(null);
+      }, 5000);
+    }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Toast Flutuante de Confirmação de Sucesso (Requisito 1.a) */}
+      {toastMensagem && (
+        <div className="fixed top-5 right-5 z-50 bg-emerald-600 text-white px-5 py-3.5 rounded-xl shadow-2xl border border-emerald-400 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-emerald-700 flex items-center justify-center font-bold text-base shadow-inner">
+            ✓
+          </div>
+          <div>
+            <div className="font-bold text-sm tracking-wide">{toastMensagem}</div>
+            <div className="text-[11px] text-emerald-100">Formulário resetado com sucesso. Pronto para o próximo atendimento!</div>
+          </div>
+          <button
+            onClick={() => setToastMensagem(null)}
+            className="ml-3 text-emerald-200 hover:text-white text-xs font-bold px-1.5 py-0.5 rounded hover:bg-emerald-700/50 transition cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       {/* Cabeçalho Superior Simplificado (Direto ao Ponto) */}
       <div className="bg-white rounded-xl p-5 sm:p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* 1. Nome/Título Principal e Subtítulo Discreto (Lado Esquerdo) */}
@@ -368,12 +436,14 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
                 Cliente Cadastrado <span className="text-red-500">*</span>
               </label>
               <select
+                ref={clienteSelectRef}
+                id="cliente_id"
                 value={clienteId}
                 onChange={(e) => setClienteId(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white"
                 required
               >
-                <option value="">Selecione o cliente...</option>
+                <option value="" disabled selected>-- Selecione um Cliente Cadastrado --</option>
                 {clientes.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.nome} ({c.cidade}/{c.estado}) - {c.documento}
@@ -1072,19 +1142,26 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
           <div className="mt-6 pt-4 border-t border-slate-800 space-y-2">
             <button
               type="button"
-              onClick={() => handleSalvar(true)}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg flex items-center justify-center gap-2 transition text-sm"
+              onClick={() => handleSalvar(false, true)}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg flex items-center justify-center gap-2 transition text-sm cursor-pointer"
             >
-              <Receipt className="w-4 h-4" />
+              <Check className="w-4 h-4 text-white" />
+              <span>Salvar e Iniciar Próxima OS (Limpar Formulário)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSalvar(true, false)}
+              className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 px-4 rounded-lg border border-slate-700 transition text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Receipt className="w-3.5 h-3.5 text-amber-400" />
               <span>Salvar e Imprimir Relatório A4 (imprimir_os.php)</span>
             </button>
             <button
               type="button"
-              onClick={() => handleSalvar(false)}
-              className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2 px-4 rounded-lg border border-slate-700 transition text-xs flex items-center justify-center gap-1.5"
+              onClick={resetFormularioOS}
+              className="w-full bg-transparent hover:bg-slate-900 text-slate-400 hover:text-slate-200 py-1.5 px-4 rounded-lg border border-slate-800 transition text-xs flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <Check className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Salvar Apenas na Base de Dados</span>
+              <span>Limpar Formulário Manualmente (Reset)</span>
             </button>
           </div>
         </div>
