@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Cliente, ItemOS, OrdemServico, CategoriaItem, StatusOS } from '../types';
-import { MFX_COMPANY } from '../data/company';
+import { MFX_COMPANY, CATALOGO_PREDEFINIDO } from '../data/company';
 import { formatCurrency, formatNumber } from '../utils/formatters';
 import { 
   FilePlus2, 
@@ -18,7 +18,12 @@ import {
   AlertTriangle,
   ArrowRight,
   Zap,
-  Package
+  Package,
+  Building2,
+  MapPin,
+  Phone,
+  Flame,
+  CornerDownLeft
 } from 'lucide-react';
 
 interface NovaOsViewProps {
@@ -62,52 +67,26 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
   const [outrasDespesas, setOutrasDespesas] = useState<number>(0);
   const [descricaoDespesas, setDescricaoDespesas] = useState<string>('');
 
-  // Tabela Dinâmica de Itens
-  const [itens, setItens] = useState<ItemOS[]>([
-    {
-      id: `it-${Date.now()}-1`,
-      tipoItem: 'produto',
-      categoria: 'Consumíveis',
-      codigo: 'MFX-LP30-15',
-      descricao: 'Lente de Proteção Laser Fibra D30 x 1.5mm Quartzo Fundido 1064nm',
-      unidade: 'UN',
-      ncm: '9027.90.99',
-      cfop: '5102',
-      precoUnitario: 120.0,
-      quantidade: 2,
-      valorTotal: 240.0,
-      prazoEntrega: 'Pronta Entrega',
-    },
-    {
-      id: `it-${Date.now()}-2`,
-      tipoItem: 'produto',
-      categoria: 'Consumíveis',
-      codigo: 'MFX-BD-15',
-      descricao: 'Bico Laser Duplo Cromado D32 H15 Calibre 1.5mm',
-      unidade: 'UN',
-      ncm: '8466.93.30',
-      cfop: '5102',
-      precoUnitario: 85.0,
-      quantidade: 3,
-      valorTotal: 255.0,
-      prazoEntrega: 'Pronta Entrega',
-    },
-    {
-      id: `it-${Date.now()}-3`,
-      tipoItem: 'servico',
-      categoria: 'Serviços Laser',
-      codigo: 'MFX-SRV-LASER-01',
-      descricao: 'Alinhamento Óptico do Feixe Laser Fibra, Colimação e Foco',
-      unidade: 'UN',
-      codigoLc116: '14.01',
-      aliquotaIss: 3.0,
-      cfop: '5933',
-      precoUnitario: 650.0,
-      quantidade: 1,
-      valorTotal: 650.0,
-      prazoEntrega: 'Executado In-loco',
-    },
-  ]);
+  // Tabela Dinâmica de Itens (inicia COMPLETAMENTE LIMPA conforme solicitado)
+  const [itens, setItens] = useState<ItemOS[]>([]);
+
+  // Linha de Lançamento Rápido de Itens (suporte à tecla ENTER para confirmação contínua)
+  const [novoItemTipo, setNovoItemTipo] = useState<'produto' | 'servico'>('produto');
+  const [novoItemCodigo, setNovoItemCodigo] = useState('');
+  const [novoItemDescricao, setNovoItemDescricao] = useState('');
+  const [novoItemUnidade, setNovoItemUnidade] = useState('UN');
+  const [novoItemQuantidade, setNovoItemQuantidade] = useState<number>(1);
+  const [novoItemPreco, setNovoItemPreco] = useState<string>('');
+  const [novoItemCategoria, setNovoItemCategoria] = useState<CategoriaItem>('Consumíveis');
+
+  const codigoInputRef = useRef<HTMLInputElement>(null);
+  const quantidadeInputRef = useRef<HTMLInputElement>(null);
+  const precoInputRef = useRef<HTMLInputElement>(null);
+
+  // Foco inicial automático no campo de Código/Busca para começar a digitar sem clique
+  useEffect(() => {
+    codigoInputRef.current?.focus();
+  }, []);
 
   // Informações Complementares
   const [condicoesPagamento, setCondicoesPagamento] = useState('28 DDL Boleto Bancário Faturado PJ');
@@ -147,43 +126,98 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
   // Cliente atual selecionado
   const clienteAtual = clientes.find((c) => c.id === clienteId);
 
-  // Adicionar Linha Vazia de Item
-  const handleAdicionarItemVazio = (tipoEscolhido: 'produto' | 'servico' = 'produto') => {
-    const isSrv = tipoEscolhido === 'servico';
-    const novoItem: ItemOS = {
+  // Manipulação de código e catálogo inteligente
+  const handleCodigoChange = (codigoDigitado: string) => {
+    setNovoItemCodigo(codigoDigitado);
+    const itemPre = CATALOGO_PREDEFINIDO.find(
+      (p) => p.codigo.toLowerCase() === codigoDigitado.trim().toLowerCase()
+    );
+    if (itemPre) {
+      setNovoItemDescricao(itemPre.descricao);
+      setNovoItemPreco(itemPre.precoSugerido.toString());
+      setNovoItemUnidade(itemPre.unidade);
+      setNovoItemTipo(itemPre.tipo);
+      setNovoItemCategoria(itemPre.categoria);
+    }
+  };
+
+  // Alternar Tipo Fiscal na linha rápida
+  const handleTipoChange = (tipo: 'produto' | 'servico') => {
+    setNovoItemTipo(tipo);
+    if (tipo === 'servico') {
+      if (novoItemUnidade === 'UN') setNovoItemUnidade('HR');
+      setNovoItemCategoria('Mão de Obra');
+    } else {
+      if (novoItemUnidade === 'HR') setNovoItemUnidade('UN');
+      setNovoItemCategoria('Consumíveis');
+    }
+  };
+
+  // Confirmar e Adicionar Novo Item à Tabela de Verificação
+  const handleConfirmarNovoItem = () => {
+    const desc = novoItemDescricao.trim() || novoItemCodigo.trim();
+    if (!desc) {
+      codigoInputRef.current?.focus();
+      return;
+    }
+
+    const precoNum = parseFloat(String(novoItemPreco).replace(',', '.')) || 0;
+    const qtdNum = Number(novoItemQuantidade) || 1;
+    const isSrv = novoItemTipo === 'servico';
+
+    const itemNovo: ItemOS = {
       id: `it-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      tipoItem: tipoEscolhido,
-      categoria: isSrv ? 'Mão de Obra' : 'Consumíveis',
-      codigo: isSrv ? 'MFX-SRV-NOVO' : 'MFX-CONS-NOVO',
-      descricao: '',
-      unidade: isSrv ? 'HR' : 'UN',
+      tipoItem: novoItemTipo,
+      categoria: novoItemCategoria || (isSrv ? 'Mão de Obra' : 'Consumíveis'),
+      codigo: (novoItemCodigo.trim() || (isSrv ? 'MFX-SRV' : 'MFX-ITEM')).toUpperCase(),
+      descricao: desc,
+      unidade: novoItemUnidade || (isSrv ? 'HR' : 'UN'),
+      precoUnitario: precoNum,
+      quantidade: qtdNum,
+      valorTotal: precoNum * qtdNum,
+      prazoEntrega: isSrv ? 'Executado In-loco' : 'Pronta Entrega',
       codigoLc116: isSrv ? '14.01' : undefined,
       aliquotaIss: isSrv ? 3.0 : undefined,
       ncm: !isSrv ? '8466.93.30' : undefined,
       cfop: isSrv ? '5933' : '5102',
-      precoUnitario: 0,
-      quantidade: 1,
-      valorTotal: 0,
-      prazoEntrega: isSrv ? 'Execução Técnica' : 'Pronta Entrega',
     };
-    setItens([...itens, novoItem]);
+
+    setItens((prev) => [...prev, itemNovo]);
+
+    // Reseta os campos da linha de lançamento rápido em branco
+    setNovoItemCodigo('');
+    setNovoItemDescricao('');
+    setNovoItemQuantidade(1);
+    setNovoItemPreco('');
+    setNovoItemUnidade(isSrv ? 'HR' : 'UN');
+
+    // Foco automático de volta no campo de Código/Busca da nova linha
+    setTimeout(() => {
+      codigoInputRef.current?.focus();
+    }, 10);
   };
 
-  // Atualizar Item Específico
-  const handleAtualizarItem = (id: string, campo: keyof ItemOS, valor: any) => {
-    setItens((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) return item;
-        const atualizado = { ...item, [campo]: valor };
-        // Recalcular valorTotal da linha se preço ou quantidade mudarem
-        if (campo === 'precoUnitario' || campo === 'quantidade') {
-          const preco = campo === 'precoUnitario' ? Number(valor) : item.precoUnitario;
-          const qtd = campo === 'quantidade' ? Number(valor) : item.quantidade;
-          atualizado.valorTotal = (preco || 0) * (qtd || 0);
-        }
-        return atualizado;
-      })
-    );
+  // Função dedicada para interceptar a tecla ENTER nos campos da tabela
+  const adicionarLinhaComEnter = (
+    campo: 'codigo' | 'descricao' | 'quantidade' | 'preco' | 'outro',
+    e: React.KeyboardEvent
+  ) => {
+    if (e.key === 'Enter') {
+      e.preventDefault(); // Impede submissão precoce ou perda de foco
+
+      // a) Se o campo atual for o CÓDIGO (ou Descrição): move o foco direto para o campo QUANTIDADE
+      if (campo === 'codigo' || campo === 'descricao') {
+        quantidadeInputRef.current?.focus();
+        quantidadeInputRef.current?.select();
+        return;
+      }
+
+      // b) Se o campo atual for a QUANTIDADE ou o VALOR:
+      // Confirma o item atual, adiciona a nova linha e move o foco automático para o CÓDIGO
+      if (campo === 'quantidade' || campo === 'preco' || campo === 'outro') {
+        handleConfirmarNovoItem();
+      }
+    }
   };
 
   // Remover Linha de Item
@@ -198,7 +232,31 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
       return;
     }
 
-    if (itens.length === 0 && totalOperacional === 0) {
+    let itensParaSalvar = [...itens];
+    // Se o usuário preencheu a linha rápida mas não apertou Enter antes de Salvar
+    if (novoItemDescricao.trim() || novoItemCodigo.trim()) {
+      const precoNum = parseFloat(String(novoItemPreco).replace(',', '.')) || 0;
+      const qtdNum = Number(novoItemQuantidade) || 1;
+      const isSrv = novoItemTipo === 'servico';
+      itensParaSalvar.push({
+        id: `it-${Date.now()}`,
+        tipoItem: novoItemTipo,
+        categoria: novoItemCategoria || (isSrv ? 'Mão de Obra' : 'Consumíveis'),
+        codigo: (novoItemCodigo.trim() || (isSrv ? 'MFX-SRV' : 'MFX-ITEM')).toUpperCase(),
+        descricao: novoItemDescricao.trim() || novoItemCodigo.trim(),
+        unidade: novoItemUnidade || (isSrv ? 'HR' : 'UN'),
+        precoUnitario: precoNum,
+        quantidade: qtdNum,
+        valorTotal: precoNum * qtdNum,
+        prazoEntrega: isSrv ? 'Executado In-loco' : 'Pronta Entrega',
+        codigoLc116: isSrv ? '14.01' : undefined,
+        aliquotaIss: isSrv ? 3.0 : undefined,
+        ncm: !isSrv ? '8466.93.30' : undefined,
+        cfop: isSrv ? '5933' : '5102',
+      });
+    }
+
+    if (itensParaSalvar.length === 0 && totalOperacional === 0) {
       alert('Inclua ao menos um item de serviço/consumível ou informe custos operacionais.');
       return;
     }
@@ -261,46 +319,32 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-bold font-mono uppercase tracking-wider bg-orange-100 text-orange-800 px-2 py-0.5 rounded">
-              Módulo: nova_os.php
-            </span>
-            <span className="text-xs text-slate-500 font-medium">| MFx Tecnologia Industrial</span>
+      {/* Cabeçalho Superior Simplificado (Direto ao Ponto) */}
+      <div className="bg-white rounded-xl p-5 sm:p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* 1. Nome/Título Principal e Subtítulo Discreto (Lado Esquerdo) */}
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-slate-950 flex items-center justify-center border border-slate-800 shadow-sm shrink-0">
+            <Flame className="w-6 h-6 text-amber-500" />
           </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <FilePlus2 className="w-6 h-6 text-red-600" />
-            Lançamento de Chamado e Ordem de Serviço (OS)
-          </h1>
-          <p className="text-sm text-slate-600 mt-1 max-w-2xl">
-            Cálculo em tempo real de deslocamento (<code className="font-mono text-red-600 font-bold">KM × R$ 2,50</code>), mão de obra técnica (<code className="font-mono text-red-600 font-bold">Horas × R$ 100,00</code>) e tabela dinâmica de consumíveis de Laser, Plasma e Oxicorte.
-          </p>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight flex items-center gap-1.5 leading-none">
+              <span>MF<span className="text-red-600">x</span></span>
+              <span className="text-slate-900 font-extrabold uppercase">TECNOLOGIA INDUSTRIAL</span>
+            </h1>
+            <p className="text-xs font-semibold text-slate-500 mt-1">
+              Ordem de Serviço & Assistência Técnica
+            </p>
+          </div>
         </div>
 
-        {/* Live Total Badge com Separação Fiscal */}
-        <div className="bg-slate-950 text-white p-4 rounded-xl shadow-md border-l-4 border-amber-500 min-w-[260px]">
-          <div className="text-[11px] uppercase tracking-wider text-slate-400 font-bold flex items-center justify-between">
-            <span>Total da OS</span>
-            <Calculator className="w-4 h-4 text-amber-400" />
+        {/* 2. Card Escuro Simplificado "TOTAL DA OS" (Lado Direito) */}
+        <div className="bg-slate-950 text-white px-6 py-4 rounded-xl shadow-md border-l-4 border-amber-500 border border-slate-800 min-w-[220px]">
+          <div className="text-[11px] uppercase tracking-wider text-slate-400 font-bold flex items-center gap-1.5">
+            <Calculator className="w-3.5 h-3.5 text-amber-400" />
+            <span>TOTAL DA OS</span>
           </div>
-          <div className="text-2xl font-black text-amber-400 font-mono mt-0.5">
+          <div className="text-2xl sm:text-3xl font-black text-amber-400 font-mono mt-1 tracking-tight">
             {formatCurrency(valorTotalGeral)}
-          </div>
-          <div className="text-[10px] text-slate-300 mt-1.5 space-y-0.5 border-t border-slate-800 pt-1 font-mono">
-            <div className="flex justify-between">
-              <span className="text-purple-300">NFS-e (Serviços):</span>
-              <span className="font-bold text-purple-300">{formatCurrency(subtotalNfseServicos)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-amber-300">NF-e (Peças):</span>
-              <span className="font-bold text-amber-300">{formatCurrency(subtotalNfeProdutos)}</span>
-            </div>
-            <div className="flex justify-between text-slate-400">
-              <span>Operacional:</span>
-              <span>{formatCurrency(totalOperacional)}</span>
-            </div>
           </div>
         </div>
       </div>
@@ -603,7 +647,7 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
 
       {/* 3. SEÇÃO DINÂMICA DE ITENS (CONSUMÍVEIS E SERVIÇOS) COM SUPORTE NF-e / NFS-e */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="bg-slate-900 text-white px-6 py-3.5">
+        <div className="bg-slate-900 text-white px-6 py-3.5 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-red-600 text-[11px] flex items-center justify-center font-mono font-bold">3</span>
             <div>
@@ -611,262 +655,243 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
                 Tabela de Consumíveis e Mão de Obra Técnica
               </h2>
               <div className="text-[10px] text-slate-400">
-                Separação automática para emissão de NFS-e (Serviços) e NF-e (Consumíveis)
+                Pressione ENTER em qualquer campo para confirmar e abrir uma nova linha automaticamente
               </div>
+            </div>
+          </div>
+          <span className="text-xs bg-slate-800 text-amber-300 border border-slate-700 px-3 py-1 rounded-lg font-mono font-bold">
+            Subtotal: {formatCurrency(totalItens)}
+          </span>
+        </div>
+
+        {/* ÁREA DE LANÇAMENTO RÁPIDO CONTÍNUO (ENTER PARA CONFIRMAR E AVANÇAR) */}
+        <div className="p-4 bg-slate-50 border-b border-slate-200">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2.5 flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-slate-800">
+              <CornerDownLeft className="w-3.5 h-3.5 text-red-600" />
+              Lançamento Rápido de Linha (Pressione [ENTER] para confirmar e avançar)
+            </span>
+            <span className="text-[11px] font-normal text-slate-500 hidden sm:inline">
+              [TAB] navega • [ENTER] confirma e adiciona linha
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+            {/* Tipo Fiscal */}
+            <div className="sm:col-span-2">
+              <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                Tipo Fiscal
+              </label>
+              <select
+                value={novoItemTipo}
+                onChange={(e) => handleTipoChange(e.target.value as 'produto' | 'servico')}
+                onKeyDown={(e) => adicionarLinhaComEnter('outro', e)}
+                className="w-full text-xs font-bold py-1.5 px-2 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              >
+                <option value="produto">📦 NF-e (Peça)</option>
+                <option value="servico">🛠️ NFS-e (Srv)</option>
+              </select>
+            </div>
+
+            {/* Código / Sugestão */}
+            <div className="sm:col-span-2">
+              <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                Código
+              </label>
+              <input
+                ref={codigoInputRef}
+                type="text"
+                value={novoItemCodigo}
+                onChange={(e) => handleCodigoChange(e.target.value)}
+                onKeyDown={(e) => adicionarLinhaComEnter('codigo', e)}
+                placeholder="Ex: MFX-LP30"
+                list="catalogoSugestoes"
+                className="w-full text-xs font-mono font-bold py-1.5 px-2.5 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              />
+              <datalist id="catalogoSugestoes">
+                {CATALOGO_PREDEFINIDO.map((item) => (
+                  <option key={item.codigo} value={item.codigo}>
+                    {item.descricao} ({item.unidade} - R$ {item.precoSugerido.toFixed(2)})
+                  </option>
+                ))}
+              </datalist>
+            </div>
+
+            {/* Descrição */}
+            <div className="sm:col-span-4">
+              <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                Descrição do Item ou Serviço <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={novoItemDescricao}
+                onChange={(e) => setNovoItemDescricao(e.target.value)}
+                onKeyDown={(e) => adicionarLinhaComEnter('descricao', e)}
+                placeholder="Descrição do consumível, peça ou serviço..."
+                className="w-full text-xs py-1.5 px-2.5 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              />
+            </div>
+
+            {/* Unidade */}
+            <div className="sm:col-span-1">
+              <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1 text-center">
+                Unid.
+              </label>
+              <select
+                value={novoItemUnidade}
+                onChange={(e) => setNovoItemUnidade(e.target.value)}
+                onKeyDown={(e) => adicionarLinhaComEnter('outro', e)}
+                className="w-full text-xs font-bold py-1.5 px-1 border border-slate-300 rounded-lg text-center bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              >
+                <option value="UN">UN</option>
+                <option value="HR">HR</option>
+                <option value="PC">PC</option>
+                <option value="JG">JG</option>
+                <option value="CX">CX</option>
+                <option value="DIA">DIA</option>
+                <option value="MT">MT</option>
+              </select>
+            </div>
+
+            {/* Quantidade */}
+            <div className="sm:col-span-1">
+              <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1 text-center">
+                Qtd
+              </label>
+              <input
+                ref={quantidadeInputRef}
+                type="number"
+                min="1"
+                step="1"
+                value={novoItemQuantidade}
+                onChange={(e) => setNovoItemQuantidade(Math.max(1, parseFloat(e.target.value) || 1))}
+                onKeyDown={(e) => adicionarLinhaComEnter('quantidade', e)}
+                className="w-full text-xs font-mono font-bold py-1.5 px-1 border border-slate-300 rounded-lg text-center bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              />
+            </div>
+
+            {/* Valor Unitário */}
+            <div className="sm:col-span-1">
+              <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1 text-right">
+                Valor (R$)
+              </label>
+              <input
+                ref={precoInputRef}
+                type="number"
+                step="0.01"
+                min="0"
+                value={novoItemPreco}
+                onChange={(e) => setNovoItemPreco(e.target.value)}
+                onKeyDown={(e) => adicionarLinhaComEnter('preco', e)}
+                placeholder="0,00"
+                className="w-full text-xs font-mono font-semibold py-1.5 px-2 border border-slate-300 rounded-lg text-right bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              />
+            </div>
+
+            {/* Botão Adicionar Linha */}
+            <div className="sm:col-span-1">
+              <button
+                type="button"
+                onClick={handleConfirmarNovoItem}
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-1.5 px-2 rounded-lg text-xs flex items-center justify-center gap-1 shadow-sm transition active:scale-95 cursor-pointer h-[34px]"
+                title="Pressione ENTER para adicionar e abrir nova linha"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline">Adicionar</span>
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Table of Dynamic Items */}
+        {/* TABELA DE VERIFICAÇÃO / RESUMO DOS ITENS LANÇADOS */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-800 text-white uppercase text-[11px] font-bold tracking-wider">
               <tr>
-                <th className="py-2.5 px-3 w-[110px]">Tipo Fiscal</th>
-                <th className="py-2.5 px-3 w-[140px]">Categoria</th>
-                <th className="py-2.5 px-3 w-[120px]">Código</th>
-                <th className="py-2.5 px-3">Descrição do Consumível ou Serviço</th>
+                <th className="py-2.5 px-3 w-[120px]">Tipo Fiscal</th>
+                <th className="py-2.5 px-3 w-[130px]">Código</th>
+                <th className="py-2.5 px-4">Descrição</th>
                 <th className="py-2.5 px-3 w-[70px] text-center">Unid.</th>
-                <th className="py-2.5 px-3 w-[140px]">Classificação</th>
-                <th className="py-2.5 px-3 w-[100px] text-right">Unitário</th>
-                <th className="py-2.5 px-3 w-[70px] text-center">Qtd</th>
-                <th className="py-2.5 px-3 w-[105px] text-right">Total (R$)</th>
-                <th className="py-2.5 px-3 w-[120px]">Prazo</th>
-                <th className="py-2.5 px-3 w-[45px] text-center">Ação</th>
+                <th className="py-2.5 px-3 w-[80px] text-center">Qtd</th>
+                <th className="py-2.5 px-3 w-[120px] text-right">Valor Unitário</th>
+                <th className="py-2.5 px-3 w-[130px] text-right">Subtotal (R$)</th>
+                <th className="py-2.5 px-3 w-[50px] text-center">Ação</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {itens.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="py-8 text-center text-slate-500">
-                    <p className="mb-2">Nenhum item adicionado ainda à Ordem de Serviço.</p>
-                    <button
-                      type="button"
-                      onClick={() => handleAdicionarItemVazio('produto')}
-                      className="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-1.5 rounded inline-flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>+ Adicionar Linha</span>
-                    </button>
+                  <td colSpan={8} className="py-10 text-center text-slate-400">
+                    <p className="font-semibold text-slate-600">Nenhum item lançado ainda na Ordem de Serviço.</p>
+                    <p className="text-[11px] mt-1 text-slate-400">
+                      Preencha os campos na linha acima e pressione <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700 font-mono text-[10px]">ENTER</kbd> para adicionar o primeiro item.
+                    </p>
                   </td>
                 </tr>
               ) : (
                 itens.map((item) => {
                   const isSrv = item.tipoItem === 'servico' || item.categoria === 'Mão de Obra' || item.categoria.startsWith('Serviços');
-
                   return (
-                    <tr key={item.id} className="hover:bg-slate-50/70 transition">
-                      
-                      {/* Tipo Fiscal (Toggle Rápido) */}
-                      <td className="py-2 px-3">
-                        <select
-                          value={item.tipoItem || (isSrv ? 'servico' : 'produto')}
-                          onChange={(e) => {
-                            const novoTipo = e.target.value as 'produto' | 'servico';
-                            handleAtualizarItem(item.id, 'tipoItem', novoTipo);
-                            if (novoTipo === 'servico') {
-                              handleAtualizarItem(item.id, 'categoria', 'Mão de Obra');
-                              handleAtualizarItem(item.id, 'unidade', 'HR');
-                              handleAtualizarItem(item.id, 'codigoLc116', '14.01');
-                              handleAtualizarItem(item.id, 'aliquotaIss', 3.0);
-                              handleAtualizarItem(item.id, 'cfop', '5933');
-                            } else {
-                              handleAtualizarItem(item.id, 'categoria', 'Consumíveis');
-                              handleAtualizarItem(item.id, 'unidade', 'UN');
-                              handleAtualizarItem(item.id, 'ncm', '8466.93.30');
-                              handleAtualizarItem(item.id, 'cfop', '5102');
-                            }
-                          }}
-                          className={`w-full text-[10px] font-bold py-1 px-1 rounded border ${
-                            isSrv
-                              ? 'bg-purple-50 text-purple-800 border-purple-200'
-                              : 'bg-amber-50 text-amber-800 border-amber-200'
-                          }`}
-                        >
-                          <option value="produto">📦 NF-e Peça</option>
-                          <option value="servico">🛠️ NFS-e Srv</option>
-                        </select>
+                    <tr key={item.id} className="hover:bg-slate-50/80 transition">
+                      <td className="py-2.5 px-3">
+                        <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                          isSrv
+                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            : 'bg-amber-50 text-amber-700 border-amber-200'
+                        }`}>
+                          {isSrv ? '🛠️ NFS-e Srv' : '📦 NF-e Peça'}
+                        </span>
                       </td>
-
-                      {/* Categoria */}
-                      <td className="py-2 px-3">
-                        <select
-                          value={item.categoria}
-                          onChange={(e) => handleAtualizarItem(item.id, 'categoria', e.target.value as CategoriaItem)}
-                          className="w-full text-xs py-1 px-1.5 border border-slate-300 rounded font-medium bg-white"
-                        >
-                          <option value="Consumíveis">Consumíveis</option>
-                          <option value="Mão de Obra">Mão de Obra</option>
-                          <option value="Serviços Laser">Serviços Laser</option>
-                          <option value="Serviços Oxicorte">Serviços Oxicorte</option>
-                          <option value="Serviços Plasma">Serviços Plasma</option>
-                          <option value="Peças & Acessórios">Peças & Acessórios</option>
-                        </select>
+                      <td className="py-2.5 px-3 font-mono font-bold text-slate-800">
+                        {item.codigo}
                       </td>
-
-                      {/* Código */}
-                      <td className="py-2 px-3">
-                        <input
-                          type="text"
-                          value={item.codigo}
-                          onChange={(e) => handleAtualizarItem(item.id, 'codigo', e.target.value)}
-                          placeholder="Ex: MFX-LP30"
-                          className="w-full text-xs font-mono font-bold py-1 px-2 border border-slate-300 rounded text-center bg-white"
-                        />
+                      <td className="py-2.5 px-4 text-slate-900 font-medium">
+                        {item.descricao}
                       </td>
-
-                      {/* Descrição */}
-                      <td className="py-2 px-3">
-                        <input
-                          type="text"
-                          value={item.descricao}
-                          onChange={(e) => handleAtualizarItem(item.id, 'descricao', e.target.value)}
-                          placeholder="Descrição do consumível ou serviço realizado..."
-                          className="w-full text-xs py-1 px-2 border border-slate-300 rounded bg-white"
-                          required
-                        />
+                      <td className="py-2.5 px-3 text-center font-mono font-semibold text-slate-600">
+                        {item.unidade}
                       </td>
-
-                      {/* Unidade (HR, UN, DIA, PC, etc.) */}
-                      <td className="py-2 px-3 text-center">
-                        <select
-                          value={item.unidade || (isSrv ? 'HR' : 'UN')}
-                          onChange={(e) => handleAtualizarItem(item.id, 'unidade', e.target.value)}
-                          className="w-full text-xs py-1 px-1 border border-slate-300 rounded font-mono font-bold text-center bg-white"
-                        >
-                          {isSrv ? (
-                            <>
-                              <option value="HR">HR</option>
-                              <option value="UN">UN</option>
-                              <option value="DIA">DIA</option>
-                            </>
-                          ) : (
-                            <>
-                              <option value="UN">UN</option>
-                              <option value="PC">PC</option>
-                              <option value="JG">JG</option>
-                              <option value="CX">CX</option>
-                              <option value="MT">MT</option>
-                            </>
-                          )}
-                        </select>
+                      <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-800">
+                        {item.quantidade}
                       </td>
-
-                      {/* Classificação Fiscal (NCM ou LC 116) */}
-                      <td className="py-2 px-3">
-                        {isSrv ? (
-                          <div className="flex items-center gap-1">
-                            <span className="text-[10px] text-purple-700 font-bold shrink-0">LC:</span>
-                            <input
-                              type="text"
-                              value={item.codigoLc116 || '14.01'}
-                              onChange={(e) => handleAtualizarItem(item.id, 'codigoLc116', e.target.value)}
-                              placeholder="14.01"
-                              className="w-full text-[11px] font-mono py-0.5 px-1.5 border border-purple-200 rounded bg-purple-50/50"
-                              title="Item da Lista de Serviços LC 116/2003"
-                            />
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1">
-                            <span className="text-[10px] text-amber-700 font-bold shrink-0">NCM:</span>
-                            <input
-                              type="text"
-                              value={item.ncm || '8466.93.30'}
-                              onChange={(e) => handleAtualizarItem(item.id, 'ncm', e.target.value)}
-                              placeholder="9027.90.99"
-                              className="w-full text-[11px] font-mono py-0.5 px-1.5 border border-amber-200 rounded bg-amber-50/50"
-                              title="Nomenclatura Comum do Mercosul"
-                            />
-                          </div>
-                        )}
+                      <td className="py-2.5 px-3 text-right font-mono text-slate-700">
+                        {formatCurrency(item.precoUnitario)}
                       </td>
-
-                      {/* Preço Unitário */}
-                      <td className="py-2 px-3">
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={item.precoUnitario}
-                          onChange={(e) => handleAtualizarItem(item.id, 'precoUnitario', parseFloat(e.target.value) || 0)}
-                          className="w-full text-xs py-1 px-2 text-right font-mono font-semibold border border-slate-300 rounded bg-white"
-                        />
-                      </td>
-
-                      {/* Quantidade */}
-                      <td className="py-2 px-3">
-                        <input
-                          type="number"
-                          min="1"
-                          step="1"
-                          value={item.quantidade}
-                          onChange={(e) => handleAtualizarItem(item.id, 'quantidade', parseFloat(e.target.value) || 1)}
-                          className="w-full text-xs py-1 px-1 text-center font-mono font-bold border border-slate-300 rounded bg-white"
-                        />
-                      </td>
-
-                      {/* Valor Total Calculado */}
-                      <td className="py-2 px-3 text-right font-mono font-bold text-slate-900 bg-slate-50/50">
+                      <td className="py-2.5 px-3 text-right font-mono font-black text-slate-900">
                         {formatCurrency(item.valorTotal)}
                       </td>
-
-                      {/* Prazo de Entrega */}
-                      <td className="py-2 px-3">
-                        <input
-                          type="text"
-                          value={item.prazoEntrega}
-                          onChange={(e) => handleAtualizarItem(item.id, 'prazoEntrega', e.target.value)}
-                          placeholder="Pronta Entrega"
-                          className="w-full text-xs py-1 px-2 border border-slate-300 rounded bg-white"
-                        />
-                      </td>
-
-                      {/* Remover */}
-                      <td className="py-2 px-3 text-center">
+                      <td className="py-2.5 px-3 text-center">
                         <button
                           type="button"
                           onClick={() => handleRemoverItem(item.id)}
-                          className="text-slate-400 hover:text-red-600 p-1 rounded transition"
-                          title="Remover este item"
+                          className="text-slate-400 hover:text-red-600 p-1.5 rounded-md hover:bg-red-50 transition cursor-pointer"
+                          title="Remover este item da OS"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </td>
-
                     </tr>
                   );
                 })
               )}
             </tbody>
             {itens.length > 0 && (
-              <tfoot className="bg-slate-100 font-bold text-slate-900">
+              <tfoot className="bg-slate-100 font-bold text-slate-900 border-t border-slate-300">
                 <tr>
-                  <td colSpan={8} className="py-2.5 px-4 text-right uppercase text-xs">
+                  <td colSpan={4} className="py-2.5 px-4 text-xs text-slate-600">
+                    Total de Itens Lançados: <strong className="text-slate-900 font-mono">{itens.length}</strong>
+                  </td>
+                  <td colSpan={2} className="py-2.5 px-3 text-right uppercase text-xs text-slate-700">
                     Subtotal de Consumíveis e Serviços:
                   </td>
-                  <td className="py-2.5 px-3 text-right font-mono text-sm text-red-700">
+                  <td className="py-2.5 px-3 text-right font-mono text-sm font-black text-red-700">
                     {formatCurrency(totalItens)}
                   </td>
-                  <td colSpan={2}></td>
+                  <td></td>
                 </tr>
               </tfoot>
             )}
           </table>
-        </div>
-
-        {/* Barra de Ação da Tabela: Adicionar Linha */}
-        <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => handleAdicionarItemVazio('produto')}
-            className="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-xs cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>+ Adicionar Linha</span>
-          </button>
-          <span className="text-[11px] text-slate-500">
-            Lançamento direto de consumíveis, peças ou serviços na tabela.
-          </span>
         </div>
 
         {/* DEMONSTRATIVO FISCAL DINÂMICO PARA FATURAMENTO (NFS-e x NF-e) */}

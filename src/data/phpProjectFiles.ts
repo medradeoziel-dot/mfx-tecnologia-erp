@@ -1675,12 +1675,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
 </nav>
 
 <div class="container my-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h3 class="fw-bold text-dark mb-0"><i class="fa-solid fa-file-circle-plus text-danger"></i> Nova Ordem de Serviço</h3>
-            <p class="text-muted small mb-0">Custos operacionais automatizados e itens dinâmicos com cálculo em tempo real.</p>
+    <!-- Cabeçalho Superior Simplificado (Direto ao Ponto) -->
+    <div class="card card-custom p-3 p-md-4 mb-4 shadow-sm border-0 bg-white">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <!-- 1. Nome/Título Principal e Subtítulo Discreto (Lado Esquerdo) -->
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-dark text-warning p-2 rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px;">
+                    <i class="fa-solid fa-fire-flame-curved fs-4"></i>
+                </div>
+                <div>
+                    <h3 class="fw-black text-dark font-monospace mb-0 d-flex align-items-center gap-2">
+                        <span>MF<span class="text-danger">x</span></span>
+                        <span class="fw-bold text-uppercase fs-4">TECNOLOGIA INDUSTRIAL</span>
+                    </h3>
+                    <p class="text-secondary small mb-0 mt-1">Ordem de Serviço & Assistência Técnica</p>
+                </div>
+            </div>
+
+            <!-- 2. Card Escuro Simplificado "TOTAL DA OS" (Lado Direito) -->
+            <div class="bg-dark text-white px-4 py-3 rounded-3 shadow border-start border-4 border-warning" style="min-width: 220px;">
+                <div class="text-uppercase small text-secondary fw-bold">
+                    <i class="fa-solid fa-calculator text-warning me-1"></i> TOTAL DA OS
+                </div>
+                <div class="fs-3 fw-bold text-warning font-monospace mt-1 mb-0" id="badgeTotalGeral">
+                    R$ 0,00
+                </div>
+            </div>
         </div>
-        <a href="clientes.php" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-user-plus"></i> Novo Cliente</a>
     </div>
 
     <?php if (!empty($mensagem)): ?>
@@ -1813,31 +1834,108 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
             </div>
         </div>
 
-        <div class="card card-custom mb-4">
-            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fw-bold text-dark">
-                    <i class="fa-solid fa-cart-shopping text-primary"></i> 3. Tabela de Consumíveis e Serviços
-                </h5>
-                <button type="button" class="btn btn-primary btn-sm fw-semibold" onclick="adicionarLinhaItem()">
-                    <i class="fa-solid fa-plus"></i> Adicionar Item
-                </button>
+        <!-- 3. TABELA DE CONSUMÍVEIS E MÃO DE OBRA TÉCNICA (LANÇAMENTO RÁPIDO & VERIFICAÇÃO) -->
+        <div class="card card-custom mb-4 border-0 shadow-sm bg-white">
+            <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fa-solid fa-cart-shopping text-warning me-2"></i> 3. Tabela de Consumíveis e Mão de Obra Técnica
+                    </h5>
+                    <small class="text-secondary">Pressione ENTER em qualquer campo para confirmar e abrir uma nova linha automaticamente.</small>
+                </div>
+                <span class="badge bg-secondary font-monospace" id="badgeSubtotalItensTop">Subtotal: R$ 0,00</span>
             </div>
+
+            <!-- LINHA DE LANÇAMENTO RÁPIDO CONTÍNUO (ENTER PARA CONFIRMAR E AVANÇAR) -->
+            <div class="p-3 bg-light border-bottom">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold small text-dark">
+                        <i class="fa-solid fa-keyboard text-danger me-1"></i> Lançamento Rápido de Linha (Pressione [ENTER] para confirmar e avançar)
+                    </span>
+                    <span class="text-muted small d-none d-md-inline">[TAB] navega entre campos • [ENTER] insere o item</span>
+                </div>
+                <div class="row g-2 align-items-end" id="linhaLancamentoRapido">
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold mb-1">Tipo Fiscal</label>
+                        <select class="form-select form-select-sm" id="novo_tipo_fiscal" onkeydown="adicionarLinhaComEnter(event, this)">
+                            <option value="produto">📦 NF-e (Peça)</option>
+                            <option value="servico">🛠️ NFS-e (Srv)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold mb-1">Código</label>
+                        <input type="text" class="form-control form-control-sm font-monospace fw-bold" id="novo_codigo" placeholder="Ex: MFX-LP30" list="listaSugestoesPhp" onkeydown="adicionarLinhaComEnter(event, this)">
+                        <datalist id="listaSugestoesPhp">
+                            <option value="MFX-LP30-15">Lente Proteção D30 Laser</option>
+                            <option value="MFX-BD-15">Bico Laser Duplo 1.5mm</option>
+                            <option value="MFX-BS-20">Bico Laser Simples 2.0mm</option>
+                            <option value="MFX-AC-28">Anel Cerâmico D28mm</option>
+                            <option value="MFX-CC-01">Cabo Sensor Capacitivo</option>
+                            <option value="MFX-SRV-LASER-01">Alinhamento Óptico Laser</option>
+                            <option value="MFX-SRV-REV-01">Revisão Preventiva CNC</option>
+                        </datalist>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold mb-1">Descrição do Consumível ou Serviço *</label>
+                        <input type="text" class="form-control form-control-sm" id="novo_descricao" placeholder="Descrição do consumível ou serviço realizado..." onkeydown="adicionarLinhaComEnter(event, this)">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label small fw-bold mb-1 text-center d-block">Unid.</label>
+                        <select class="form-select form-select-sm text-center" id="novo_unidade" onkeydown="adicionarLinhaComEnter(event, this)">
+                            <option value="UN">UN</option>
+                            <option value="HR">HR</option>
+                            <option value="PC">PC</option>
+                            <option value="JG">JG</option>
+                            <option value="CX">CX</option>
+                            <option value="DIA">DIA</option>
+                            <option value="MT">MT</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label small fw-bold mb-1 text-center d-block">Qtd</label>
+                        <input type="number" step="1" min="1" class="form-control form-control-sm text-center font-monospace fw-bold" id="novo_quantidade" value="1" onkeydown="adicionarLinhaComEnter(event, this)">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label small fw-bold mb-1 text-end d-block">Valor (R$)</label>
+                        <input type="number" step="0.01" min="0" class="form-control form-control-sm text-end font-monospace" id="novo_preco" placeholder="0,00" onkeydown="adicionarLinhaComEnter(event, this)">
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-dark btn-sm w-100 fw-bold" onclick="confirmarNovoItemPhp()" title="Pressione ENTER para adicionar">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABELA DE VERIFICAÇÃO / RESUMO DOS ITENS LANÇADOS -->
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-bordered table-striped align-middle mb-0" id="tabelaItens">
+                    <table class="table table-bordered table-striped table-hover align-middle mb-0" id="tabelaItens">
                         <thead class="table-dark">
                             <tr>
-                                <th style="width: 15%;">Categoria</th>
-                                <th style="width: 15%;">Código</th>
-                                <th style="width: 32%;">Descrição</th>
-                                <th style="width: 12%;">Vlr. Unitário</th>
-                                <th style="width: 8%;">Qtd</th>
-                                <th style="width: 10%;">Total</th>
-                                <th style="width: 13%;">Prazo</th>
-                                <th style="width: 5%;" class="text-center">Ação</th>
+                                <th style="width: 12%;">Tipo Fiscal</th>
+                                <th style="width: 13%;">Código</th>
+                                <th>Descrição</th>
+                                <th style="width: 8%;" class="text-center">Unidade</th>
+                                <th style="width: 8%;" class="text-center">Quantidade</th>
+                                <th style="width: 12%;" class="text-end">Valor Unitário</th>
+                                <th style="width: 14%;" class="text-end">Subtotal (R$)</th>
+                                <th style="width: 6%;" class="text-center">Ação</th>
                             </tr>
                         </thead>
-                        <tbody id="corpoItens"></tbody>
+                        <tbody id="corpoItens">
+                            <!-- Inicia completamente vazia; itens adicionados via ENTER ou botão -->
+                        </tbody>
+                        <tfoot class="table-light fw-bold" id="tfootItens" style="display: none;">
+                            <tr>
+                                <td colspan="4" class="text-muted small">
+                                    Total de itens na lista: <strong id="qtdTotalItensLista" class="text-dark">0</strong>
+                                </td>
+                                <td colspan="2" class="text-end text-uppercase small">Subtotal de Consumíveis e Serviços:</td>
+                                <td class="text-end text-danger font-monospace fs-6" id="subtotalItensTfoot">R$ 0,00</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
@@ -1853,33 +1951,244 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
 
 <script>
 let contadorItens = 0;
-function adicionarLinhaItem(dados = null) {
+
+function formatMoeda(val) {
+    return 'R$ ' + (Number(val) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Catálogo rápido de sugestões para autofill ao digitar o código
+const CATALOGO_PHP = {
+    'MFX-LP30-15': { desc: 'Lente de Proteção Laser Fibra D30 x 1.5mm', preco: 120.00, un: 'UN', tipo: 'produto' },
+    'MFX-BD-15': { desc: 'Bico Laser Duplo Cromado D32 H15 Calibre 1.5mm', preco: 85.00, un: 'UN', tipo: 'produto' },
+    'MFX-BS-20': { desc: 'Bico Laser Simples Cromado D32 H15 Calibre 2.0mm', preco: 85.00, un: 'UN', tipo: 'produto' },
+    'MFX-AC-28': { desc: 'Anel Cerâmico para Cabeçote Raytools D28mm', preco: 220.00, un: 'UN', tipo: 'produto' },
+    'MFX-CC-01': { desc: 'Cabo Sensor Capacitivo SMA x BNC BCS100', preco: 340.00, un: 'UN', tipo: 'produto' },
+    'MFX-SRV-LASER-01': { desc: 'Alinhamento Óptico do Feixe Laser Fibra', preco: 650.00, un: 'HR', tipo: 'servico' },
+    'MFX-SRV-REV-01': { desc: 'Revisão Preventiva Mecânica e Pneumática CNC', preco: 800.00, un: 'HR', tipo: 'servico' }
+};
+
+document.getElementById('novo_codigo')?.addEventListener('input', function(e) {
+    let cod = e.target.value.trim().toUpperCase();
+    if (CATALOGO_PHP[cod]) {
+        let item = CATALOGO_PHP[cod];
+        document.getElementById('novo_descricao').value = item.desc;
+        document.getElementById('novo_preco').value = item.preco.toFixed(2);
+        document.getElementById('novo_unidade').value = item.un;
+        document.getElementById('novo_tipo_fiscal').value = item.tipo;
+    }
+});
+
+document.getElementById('novo_tipo_fiscal')?.addEventListener('change', function(e) {
+    if (e.target.value === 'servico') {
+        document.getElementById('novo_unidade').value = 'HR';
+    } else {
+        document.getElementById('novo_unidade').value = 'UN';
+    }
+});
+
+// Confirmar e adicionar linha na tabela de verificação
+function confirmarNovoItemPhp() {
+    let codigoEl = document.getElementById('novo_codigo');
+    let descEl = document.getElementById('novo_descricao');
+    let precoEl = document.getElementById('novo_preco');
+    let qtdEl = document.getElementById('novo_quantidade');
+    let unidEl = document.getElementById('novo_unidade');
+    let tipoEl = document.getElementById('novo_tipo_fiscal');
+
+    let desc = descEl.value.trim() || codigoEl.value.trim();
+    if (!desc) {
+        codigoEl.focus();
+        return;
+    }
+
+    let codigo = (codigoEl.value.trim() || (tipoEl.value === 'servico' ? 'MFX-SRV' : 'MFX-ITEM')).toUpperCase();
+    let preco = parseFloat(precoEl.value) || 0;
+    let qtd = parseFloat(qtdEl.value) || 1;
+    let subtotal = preco * qtd;
+    let unidade = unidEl.value;
+    let tipo = tipoEl.value;
+    let isSrv = (tipo === 'servico');
+
     contadorItens++;
     const corpo = document.getElementById('corpoItens');
-    const modelo = dados || { cat: 'Consumíveis', cod: 'MFX-LP30-15', desc: 'Lente de Proteção Laser D30 Quartzo', preco: 120.00, qtd: 1, prazo: 'Pronta Entrega' };
 
     const tr = document.createElement('tr');
     tr.id = 'linha_item_' + contadorItens;
     tr.innerHTML = \`
         <td>
-            <select name="item_categoria[]" class="form-select form-select-sm">
-                <option value="Consumíveis">Consumíveis</option>
-                <option value="Serviços Laser">Serviços Laser</option>
-                <option value="Serviços Oxicorte">Serviços Oxicorte</option>
-                <option value="Serviços Plasma">Serviços Plasma</option>
-            </select>
+            <span class="badge \${isSrv ? 'bg-purple-subtle text-purple border border-purple-subtle' : 'bg-warning-subtle text-dark border border-warning-subtle'}">
+                \${isSrv ? '🛠️ NFS-e Srv' : '📦 NF-e Peça'}
+            </span>
+            <input type="hidden" name="item_categoria[]" value="\${isSrv ? 'Serviços Laser' : 'Consumíveis'}">
         </td>
-        <td><input type="text" name="item_codigo[]" class="form-control form-control-sm text-center font-monospace fw-bold" value="\${modelo.cod}"></td>
-        <td><input type="text" name="item_descricao[]" class="form-control form-control-sm" value="\${modelo.desc}" required></td>
-        <td><input type="number" step="0.01" name="item_preco[]" class="form-control form-control-sm text-end" value="\${modelo.preco.toFixed(2)}"></td>
-        <td><input type="number" step="1" name="item_quantidade[]" class="form-control form-control-sm text-center" value="\${modelo.qtd}"></td>
-        <td><input type="text" class="form-control form-control-sm text-end fw-bold bg-light" readonly value="R$ 0,00"></td>
-        <td><input type="text" name="item_prazo[]" class="form-control form-control-sm" value="\${modelo.prazo}"></td>
-        <td class="text-center"><button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('tr').remove()"><i class="fa-solid fa-trash"></i></button></td>
+        <td class="font-monospace fw-bold text-dark">
+            \${codigo}
+            <input type="hidden" name="item_codigo[]" value="\${codigo}">
+        </td>
+        <td>
+            \${desc}
+            <input type="hidden" name="item_descricao[]" value="\${desc}">
+        </td>
+        <td class="text-center font-monospace">
+            \${unidade}
+            <input type="hidden" name="item_unidade[]" value="\${unidade}">
+        </td>
+        <td class="text-center font-monospace fw-bold">
+            \${qtd}
+            <input type="hidden" name="item_quantidade[]" value="\${qtd}">
+        </td>
+        <td class="text-end font-monospace">
+            \${formatMoeda(preco)}
+            <input type="hidden" name="item_preco[]" value="\${preco}">
+        </td>
+        <td class="text-end font-monospace fw-bold text-dark">
+            \${formatMoeda(subtotal)}
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2" onclick="removerItemLinha(this)" title="Remover item">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+        </td>
     \`;
     corpo.appendChild(tr);
+
+    // Reseta campos da linha rápida
+    if (codigoEl) codigoEl.value = '';
+    if (descEl) descEl.value = '';
+    if (precoEl) precoEl.value = '';
+    if (qtdEl) qtdEl.value = '1';
+
+    // Foco automático de volta no campo CÓDIGO/BUSCA da nova linha
+    setTimeout(() => {
+        if (codigoEl) {
+            codigoEl.focus();
+            codigoEl.select?.();
+        }
+    }, 10);
+
+    recalcularTotaisOS();
 }
-window.addEventListener('DOMContentLoaded', () => adicionarLinhaItem());
+
+function removerItemLinha(btn) {
+    btn.closest('tr').remove();
+    recalcularTotaisOS();
+}
+
+// 1. INTERCEPTAR A TECLA ENTER & 2. FLUXO DE DIGITAÇÃO CONTÍNUA COM TECLADO
+function adicionarLinhaComEnter(event, elemento) {
+    if (event.key === 'Enter' || event.keyCode === 13) {
+        // a) Execute e.preventDefault() IMEDIATAMENTE para impedir que o formulário da OS seja enviado/salvo antes da hora
+        event.preventDefault();
+        event.stopPropagation();
+
+        const id = elemento ? elemento.id : '';
+
+        // c) Se o campo atual for o CÓDIGO (ou Descrição): mova o foco direto para o campo QUANTIDADE
+        if (id === 'novo_codigo' || id === 'novo_descricao') {
+            const qtdInput = document.getElementById('novo_quantidade');
+            if (qtdInput) {
+                qtdInput.focus();
+                qtdInput.select();
+            }
+            return false;
+        }
+
+        // b) Se o campo atual for a QUANTIDADE ou o VALOR (ou Unidade/Tipo):
+        // Confirma o item atual, adiciona uma nova linha em branco na tabela e mova o foco automático para o CÓDIGO/BUSCA da nova linha
+        if (id === 'novo_quantidade' || id === 'novo_preco' || id === 'novo_unidade' || id === 'novo_tipo_fiscal') {
+            confirmarNovoItemPhp();
+            return false;
+        }
+
+        confirmarNovoItemPhp();
+        return false;
+    }
+}
+
+// Ouvinte de keydown nos inputs da linha rápida de itens
+const inputsLinhaRapida = ['novo_codigo', 'novo_descricao', 'novo_quantidade', 'novo_preco', 'novo_unidade', 'novo_tipo_fiscal'];
+inputsLinhaRapida.forEach(id => {
+    document.getElementById(id)?.addEventListener('keydown', function(e) {
+        adicionarLinhaComEnter(e, this);
+    });
+});
+
+// Impede envio indesejado do formulário principal ao pressionar ENTER em campos normais
+document.getElementById('formNovaOS')?.addEventListener('keydown', function(e) {
+    if ((e.key === 'Enter' || e.keyCode === 13) && e.target.tagName !== 'TEXTAREA') {
+        const id = e.target.id;
+        if (inputsLinhaRapida.includes(id)) {
+            // já tratado por adicionarLinhaComEnter
+        } else {
+            e.preventDefault();
+        }
+    }
+});
+
+function recalcularTotaisOS() {
+    let km = parseFloat(document.getElementById('km_rodados')?.value || 0) || 0;
+    let vlrKm = parseFloat(document.getElementById('valor_unitario_km')?.value || 0) || 0;
+    let horas = parseFloat(document.getElementById('horas_trabalhadas')?.value || 0) || 0;
+    let vlrHora = parseFloat(document.getElementById('valor_hora_tecnica')?.value || 0) || 0;
+    let alim = parseFloat(document.getElementById('despesa_alimentacao')?.value || 0) || 0;
+    let estadia = parseFloat(document.getElementById('despesa_estadia')?.value || 0) || 0;
+    let outras = parseFloat(document.getElementById('outras_despesas')?.value || 0) || 0;
+
+    let totalOperacional = (km * vlrKm) + (horas * vlrHora) + alim + estadia + outras;
+    let totalNfse = 0;
+    let totalNfe = 0;
+    let countItens = 0;
+
+    document.querySelectorAll('#corpoItens tr').forEach(row => {
+        let cat = row.querySelector('input[name="item_categoria[]"]')?.value || '';
+        let preco = parseFloat(row.querySelector('input[name="item_preco[]"]')?.value || 0) || 0;
+        let qtd = parseFloat(row.querySelector('input[name="item_quantidade[]"]')?.value || 0) || 0;
+        let sub = preco * qtd;
+        countItens++;
+
+        if (cat.startsWith('Serviço') || cat === 'Mão de Obra') {
+            totalNfse += sub;
+        } else {
+            totalNfe += sub;
+        }
+    });
+
+    let totalItens = totalNfse + totalNfe;
+    let totalGeral = totalOperacional + totalItens;
+
+    // Atualiza Total Geral no topo
+    let elTotal = document.getElementById('badgeTotalGeral');
+    if (elTotal) elTotal.textContent = formatMoeda(totalGeral);
+
+    // Atualiza Subtotais no card de itens
+    let elSubtop = document.getElementById('badgeSubtotalItensTop');
+    if (elSubtop) elSubtop.textContent = 'Subtotal: ' + formatMoeda(totalItens);
+
+    let elTfoot = document.getElementById('tfootItens');
+    if (elTfoot) {
+        elTfoot.style.display = countItens > 0 ? '' : 'none';
+    }
+    let elQtd = document.getElementById('qtdTotalItensLista');
+    if (elQtd) elQtd.textContent = countItens;
+
+    let elSubtFoot = document.getElementById('subtotalItensTfoot');
+    if (elSubtFoot) elSubtFoot.textContent = formatMoeda(totalItens);
+}
+
+document.addEventListener('input', (e) => {
+    if (e.target.matches('.calc-trigger')) {
+        recalcularTotaisOS();
+    }
+});
+
+// 3. TABELA LIMPA: Tabela inicia vazia e o foco vai direto para o campo de Código/Busca da linha rápida
+window.addEventListener('DOMContentLoaded', () => {
+    const codInput = document.getElementById('novo_codigo');
+    if (codInput) {
+        codInput.focus();
+    }
+    recalcularTotaisOS();
+});
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
