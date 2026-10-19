@@ -398,8 +398,6 @@ export default function App() {
             )}
 
             {(currentModule === 'fiscal' ||
-              currentModule === 'vendas' ||
-              currentModule === 'orcamento' ||
               currentModule === 'financeiro' ||
               currentModule === 'acesso' ||
               currentModule === 'configuracoes' ||

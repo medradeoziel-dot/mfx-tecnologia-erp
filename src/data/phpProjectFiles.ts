@@ -331,19 +331,9 @@ $modulo = $_GET['modulo'] ?? 'abertura';
                 <span>Estoque</span>
             </a>
 
-            <a href="#" class="sidebar-link">
+            <a href="compras.php" class="sidebar-link">
                 <i class="fa-solid fa-cart-flatbed text-success"></i>
                 <span>Compras</span>
-            </a>
-
-            <a href="#" class="sidebar-link">
-                <i class="fa-solid fa-chart-line text-info"></i>
-                <span>Vendas</span>
-            </a>
-
-            <a href="#" class="sidebar-link">
-                <i class="fa-solid fa-file-invoice-dollar text-warning"></i>
-                <span>Orçamento</span>
             </a>
 
             <a href="#" class="sidebar-link">
@@ -402,25 +392,13 @@ $modulo = $_GET['modulo'] ?? 'abertura';
                     <i class="fa-solid fa-box-open text-primary"></i>
                     <span>Produtos</span>
                 </a>
-                <a href="#" class="quick-btn" title="Compras">
+                <a href="compras.php" class="quick-btn" title="Compras">
                     <i class="fa-solid fa-cart-shopping text-success"></i>
                     <span>Compras</span>
-                </a>
-                <a href="#" class="quick-btn" title="Vendas">
-                    <i class="fa-solid fa-cash-register text-warning"></i>
-                    <span>Vendas</span>
-                </a>
-                <a href="#" class="quick-btn" title="Orçamento">
-                    <i class="fa-solid fa-file-lines text-info"></i>
-                    <span>Orçamento</span>
                 </a>
                 <a href="#" class="quick-btn" title="Caixa">
                     <i class="fa-solid fa-vault text-dark"></i>
                     <span>Caixa</span>
-                </a>
-                <a href="#" class="quick-btn" title="PDV">
-                    <i class="fa-solid fa-calculator text-secondary"></i>
-                    <span>PDV</span>
                 </a>
                 <a href="#" class="quick-btn" title="NF-e">
                     <i class="fa-solid fa-receipt text-danger"></i>
@@ -3402,8 +3380,8 @@ document.addEventListener('DOMContentLoaded', function() {
 Layout completo de abertura em **PHP com PDO e MySQL**, estilizado com **Bootstrap 5 e FontAwesome 6**.
 
 ## Estrutura do ERP
-- **Barra Lateral Esquerda (Sidebar):** Fundo escuro \`#212529\`, logotipo oficial, menu retrátil com os módulos (*Pessoas, Estoque, Compras, Vendas, Orçamento, OS, Financeiro, Fiscal, Relatórios, Acesso, Configurações, Ajuda*) e rodapé com perfil do operador \`ADM - MEDRADE\`.
-- **Barra Superior (Topbar Ribbon):** Atalhos rápidos para Produtos, Compras, Vendas, Orçamento, Caixa, PDV, NF-e, NFS-e, Receber, Pagar e Sair, além de sino de notificações.
+- **Barra Lateral Esquerda (Sidebar):** Fundo escuro \`#212529\`, logotipo oficial, menu retrátil com os módulos (*Pessoas, OS & Manutenção, Estoque, Compras, Financeiro, Fiscal, Relatórios, Acesso, Configurações, Ajuda*) e rodapé com perfil do operador \`ADM - MEDRADE\`.
+- **Barra Superior (Topbar Ribbon):** Atalhos rápidos para Produtos, Compras, Caixa, NF-e, NFS-e, Receber, Pagar, Nova OS e Sair, além de sino de notificações.
 - **Área Central (Workspace):** Logo oficial **MFx TECNOLOGIA** centralizado em destaque no modelo de capa do sistema.
 - **Rodapé Inferior (Status Bar):** Versão 1.0.0, Data/Hora ao vivo, Licenciamento MFx Tecnologia Industrial (CNPJ: 34.375.789-0001/87), IP 192.168.1.105 e indicador verde de conexão \`● Internet ON\`.
 `

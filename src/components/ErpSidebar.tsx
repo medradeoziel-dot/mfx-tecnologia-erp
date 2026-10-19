@@ -7,8 +7,6 @@ export type ErpModuleType =
   | 'pessoas' 
   | 'estoque' 
   | 'compras' 
-  | 'vendas' 
-  | 'orcamento' 
   | 'os' 
   | 'financeiro' 
   | 'fiscal' 
@@ -74,22 +72,6 @@ export const ErpSidebar: React.FC<ErpSidebarProps> = ({
       iconClass: 'fa-solid fa-cart-flatbed',
       badge: null,
       color: 'text-emerald-400',
-    },
-    {
-      id: 'vendas' as ErpModuleType,
-      label: 'Vendas',
-      sublabel: 'Máquinas & Peças',
-      iconClass: 'fa-solid fa-chart-line',
-      badge: null,
-      color: 'text-cyan-400',
-    },
-    {
-      id: 'orcamento' as ErpModuleType,
-      label: 'Orçamento',
-      sublabel: 'Propostas Comerciais',
-      iconClass: 'fa-solid fa-file-invoice-dollar',
-      badge: null,
-      color: 'text-yellow-400',
     },
     {
       id: 'financeiro' as ErpModuleType,

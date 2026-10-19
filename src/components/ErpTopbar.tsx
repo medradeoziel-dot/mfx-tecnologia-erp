@@ -12,10 +12,7 @@ export const ErpTopbar: React.FC<ErpTopbarProps> = ({ onQuickAction, onSelectMod
   const quickButtons = [
     { id: 'produtos', label: 'Produtos', icon: 'fa-solid fa-box-open', color: 'hover:text-blue-600', module: 'estoque' as ErpModuleType },
     { id: 'compras', label: 'Compras', icon: 'fa-solid fa-cart-shopping', color: 'hover:text-emerald-600', module: 'compras' as ErpModuleType },
-    { id: 'vendas', label: 'Vendas', icon: 'fa-solid fa-cash-register', color: 'hover:text-amber-600', module: 'vendas' as ErpModuleType },
-    { id: 'orcamento', label: 'Orçamento', icon: 'fa-solid fa-file-lines', color: 'hover:text-indigo-600', module: 'orcamento' as ErpModuleType },
     { id: 'caixa', label: 'Caixa', icon: 'fa-solid fa-vault', color: 'hover:text-slate-800', module: 'financeiro' as ErpModuleType },
-    { id: 'pdv', label: 'PDV', icon: 'fa-solid fa-calculator', color: 'hover:text-purple-600', module: 'vendas' as ErpModuleType },
     { id: 'nfe', label: 'NF-e', icon: 'fa-solid fa-receipt', color: 'hover:text-cyan-600', module: 'fiscal' as ErpModuleType },
     { id: 'nfse', label: 'NFS-e', icon: 'fa-solid fa-file-invoice', color: 'hover:text-teal-600', module: 'fiscal' as ErpModuleType },
     { id: 'receber', label: 'Receber', icon: 'fa-solid fa-arrow-down', iconColor: 'text-emerald-600', color: 'hover:text-emerald-700', module: 'financeiro' as ErpModuleType },
