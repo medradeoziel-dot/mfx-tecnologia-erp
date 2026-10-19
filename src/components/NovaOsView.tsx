@@ -443,7 +443,7 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
                 className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white"
                 required
               >
-                <option value="" disabled selected>-- Selecione um Cliente Cadastrado --</option>
+                <option value="" disabled>-- Selecione um Cliente Cadastrado --</option>
                 {clientes.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.nome} ({c.cidade}/{c.estado}) - {c.documento}
