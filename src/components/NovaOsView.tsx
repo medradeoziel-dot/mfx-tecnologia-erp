@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Cliente, ItemOS, OrdemServico, CategoriaItem, StatusOS } from '../types';
-import { MFX_COMPANY, CATALOGO_PREDEFINIDO, ItemPredefinido } from '../data/company';
+import { MFX_COMPANY } from '../data/company';
 import { formatCurrency, formatNumber } from '../utils/formatters';
 import { 
   FilePlus2, 
@@ -17,7 +17,6 @@ import {
   Check, 
   AlertTriangle,
   ArrowRight,
-  Sparkles,
   Zap,
   Package
 } from 'lucide-react';
@@ -166,27 +165,6 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
       quantidade: 1,
       valorTotal: 0,
       prazoEntrega: isSrv ? 'Execução Técnica' : 'Pronta Entrega',
-    };
-    setItens([...itens, novoItem]);
-  };
-
-  // Adicionar Item do Catálogo Rápido
-  const handleAdicionarPredefinido = (itemPredef: ItemPredefinido) => {
-    const novoItem: ItemOS = {
-      id: `it-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      tipoItem: itemPredef.tipo,
-      categoria: itemPredef.categoria,
-      codigo: itemPredef.codigo,
-      descricao: itemPredef.descricao,
-      unidade: itemPredef.unidade,
-      ncm: itemPredef.ncm,
-      codigoLc116: itemPredef.codigoLc116,
-      aliquotaIss: itemPredef.aliquotaIss,
-      cfop: itemPredef.cfop,
-      precoUnitario: itemPredef.precoSugerido,
-      quantidade: 1,
-      valorTotal: itemPredef.precoSugerido,
-      prazoEntrega: itemPredef.prazoSugerido,
     };
     setItens([...itens, novoItem]);
   };
@@ -625,7 +603,7 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
 
       {/* 3. SEÇÃO DINÂMICA DE ITENS (CONSUMÍVEIS E SERVIÇOS) COM SUPORTE NF-e / NFS-e */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="bg-slate-900 text-white px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="bg-slate-900 text-white px-6 py-3.5">
           <div className="flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-red-600 text-[11px] flex items-center justify-center font-mono font-bold">3</span>
             <div>
@@ -636,59 +614,6 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
                 Separação automática para emissão de NFS-e (Serviços) e NF-e (Consumíveis)
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => handleAdicionarItemVazio('servico')}
-              className="bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold px-3 py-1.5 rounded flex items-center gap-1.5 transition shadow-sm"
-            >
-              <Wrench className="w-3.5 h-3.5" />
-              + Mão de Obra (NFS-e)
-            </button>
-            <button
-              type="button"
-              onClick={() => handleAdicionarItemVazio('produto')}
-              className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-1.5 rounded flex items-center gap-1.5 transition shadow-sm"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              + Consumível / Peça (NF-e)
-            </button>
-          </div>
-        </div>
-
-        {/* Quick Presets Picker com Tags Fiscais */}
-        <div className="p-4 bg-slate-50 border-b border-slate-200">
-          <div className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            Inserção Rápida de Itens Frequentes (Consumíveis Laser, Plasma & Serviços Especializados):
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {CATALOGO_PREDEFINIDO.map((itemPredef, idx) => {
-              const isSrv = itemPredef.tipo === 'servico';
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleAdicionarPredefinido(itemPredef)}
-                  className={`bg-white hover:bg-slate-100 border px-2.5 py-1 rounded text-xs transition flex items-center gap-1.5 shadow-2xs ${
-                    isSrv
-                      ? 'border-purple-300 text-purple-950 hover:bg-purple-50'
-                      : 'border-slate-300 text-slate-800 hover:border-amber-300'
-                  }`}
-                  title={`Adicionar ${isSrv ? 'Serviço NFS-e' : 'Produto NF-e'}: ${itemPredef.descricao}`}
-                >
-                  <Plus className={`w-3 h-3 ${isSrv ? 'text-purple-600' : 'text-amber-600'}`} />
-                  <span className={`text-[9px] font-bold px-1 rounded ${
-                    isSrv ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'
-                  }`}>
-                    {isSrv ? 'NFS-e' : 'NF-e'}
-                  </span>
-                  <span className="font-semibold">{itemPredef.codigo}</span>
-                  <span className="text-slate-500 text-[11px]">({formatCurrency(itemPredef.precoSugerido)})</span>
-                </button>
-              );
-            })}
           </div>
         </div>
 
@@ -714,7 +639,15 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
               {itens.length === 0 ? (
                 <tr>
                   <td colSpan={11} className="py-8 text-center text-slate-500">
-                    Nenhum item adicionado ainda. Clique nos botões acima para adicionar Mão de Obra ou Consumíveis.
+                    <p className="mb-2">Nenhum item adicionado ainda à Ordem de Serviço.</p>
+                    <button
+                      type="button"
+                      onClick={() => handleAdicionarItemVazio('produto')}
+                      className="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-1.5 rounded inline-flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>+ Adicionar Linha</span>
+                    </button>
                   </td>
                 </tr>
               ) : (
@@ -919,6 +852,21 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
               </tfoot>
             )}
           </table>
+        </div>
+
+        {/* Barra de Ação da Tabela: Adicionar Linha */}
+        <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => handleAdicionarItemVazio('produto')}
+            className="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>+ Adicionar Linha</span>
+          </button>
+          <span className="text-[11px] text-slate-500">
+            Lançamento direto de consumíveis, peças ou serviços na tabela.
+          </span>
         </div>
 
         {/* DEMONSTRATIVO FISCAL DINÂMICO PARA FATURAMENTO (NFS-e x NF-e) */}
