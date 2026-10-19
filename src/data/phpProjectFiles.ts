@@ -665,9 +665,10 @@ VALUES
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script>
         async function consultarDocumento(input) {
-            let doc = input.value.replace(/\\D/g, '');
+            let doc = input.value.replace(/\D/g, '');
             
             if (doc.length === 11) {
+                document.getElementById('feedback_status').className = "alert alert-warning py-2 mb-3";
                 document.getElementById('feedback_status').innerHTML = "⚠️ CPF detectado. Preencha os dados manualmente.";
                 document.getElementById('indicador_ie').value = "9"; // Não Contribuinte
                 document.getElementById('inscricao_estadual').value = "ISENTO";
@@ -675,9 +676,11 @@ VALUES
             }
 
             if (doc.length === 14) {
-                document.getElementById('feedback_status').innerHTML = "⏳ Consultando dados na Receita Federal...";
+                document.getElementById('feedback_status').className = "alert alert-info py-2 mb-3";
+                document.getElementById('feedback_status').innerHTML = "⏳ Consultando dados na Receita Federal e SEFAZ...";
                 
                 try {
+                    // 1. Consulta BrasilAPI (Receita Federal)
                     let response = await fetch(\`https://brasilapi.com.br/api/cnpj/v1/\${doc}\`);
                     
                     if (response.ok) {
@@ -691,20 +694,64 @@ VALUES
                         document.getElementById('complemento').value = data.complemento || '';
                         document.getElementById('bairro').value = data.bairro || '';
                         document.getElementById('cidade').value = data.municipio || '';
-                        document.getElementById('uf').value = data.uf || '';
+                        let ufEncontrada = (data.uf || 'SP').toUpperCase();
+                        document.getElementById('uf').value = ufEncontrada;
                         document.getElementById('telefone').value = data.ddd_telefone_1 || '';
-                        document.getElementById('email').value = data.email || '';
+                        document.getElementById('email').value = data.email ? data.email.toLowerCase() : '';
 
-                        // Limpa o campo de IE caso a API federal não traga o dado estadual
-                        document.getElementById('inscricao_estadual').value = "";
-                        document.getElementById('indicador_ie').value = "2"; // Isento por padrão para indústrias/comércio
+                        // 2. Consulta complementar automática para buscar a Inscrição Estadual (IE) na SEFAZ (CNPJ.ws / Sintegra)
+                        let ieEncontrada = '';
 
-                        document.getElementById('feedback_status').innerHTML = \`✅ Dados carregados com sucesso! Razão Social: "\${data.razao_social}".\`;
+                        // Verifica se a própria BrasilAPI já retornou alguma IE no array
+                        if (data.inscricoes_estaduais && Array.isArray(data.inscricoes_estaduais) && data.inscricoes_estaduais.length > 0) {
+                            let ieItem = data.inscricoes_estaduais.find(i => i.ativo) || data.inscricoes_estaduais[0];
+                            if (ieItem && ieItem.inscricao_estadual) {
+                                ieEncontrada = String(ieItem.inscricao_estadual).trim();
+                            }
+                        }
+
+                        // Caso não tenha na BrasilAPI, consulta a API pública complementar da CNPJ.ws
+                        if (!ieEncontrada) {
+                            try {
+                                let resWs = await fetch(\`https://publica.cnpj.ws/cnpj/\${doc}\`);
+                                if (resWs.ok) {
+                                    let dataWs = await resWs.json();
+                                    let listaIes = dataWs?.estabelecimento?.inscricoes_estaduais || dataWs?.inscricoes_estaduais || [];
+                                    if (Array.isArray(listaIes) && listaIes.length > 0) {
+                                        let ieItem = listaIes.find(item => {
+                                            let itemUf = (item?.estado?.sigla || item?.estado || '').toUpperCase();
+                                            return item?.ativo && (!ufEncontrada || itemUf === ufEncontrada);
+                                        }) || listaIes.find(item => item?.ativo) || listaIes[0];
+
+                                        if (ieItem && ieItem.inscricao_estadual) {
+                                            ieEncontrada = String(ieItem.inscricao_estadual).trim();
+                                        }
+                                    }
+                                }
+                            } catch (errWs) {
+                                console.warn("Consulta complementar SEFAZ/CNPJ.ws indisponível:", errWs);
+                            }
+                        }
+
+                        // 3 & 4. Regras de preenchimento da Inscrição Estadual e Indicador IE
+                        if (ieEncontrada && ieEncontrada.toUpperCase() !== 'ISENTO') {
+                            document.getElementById('inscricao_estadual').value = ieEncontrada;
+                            document.getElementById('indicador_ie').value = "1"; // 1 - Contribuinte ICMS (Possui Inscrição Estadual)
+                            document.getElementById('feedback_status').className = "alert alert-success py-2 mb-3";
+                            document.getElementById('feedback_status').innerHTML = \`✅ Dados carregados com sucesso! Razão Social: "<strong>\${data.razao_social}</strong>" | IE SEFAZ: <strong>\${ieEncontrada}</strong> (Contribuinte ICMS).\`;
+                        } else {
+                            document.getElementById('inscricao_estadual').value = "ISENTO";
+                            document.getElementById('indicador_ie').value = "2"; // 2 - Contribuinte Isento de Inscrição Estadual
+                            document.getElementById('feedback_status').className = "alert alert-success py-2 mb-3";
+                            document.getElementById('feedback_status').innerHTML = \`✅ Dados carregados com sucesso! Razão Social: "<strong>\${data.razao_social}</strong>" | IE: <strong>ISENTO</strong> (Contribuinte Isento).\`;
+                        }
                     } else {
+                        document.getElementById('feedback_status').className = "alert alert-danger py-2 mb-3";
                         document.getElementById('feedback_status').innerHTML = "❌ CNPJ não encontrado.";
                     }
                 } catch (error) {
                     console.error("Erro:", error);
+                    document.getElementById('feedback_status').className = "alert alert-danger py-2 mb-3";
                     document.getElementById('feedback_status').innerHTML = "❌ Erro ao consultar o CNPJ.";
                 }
             }
@@ -1030,6 +1077,10 @@ $clientes = $stmtList->fetchAll();
             </h5>
         </div>
         <div class="card-body p-4">
+            <div id="feedback_status" class="alert alert-secondary py-2 mb-3" role="alert">
+                ℹ️ Digite o CPF ou CNPJ para buscar os dados automaticamente.
+            </div>
+
             <form method="POST" action="clientes.php" id="formCliente">
                 <input type="hidden" name="acao" value="salvar_cliente">
 
@@ -1043,7 +1094,7 @@ $clientes = $stmtList->fetchAll();
                         <div class="input-group">
                             <span class="input-group-text bg-light"><i class="fa-solid fa-id-card"></i></span>
                             <input type="text" class="form-control font-monospace" id="documento" name="documento" 
-                                   placeholder="Ex: 34.375.789/0001-87" required onblur="consultarCNPJ(this)">
+                                   placeholder="Ex: 34.375.789/0001-87" required onblur="consultarDocumento(this)">
                         </div>
                     </div>
 
@@ -1059,7 +1110,10 @@ $clientes = $stmtList->fetchAll();
 
                     <!-- NOVOS CAMPOS DE INSCRIÇÃO ESTADUAL E INDICADOR SEFAZ -->
                     <div class="col-md-6">
-                        <label for="inscricao_estadual" class="form-label fw-bold">Inscrição Estadual (IE) <small class="text-muted">Obrigatório p/ contribuintes</small></label>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label for="inscricao_estadual" class="form-label fw-bold mb-0">Inscrição Estadual (IE) <small class="text-muted">SEFAZ</small></label>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="definirIsento()" style="font-size: 11px;">Definir ISENTO</button>
+                        </div>
                         <input type="text" class="form-control font-monospace" name="inscricao_estadual" id="inscricao_estadual" placeholder="Ex: 209.632.131.114 ou ISENTO">
                     </div>
 
@@ -1141,62 +1195,139 @@ $clientes = $stmtList->fetchAll();
 </div>
 
 <script>
-// Função avançada para buscar CNPJ completo e dados fiscais
-async function consultarCNPJ(input) {
-    let cnpj = input.value.replace(/\\D/g, '');
-    if (cnpj.length !== 14) return;
-
+// Função inteligente para consultar CPF ou CNPJ e buscar Inscrição Estadual (IE) na SEFAZ
+async function consultarDocumento(input) {
+    let doc = input.value.replace(/\D/g, '');
+    let feedbackEl = document.getElementById('feedback_status');
     let spinner = document.getElementById('spinnerCnpj');
-    let feedback = document.getElementById('cnpjFeedback');
     let badge = document.getElementById('situacaoBadge');
 
-    if (spinner) spinner.style.display = 'inline-block';
-    document.getElementById('nome').value = "Consultando dados na Receita Federal...";
-
-    try {
-        // Usando BrasilAPI (Gratuita, rápida e muito estável)
-        let response = await fetch(\`https://brasilapi.com.br/api/cnpj/v1/\${cnpj}\`);
-        
-        if (response.ok) {
-            let data = await response.json();
-            
-            // Preenchimento automático dos dados corporativos e fiscais
-            document.getElementById('nome').value = data.razao_social || '';
-            document.getElementById('nome_fantasia').value = data.nome_fantasia || '';
-            
-            // Se a API retornar Inscrição Estadual (algumas bases trazem no cadastro estadual)
-            if (data.inscricoes_estaduais && data.inscricoes_estaduais.length > 0) {
-                document.getElementById('inscricao_estadual').value = data.inscricoes_estaduais[0].inscricao_estadual || '';
-                document.getElementById('indicador_ie').value = "1"; // Contribuinte ICMS
-            }
-
-            document.getElementById('cep').value = data.cep || '';
-            document.getElementById('logradouro').value = data.logradouro || '';
-            document.getElementById('numero').value = data.numero || '';
-            document.getElementById('complemento').value = data.complemento || '';
-            document.getElementById('bairro').value = data.bairro || '';
-            document.getElementById('cidade').value = data.municipio || '';
-            document.getElementById('uf').value = data.uf || '';
-            document.getElementById('telefone').value = data.ddd_telefone_1 || '';
-            document.getElementById('email').value = data.email ? data.email.toLowerCase() : '';
-
-            // Status da empresa (Ativa, Inapta, etc.)
-            let statusDesc = data.descricao_situacao_cadastral || data.situacao_cadastral || 'ATIVA';
-            if (badge) {
-                badge.textContent = "Situação: " + statusDesc;
-                badge.classList.remove('d-none');
-            }
-        } else {
-            alert('CNPJ não encontrado na base de dados.');
-            document.getElementById('nome').value = '';
+    // Se for CPF (11 dígitos)
+    if (doc.length === 11) {
+        if (feedbackEl) {
+            feedbackEl.className = "alert alert-warning py-2 mb-3";
+            feedbackEl.innerHTML = "⚠️ CPF detectado. Preencha os dados manualmente.";
         }
-    } catch (error) {
-        console.error("Erro na consulta do CNPJ:", error);
-        alert('Erro ao consultar o CNPJ. Verifique sua conexão.');
-        document.getElementById('nome').value = '';
-    } finally {
-        if (spinner) spinner.style.display = 'none';
+        document.getElementById('indicador_ie').value = "9"; // 9 - Não Contribuinte
+        document.getElementById('inscricao_estadual').value = "ISENTO";
+        return;
     }
+
+    // Se for CNPJ (14 dígitos)
+    if (doc.length === 14) {
+        if (spinner) spinner.style.display = 'inline-block';
+        if (feedbackEl) {
+            feedbackEl.className = "alert alert-info py-2 mb-3";
+            feedbackEl.innerHTML = "⏳ Consultando dados na Receita Federal e SEFAZ...";
+        }
+        document.getElementById('nome').value = "Consultando dados na Receita Federal...";
+
+        try {
+            // 1. Consulta BrasilAPI (Receita Federal)
+            let response = await fetch(\`https://brasilapi.com.br/api/cnpj/v1/\${doc}\`);
+            
+            if (response.ok) {
+                let data = await response.json();
+                
+                // Preenchimento dos dados cadastrais
+                document.getElementById('nome').value = data.razao_social || '';
+                document.getElementById('nome_fantasia').value = data.nome_fantasia || '';
+                document.getElementById('cep').value = data.cep || '';
+                document.getElementById('logradouro').value = data.logradouro || '';
+                document.getElementById('numero').value = data.numero || '';
+                document.getElementById('complemento').value = data.complemento || '';
+                document.getElementById('bairro').value = data.bairro || '';
+                document.getElementById('cidade').value = data.municipio || '';
+                let ufEncontrada = (data.uf || 'SP').toUpperCase();
+                document.getElementById('uf').value = ufEncontrada;
+                document.getElementById('telefone').value = data.ddd_telefone_1 || '';
+                document.getElementById('email').value = data.email ? data.email.toLowerCase() : '';
+
+                // Status da empresa (Ativa, Inapta, etc.)
+                let statusDesc = data.descricao_situacao_cadastral || data.situacao_cadastral || 'ATIVA';
+                if (badge) {
+                    badge.textContent = "Situação: " + statusDesc;
+                    badge.classList.remove('d-none');
+                }
+
+                // 2. Consulta complementar automática para buscar Inscrição Estadual (SEFAZ via CNPJ.ws)
+                let ieEncontrada = '';
+
+                // Verifica se porventura a BrasilAPI retornou Inscrições Estaduais
+                if (data.inscricoes_estaduais && Array.isArray(data.inscricoes_estaduais) && data.inscricoes_estaduais.length > 0) {
+                    let ieItem = data.inscricoes_estaduais.find(i => i.ativo) || data.inscricoes_estaduais[0];
+                    if (ieItem && ieItem.inscricao_estadual) {
+                        ieEncontrada = String(ieItem.inscricao_estadual).trim();
+                    }
+                }
+
+                // Se não veio na BrasilAPI, consulta a API pública complementar da CNPJ.ws
+                if (!ieEncontrada) {
+                    try {
+                        let resWs = await fetch(\`https://publica.cnpj.ws/cnpj/\${doc}\`);
+                        if (resWs.ok) {
+                            let dataWs = await resWs.json();
+                            let listaIes = dataWs?.estabelecimento?.inscricoes_estaduais || dataWs?.inscricoes_estaduais || [];
+                            if (Array.isArray(listaIes) && listaIes.length > 0) {
+                                let ieItem = listaIes.find(item => {
+                                    let itemUf = (item?.estado?.sigla || item?.estado || '').toUpperCase();
+                                    return item?.ativo && (!ufEncontrada || itemUf === ufEncontrada);
+                                }) || listaIes.find(item => item?.ativo) || listaIes[0];
+
+                                if (ieItem && ieItem.inscricao_estadual) {
+                                    ieEncontrada = String(ieItem.inscricao_estadual).trim();
+                                }
+                            }
+                        }
+                    } catch (errWs) {
+                        console.warn("Consulta complementar SEFAZ/CNPJ.ws indisponível:", errWs);
+                    }
+                }
+
+                // 3 & 4. Regras de preenchimento de Inscrição Estadual e Indicador IE
+                if (ieEncontrada && ieEncontrada.toUpperCase() !== 'ISENTO') {
+                    // Se a Inscrição Estadual for encontrada:
+                    document.getElementById('inscricao_estadual').value = ieEncontrada;
+                    document.getElementById('indicador_ie').value = "1"; // 1 - Contribuinte ICMS (Possui Inscrição Estadual)
+                    if (feedbackEl) {
+                        feedbackEl.className = "alert alert-success py-2 mb-3";
+                        feedbackEl.innerHTML = \`✅ Dados carregados com sucesso! Razão Social: "<strong>\${data.razao_social}</strong>" | IE SEFAZ: <strong>\${ieEncontrada}</strong> (Contribuinte ICMS).\`;
+                    }
+                } else {
+                    // Se a empresa não possuir IE ou for ISENTO:
+                    document.getElementById('inscricao_estadual').value = "ISENTO";
+                    document.getElementById('indicador_ie').value = "2"; // 2 - Contribuinte Isento de Inscrição Estadual
+                    if (feedbackEl) {
+                        feedbackEl.className = "alert alert-success py-2 mb-3";
+                        feedbackEl.innerHTML = \`✅ Dados carregados com sucesso! Razão Social: "<strong>\${data.razao_social}</strong>" | IE: <strong>ISENTO</strong> (Contribuinte Isento).\`;
+                    }
+                }
+            } else {
+                if (feedbackEl) {
+                    feedbackEl.className = "alert alert-danger py-2 mb-3";
+                    feedbackEl.innerHTML = "❌ CNPJ não encontrado na base de dados.";
+                }
+                document.getElementById('nome').value = '';
+            }
+        } catch (error) {
+            console.error("Erro na consulta do CNPJ:", error);
+            if (feedbackEl) {
+                feedbackEl.className = "alert alert-danger py-2 mb-3";
+                feedbackEl.innerHTML = "❌ Erro ao consultar o CNPJ. Verifique sua conexão.";
+            }
+            document.getElementById('nome').value = '';
+        } finally {
+            if (spinner) spinner.style.display = 'none';
+        }
+    }
+}
+
+// Alias para compatibilidade
+const consultarCNPJ = consultarDocumento;
+
+function definirIsento() {
+    document.getElementById('inscricao_estadual').value = "ISENTO";
+    document.getElementById('indicador_ie').value = "2";
 }
 
 // Função para buscar endereço pelo CEP

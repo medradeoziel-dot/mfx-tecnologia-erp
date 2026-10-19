@@ -36,6 +36,33 @@ export const cleanDigits = (value: string): string => {
   return value.replace(/\D/g, '');
 };
 
+export const fetchInscricaoEstadualSefaz = async (cnpjInput: string, uf?: string): Promise<string | null> => {
+  const digits = cleanDigits(cnpjInput);
+  if (digits.length !== 14) return null;
+
+  try {
+    const res = await fetch(`https://publica.cnpj.ws/cnpj/${digits}`);
+    if (res.ok) {
+      const dataWs = await res.json();
+      const listaIes = dataWs?.estabelecimento?.inscricoes_estaduais || dataWs?.inscricoes_estaduais || [];
+      if (Array.isArray(listaIes) && listaIes.length > 0) {
+        const ufUpper = (uf || dataWs?.estabelecimento?.estado?.sigla || '').toUpperCase();
+        const ieAtiva = listaIes.find((item: any) => {
+          const itemUf = (item?.estado?.sigla || item?.estado || '').toUpperCase();
+          return item?.ativo && (!ufUpper || itemUf === ufUpper);
+        }) || listaIes.find((item: any) => item?.ativo) || listaIes[0];
+
+        if (ieAtiva && ieAtiva.inscricao_estadual) {
+          return String(ieAtiva.inscricao_estadual).trim();
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Erro ao consultar SEFAZ via CNPJ.ws:', err);
+  }
+  return null;
+};
+
 export const fetchCnpjData = async (cnpjInput: string): Promise<BrasilApiCnpjResponse | null> => {
   const digits = cleanDigits(cnpjInput);
   if (digits.length !== 14) {

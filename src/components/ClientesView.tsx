@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Cliente } from '../types';
-import { fetchCnpjData, fetchCepData, cleanDigits } from '../utils/brasilApi';
+import { fetchCnpjData, fetchCepData, fetchInscricaoEstadualSefaz, cleanDigits } from '../utils/brasilApi';
 import { formatCpfCnpj, formatCep, formatPhone } from '../utils/formatters';
 import { 
   Building2, 
@@ -145,10 +145,11 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
     // Se for CNPJ (14 dígitos)
     if (doc.length === 14) {
       setLoadingCnpj(true);
-      setFeedbackStatus('⏳ Consultando dados na Receita Federal...');
+      setFeedbackStatus('⏳ Consultando dados na Receita Federal e SEFAZ...');
       setFeedbackTipo('info');
 
       try {
+        // 1. Consulta principal BrasilAPI (Receita Federal)
         const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${doc}`);
 
         if (response.ok) {
@@ -165,19 +166,49 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
           setComplemento(data.complemento || '');
           setBairro(data.bairro || '');
           setCidade(data.municipio || '');
-          setEstado(data.uf || 'SP');
+          const ufEncontrada = data.uf || 'SP';
+          setEstado(ufEncontrada);
           setTelefone(data.ddd_telefone_1 ? formatPhone(data.ddd_telefone_1) : '');
           setEmail(data.email ? data.email.toLowerCase() : '');
-
-          // Limpa o campo de IE caso a API federal não traga o dado estadual
-          setInscricaoEstadual('');
-          setIndicadorIe('2'); // Isento por padrão para indústrias/comércio
 
           const situacao = data.descricao_situacao_cadastral || data.situacao_cadastral || 'ATIVA';
           setSituacaoCadastral(situacao);
 
-          setFeedbackStatus(`✅ Dados carregados com sucesso! Razão Social: "${data.razao_social}".`);
-          setFeedbackTipo('success');
+          // 2. Consulta complementar automática para buscar Inscrição Estadual (SEFAZ / CNPJ.ws)
+          let ieEncontrada = '';
+
+          // Verifica se porventura a BrasilAPI retornou Inscrições Estaduais
+          if (data.inscricoes_estaduais && Array.isArray(data.inscricoes_estaduais) && data.inscricoes_estaduais.length > 0) {
+            const ieItem = data.inscricoes_estaduais.find((i: any) => i.ativo) || data.inscricoes_estaduais[0];
+            if (ieItem && ieItem.inscricao_estadual) {
+              ieEncontrada = String(ieItem.inscricao_estadual).trim();
+            }
+          }
+
+          // Se não veio na BrasilAPI, consulta a API pública CNPJ.ws
+          if (!ieEncontrada) {
+            try {
+              const ieSefaz = await fetchInscricaoEstadualSefaz(doc, ufEncontrada);
+              if (ieSefaz) {
+                ieEncontrada = ieSefaz;
+              }
+            } catch (errWs) {
+              console.warn('Consulta complementar SEFAZ/CNPJ.ws indisponível:', errWs);
+            }
+          }
+
+          // 3 & 4. Regras de preenchimento de Inscrição Estadual e Indicador IE
+          if (ieEncontrada && ieEncontrada.toUpperCase() !== 'ISENTO') {
+            setInscricaoEstadual(ieEncontrada);
+            setIndicadorIe('1'); // 1 - Contribuinte ICMS (Possui Inscrição Estadual)
+            setFeedbackStatus(`✅ Dados carregados com sucesso! Razão Social: "${data.razao_social}" | IE SEFAZ: ${ieEncontrada} (Contribuinte ICMS).`);
+            setFeedbackTipo('success');
+          } else {
+            setInscricaoEstadual('ISENTO');
+            setIndicadorIe('2'); // 2 - Contribuinte Isento de Inscrição Estadual
+            setFeedbackStatus(`✅ Dados carregados com sucesso! Razão Social: "${data.razao_social}" | IE: ISENTO (Contribuinte Isento).`);
+            setFeedbackTipo('success');
+          }
         } else {
           setFeedbackStatus('❌ CNPJ não encontrado.');
           setFeedbackTipo('danger');
