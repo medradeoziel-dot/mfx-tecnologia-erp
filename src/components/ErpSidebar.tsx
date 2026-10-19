@@ -7,6 +7,7 @@ export type ErpModuleType =
   | 'pessoas' 
   | 'estoque' 
   | 'compras' 
+  | 'pdv'
   | 'os' 
   | 'financeiro' 
   | 'fiscal' 
@@ -72,6 +73,14 @@ export const ErpSidebar: React.FC<ErpSidebarProps> = ({
       iconClass: 'fa-solid fa-cart-flatbed',
       badge: null,
       color: 'text-emerald-400',
+    },
+    {
+      id: 'pdv' as ErpModuleType,
+      label: 'PDV - Vendas',
+      sublabel: 'Balcão & Máquinas',
+      iconClass: 'fa-solid fa-cash-register',
+      badge: 'PDV',
+      color: 'text-amber-400',
     },
     {
       id: 'financeiro' as ErpModuleType,

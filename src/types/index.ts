@@ -161,3 +161,55 @@ export interface Compra {
   valorTotal: number;
   dataCadastro?: string;
 }
+
+export type FormaPagamento = 
+  | 'DINHEIRO' 
+  | 'PIX' 
+  | 'CARTAO_CREDITO' 
+  | 'CARTAO_DEBITO' 
+  | 'BOLETO';
+
+export interface ItemVenda {
+  id: string;
+  produtoId?: string;
+  codigo: string;
+  descricao: string;
+  categoria?: string;
+  unidadeMedida: UnidadeMedida | string;
+  quantidade: number;
+  precoUnitario: number;
+  descontoUnitario?: number;
+  valorTotal: number;
+}
+
+export interface Venda {
+  id: string;
+  codigoVenda: string;
+  clienteId?: string;
+  clienteNome: string;
+  clienteDocumento?: string;
+  dataVenda: string;
+  horaVenda: string;
+  formaPagamento: FormaPagamento;
+  detalhePagamento?: string;
+  valorSubtotal: number;
+  valorDesconto: number;
+  valorTotal: number;
+  valorRecebido?: number;
+  valorTroco?: number;
+  itens: ItemVenda[];
+  observacoes?: string;
+  operador: string;
+}
+
+export interface MovimentoCaixa {
+  id: string;
+  tipo: 'ENTRADA' | 'SAIDA';
+  origem: 'PDV' | 'OS' | 'COMPRA' | 'MANUAL';
+  referenciaId?: string;
+  descricao: string;
+  formaPagamento: FormaPagamento | string;
+  valor: number;
+  dataHora: string;
+  operador: string;
+}

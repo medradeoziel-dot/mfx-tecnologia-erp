@@ -726,6 +726,72 @@ VALUES
 (1, 2, 'MFX-BD-15', 'Bico Laser Duplo Cromado D32 H15 Calibre 1.5mm', 'UN', 40.00, 42.50, 1700.00),
 (2, 3, 'MFX-BP-105', 'Bico de Plasma Alta Definição 105A', 'UN', 25.00, 52.00, 1300.00),
 (2, 4, 'MFX-EP-100', 'Eletrodo de Plasma Híbrido Cobre/Háfnio 100A', 'UN', 30.00, 58.00, 1740.00);
+
+-- 7. Tabela de Vendas de Balcão e Faturamento PDV
+CREATE TABLE IF NOT EXISTS \`vendas\` (
+  \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+  \`codigo_venda\` VARCHAR(40) NOT NULL UNIQUE COMMENT 'Ex: VND-2026-0042',
+  \`cliente_id\` INT NULL,
+  \`cliente_nome\` VARCHAR(200) NOT NULL DEFAULT 'Consumidor Final / Venda Balcão',
+  \`cliente_documento\` VARCHAR(30) NULL,
+  \`data_venda\` DATE NOT NULL,
+  \`hora_venda\` TIME NOT NULL,
+  \`forma_pagamento\` ENUM('DINHEIRO', 'PIX', 'CARTAO_CREDITO', 'CARTAO_DEBITO', 'BOLETO') NOT NULL DEFAULT 'PIX',
+  \`detalhe_pagamento\` VARCHAR(150) NULL COMMENT 'Ex: PIX Chave CNPJ ou Cartão 3x',
+  \`valor_subtotal\` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  \`valor_desconto\` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  \`valor_total\` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  \`valor_recebido\` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  \`valor_troco\` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  \`observacoes\` TEXT NULL,
+  \`operador\` VARCHAR(100) NOT NULL DEFAULT 'ADM - MEDRADE',
+  \`data_cadastro\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX \`idx_data_venda\` (\`data_venda\`),
+  INDEX \`idx_cliente\` (\`cliente_id\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 8. Tabela de Itens da Venda (Detalhamento dos Consumíveis/Peças Vendidos)
+CREATE TABLE IF NOT EXISTS \`itens_venda\` (
+  \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+  \`venda_id\` INT NOT NULL,
+  \`produto_id\` INT NULL,
+  \`codigo\` VARCHAR(40) NOT NULL,
+  \`descricao\` VARCHAR(255) NOT NULL,
+  \`unidade_medida\` VARCHAR(10) NOT NULL DEFAULT 'UN',
+  \`quantidade\` DECIMAL(10,2) NOT NULL DEFAULT 1.00,
+  \`preco_unitario\` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  \`desconto_unitario\` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  \`valor_total\` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  FOREIGN KEY (\`venda_id\`) REFERENCES \`vendas\`(\`id\`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 9. Tabela de Movimentações de Caixa / Financeiro
+CREATE TABLE IF NOT EXISTS \`movimentos_caixa\` (
+  \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+  \`tipo\` ENUM('ENTRADA', 'SAIDA') NOT NULL DEFAULT 'ENTRADA',
+  \`origem\` ENUM('PDV', 'OS', 'COMPRA', 'MANUAL') NOT NULL DEFAULT 'PDV',
+  \`referencia_id\` VARCHAR(50) NULL,
+  \`descricao\` VARCHAR(255) NOT NULL,
+  \`forma_pagamento\` VARCHAR(50) NOT NULL DEFAULT 'PIX',
+  \`valor\` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  \`data_hora\` DATETIME NOT NULL,
+  \`operador\` VARCHAR(100) NOT NULL DEFAULT 'ADM - MEDRADE',
+  \`data_cadastro\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX \`idx_tipo\` (\`tipo\`),
+  INDEX \`idx_origem\` (\`origem\`),
+  INDEX \`idx_data_hora\` (\`data_hora\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Inserção de Vendas Iniciais de Exemplo no PDV
+INSERT INTO \`vendas\` (\`codigo_venda\`, \`cliente_nome\`, \`cliente_documento\`, \`data_venda\`, \`hora_venda\`, \`forma_pagamento\`, \`detalhe_pagamento\`, \`valor_subtotal\`, \`valor_desconto\`, \`valor_total\`, \`valor_recebido\`, \`valor_troco\`, \`operador\`)
+VALUES 
+('VND-2026-0042', 'Metalúrgica Corte & Conformação Paulista Ltda', '52.148.963/0001-44', '2026-10-18', '10:45:00', 'PIX', 'PIX Direto CNPJ MFx Industrial', 890.00, 40.00, 850.00, 850.00, 0.00, 'ADM - MEDRADE'),
+('VND-2026-0043', 'Consumidor Final / Venda Balcão', '98.765.432/0001-10', '2026-10-19', '08:30:00', 'CARTAO_CREDITO', 'Cartão de Crédito 2x Sem Juros', 680.00, 0.00, 680.00, 680.00, 0.00, 'ADM - MEDRADE');
+
+INSERT INTO \`movimentos_caixa\` (\`tipo\`, \`origem\`, \`referencia_id\`, \`descricao\`, \`forma_pagamento\`, \`valor\`, \`data_hora\`, \`operador\`)
+VALUES 
+('ENTRADA', 'PDV', 'VND-2026-0042', 'Recebimento Venda Balcão VND-2026-0042 - Metalúrgica Paulista', 'PIX', 850.00, '2026-10-18 10:45:00', 'ADM - MEDRADE'),
+('ENTRADA', 'PDV', 'VND-2026-0043', 'Recebimento Venda Balcão VND-2026-0043 - Consumidor Final', 'CARTAO_CREDITO', 680.00, '2026-10-19 08:30:00', 'ADM - MEDRADE');
 `
   },
   {
@@ -3365,6 +3431,566 @@ function recalcularTotais() {
 document.addEventListener('DOMContentLoaded', function() {
     adicionarLinhaItem();
 });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>`
+  },
+  {
+    filename: 'pdv.php',
+    description: 'Módulo PDV (Ponto de Venda) ágil em PHP/MySQL para faturamento balcão de consumíveis e máquinas, baixa automática de estoque e lançamento no caixa.',
+    language: 'php',
+    content: `<?php
+/**
+ * MFx Tecnologia Industrial - Sistema ERP
+ * Módulo: PDV - Ponto de Venda & Vendas Balcão (pdv.php)
+ * Faturamento rápido, baixa física no estoque e conciliação de caixa
+ */
+
+require_once 'conexao.php';
+
+$mensagemSucesso = null;
+$mensagemErro = null;
+$vendaFinalizada = null;
+
+// PROCESSAR FINALIZAÇÃO DE VENDA (POST)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['acao'] === 'finalizar_venda') {
+    try {
+        $pdo->beginTransaction();
+
+        $cliente_id = !empty($_POST['cliente_id']) ? intval($_POST['cliente_id']) : null;
+        $cliente_nome = !empty($_POST['cliente_nome']) ? trim($_POST['cliente_nome']) : 'Consumidor Final / Venda Balcão';
+        $cliente_doc = !empty($_POST['cliente_documento']) ? trim($_POST['cliente_documento']) : null;
+        $forma_pagamento = $_POST['forma_pagamento'] ?? 'PIX';
+        $detalhe_pagamento = trim($_POST['detalhe_pagamento'] ?? '');
+        $valor_subtotal = floatval($_POST['valor_subtotal'] ?? 0);
+        $valor_desconto = floatval($_POST['valor_desconto'] ?? 0);
+        $valor_total = floatval($_POST['valor_total'] ?? 0);
+        $valor_recebido = floatval($_POST['valor_recebido'] ?? $valor_total);
+        $valor_troco = floatval($_POST['valor_troco'] ?? 0);
+        $observacoes = trim($_POST['observacoes'] ?? '');
+        $operador = 'ADM - MEDRADE';
+
+        $itens_produtos = $_POST['item_produto_id'] ?? [];
+        $itens_codigos = $_POST['item_codigo'] ?? [];
+        $itens_descricoes = $_POST['item_descricao'] ?? [];
+        $itens_unidades = $_POST['item_unidade'] ?? [];
+        $itens_quantidades = $_POST['item_quantidade'] ?? [];
+        $itens_precos = $_POST['item_preco_unitario'] ?? [];
+        $itens_totais = $_POST['item_valor_total'] ?? [];
+
+        if (empty($itens_codigos)) {
+            throw new Exception("O carrinho está vazio! Adicione pelo menos um produto para finalizar a venda.");
+        }
+
+        // Gerar código único de venda
+        $anoAtual = date('Y');
+        $stmtCount = $pdo->query("SELECT COUNT(*) FROM vendas");
+        $proximoNum = intval($stmtCount->fetchColumn()) + 45;
+        $codigo_venda = sprintf("VND-%s-%04d", $anoAtual, $proximoNum);
+        $data_venda = date('Y-m-d');
+        $hora_venda = date('H:i:s');
+
+        // 1. Inserir Cabeçalho da Venda
+        $sqlVenda = "INSERT INTO vendas 
+            (codigo_venda, cliente_id, cliente_nome, cliente_documento, data_venda, hora_venda, 
+             forma_pagamento, detalhe_pagamento, valor_subtotal, valor_desconto, valor_total, 
+             valor_recebido, valor_troco, observacoes, operador)
+            VALUES 
+            (:codigo_venda, :cliente_id, :cliente_nome, :cliente_doc, :data_venda, :hora_venda, 
+             :forma_pagamento, :detalhe_pagamento, :valor_subtotal, :valor_desconto, :valor_total, 
+             :valor_recebido, :valor_troco, :observacoes, :operador)";
+        
+        $stmtVenda = $pdo->prepare($sqlVenda);
+        $stmtVenda->execute([
+            ':codigo_venda' => $codigo_venda,
+            ':cliente_id' => $cliente_id,
+            ':cliente_nome' => $cliente_nome,
+            ':cliente_doc' => $cliente_doc,
+            ':data_venda' => $data_venda,
+            ':hora_venda' => $hora_venda,
+            ':forma_pagamento' => $forma_pagamento,
+            ':detalhe_pagamento' => $detalhe_pagamento,
+            ':valor_subtotal' => $valor_subtotal,
+            ':valor_desconto' => $valor_desconto,
+            ':valor_total' => $valor_total,
+            ':valor_recebido' => $valor_recebido,
+            ':valor_troco' => $valor_troco,
+            ':observacoes' => $observacoes,
+            ':operador' => $operador
+        ]);
+
+        $venda_id = $pdo->lastInsertId();
+
+        // 2. Inserir Itens e Dar Baixa Física no Saldo de Estoque
+        $sqlItem = "INSERT INTO itens_venda 
+            (venda_id, produto_id, codigo, descricao, unidade_medida, quantidade, preco_unitario, valor_total)
+            VALUES 
+            (:venda_id, :produto_id, :codigo, :descricao, :unidade_medida, :quantidade, :preco_unitario, :valor_total)";
+        $stmtItem = $pdo->prepare($sqlItem);
+
+        $sqlBaixaEstoque = "UPDATE produtos_servicos 
+            SET estoque_atual = GREATEST(0, estoque_atual - :quantidade) 
+            WHERE codigo = :codigo AND tipo = 'produto'";
+        $stmtBaixa = $pdo->prepare($sqlBaixaEstoque);
+
+        $itensComprovante = [];
+        for ($i = 0; $i < count($itens_codigos); $i++) {
+            $cod = trim($itens_codigos[$i]);
+            $desc = trim($itens_descricoes[$i]);
+            $un = trim($itens_unidades[$i] ?? 'UN');
+            $qtd = floatval($itens_quantidades[$i] ?? 1);
+            $preco = floatval($itens_precos[$i] ?? 0);
+            $tot = floatval($itens_totais[$i] ?? ($qtd * $preco));
+            $pId = !empty($itens_produtos[$i]) ? intval($itens_produtos[$i]) : null;
+
+            if ($qtd > 0) {
+                // Inserir item
+                $stmtItem->execute([
+                    ':venda_id' => $venda_id,
+                    ':produto_id' => $pId,
+                    ':codigo' => $cod,
+                    ':descricao' => $desc,
+                    ':unidade_medida' => $un,
+                    ':quantidade' => $qtd,
+                    ':preco_unitario' => $preco,
+                    ':valor_total' => $tot
+                ]);
+
+                // Dar baixa física no saldo de estoque
+                $stmtBaixa->execute([
+                    ':quantidade' => $qtd,
+                    ':codigo' => $cod
+                ]);
+
+                $itensComprovante[] = [
+                    'codigo' => $cod,
+                    'descricao' => $desc,
+                    'quantidade' => $qtd,
+                    'unidade' => $un,
+                    'preco' => $preco,
+                    'total' => $tot
+                ];
+            }
+        }
+
+        // 3. Registrar Lançamento de Receita no Financeiro / Caixa
+        $sqlCaixa = "INSERT INTO movimentos_caixa 
+            (tipo, origem, referencia_id, descricao, forma_pagamento, valor, data_hora, operador)
+            VALUES 
+            ('ENTRADA', 'PDV', :ref_id, :descricao, :forma_pagamento, :valor, :data_hora, :operador)";
+        $stmtCaixa = $pdo->prepare($sqlCaixa);
+        $stmtCaixa->execute([
+            ':ref_id' => $codigo_venda,
+            ':descricao' => "Recebimento PDV {$codigo_venda} - {$cliente_nome}",
+            ':forma_pagamento' => $forma_pagamento,
+            ':valor' => $valor_total,
+            ':data_hora' => "{$data_venda} {$hora_venda}",
+            ':operador' => $operador
+        ]);
+
+        $pdo->commit();
+
+        $vendaFinalizada = [
+            'codigo_venda' => $codigo_venda,
+            'cliente_nome' => $cliente_nome,
+            'cliente_documento' => $cliente_doc,
+            'data_venda' => $data_venda,
+            'hora_venda' => $hora_venda,
+            'forma_pagamento' => $forma_pagamento,
+            'detalhe_pagamento' => $detalhe_pagamento,
+            'valor_subtotal' => $valor_subtotal,
+            'valor_desconto' => $valor_desconto,
+            'valor_total' => $valor_total,
+            'valor_recebido' => $valor_recebido,
+            'valor_troco' => $valor_troco,
+            'itens' => $itensComprovante
+        ];
+
+        $mensagemSucesso = "Venda {$codigo_venda} finalizada com sucesso! Baixa de estoque e lançamento de caixa efetuados.";
+
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        $mensagemErro = "Erro ao processar venda: " . $e->getMessage();
+    }
+}
+
+// Consultar produtos do estoque para venda rápida
+$sqlProdutos = "SELECT id, codigo, descricao, categoria, unidade_medida, preco_venda, estoque_atual, ncm 
+                FROM produtos_servicos 
+                WHERE tipo = 'produto' 
+                ORDER BY categoria ASC, descricao ASC";
+$produtos = $pdo->query($sqlProdutos)->fetchAll(PDO::FETCH_ASSOC);
+
+// Consultar clientes cadastrados
+$sqlClientes = "SELECT id, nome, nome_fantasia, documento, cidade, estado FROM clientes ORDER BY nome ASC";
+$clientes = $pdo->query($sqlClientes)->fetchAll(PDO::FETCH_ASSOC);
+
+// Consultar histórico das últimas 10 vendas
+$sqlVendasRecentes = "SELECT * FROM vendas ORDER BY id DESC LIMIT 10";
+$vendasRecentes = $pdo->query($sqlVendasRecentes)->fetchAll(PDO::FETCH_ASSOC);
+
+// Totais do dia
+$stmtTotaisHoje = $pdo->query("SELECT COUNT(*) as qtd, COALESCE(SUM(valor_total), 0) as faturamento FROM vendas WHERE data_venda = CURDATE()");
+$totaisHoje = $stmtTotaisHoje->fetch(PDO::FETCH_ASSOC);
+?>
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFx PDV - Vendas & Faturamento Balcão</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --mfx-gold: #f59e0b;
+            --mfx-dark: #0f172a;
+            --mfx-panel: #1e293b;
+        }
+        body {
+            background-color: #090d16;
+            color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .bg-mfx-panel {
+            background-color: var(--mfx-panel);
+            border: 1px solid #334155;
+        }
+        .text-gold {
+            color: var(--mfx-gold) !important;
+        }
+        .btn-gold {
+            background-color: var(--mfx-gold);
+            color: #0f172a;
+            font-weight: 700;
+        }
+        .btn-gold:hover {
+            background-color: #d97706;
+            color: #ffffff;
+        }
+        .font-mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+    </style>
+</head>
+<body class="p-3">
+
+<div class="container-fluid">
+    <!-- Cabeçalho PDV -->
+    <div class="bg-mfx-panel rounded-3 p-3 mb-3 d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-warning text-dark p-3 rounded-3 fs-3">
+                <i class="fa-solid fa-cash-register"></i>
+            </div>
+            <div>
+                <span class="badge bg-warning text-dark font-mono">MÓDULO PDV • MFx INDUSTRIAL</span>
+                <h3 class="mb-0 fw-bold text-white">Faturamento & Venda Balcão</h3>
+                <small class="text-secondary">Baixa imediata no estoque de consumíveis e registro no Caixa Financeiro.</small>
+            </div>
+        </div>
+
+        <div class="d-flex gap-3 text-end">
+            <div class="bg-dark p-2 px-3 rounded border border-secondary">
+                <small class="text-secondary d-block">FATURAMENTO HOJE</small>
+                <span class="fs-5 fw-bold text-success font-mono">R$ <?= number_format($totaisHoje['faturamento'], 2, ',', '.') ?></span>
+            </div>
+            <div class="bg-dark p-2 px-3 rounded border border-secondary">
+                <small class="text-secondary d-block">ATENDIMENTOS</small>
+                <span class="fs-5 fw-bold text-gold font-mono"><?= $totaisHoje['qtd'] ?> vendas</span>
+            </div>
+        </div>
+    </div>
+
+    <?php if ($mensagemSucesso): ?>
+        <div class="alert alert-success d-flex justify-content-between align-items-center">
+            <div><i class="fa-solid fa-circle-check me-2"></i> <?= htmlspecialchars($mensagemSucesso) ?></div>
+            <button class="btn btn-sm btn-dark" onclick="window.print()"><i class="fa-solid fa-print me-1"></i> Imprimir Cupom</button>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($mensagemErro): ?>
+        <div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation me-2"></i> <?= htmlspecialchars($mensagemErro) ?></div>
+    <?php endif; ?>
+
+    <!-- Formulário Principal do PDV -->
+    <form method="POST" id="formPdv">
+        <input type="hidden" name="acao" value="finalizar_venda">
+        <input type="hidden" name="valor_subtotal" id="inputSubtotal" value="0">
+        <input type="hidden" name="valor_total" id="inputTotalGeral" value="0">
+        <input type="hidden" name="valor_troco" id="inputTroco" value="0">
+
+        <div class="row g-3">
+            <!-- Coluna Esquerda: Catálogo e Seleção de Produtos -->
+            <div class="col-lg-7">
+                <div class="bg-mfx-panel p-3 rounded-3 mb-3">
+                    <h5 class="fw-bold mb-3 text-gold"><i class="fa-solid fa-boxes-stacked me-2"></i> Catálogo Rápido de Produtos</h5>
+                    <div class="table-responsive" style="max-height: 480px;">
+                        <table class="table table-dark table-hover table-sm align-middle">
+                            <thead>
+                                <tr class="text-secondary font-mono small">
+                                    <th>CÓDIGO</th>
+                                    <th>DESCRIÇÃO DO CONSUMÍVEL</th>
+                                    <th>SALDO</th>
+                                    <th>PREÇO</th>
+                                    <th class="text-center">AÇÃO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($produtos as $p): ?>
+                                    <tr>
+                                        <td class="font-mono text-warning fw-bold"><?= htmlspecialchars($p['codigo']) ?></td>
+                                        <td>
+                                            <div class="fw-semibold text-white"><?= htmlspecialchars($p['descricao']) ?></div>
+                                            <small class="text-secondary"><?= htmlspecialchars($p['categoria']) ?></small>
+                                        </td>
+                                        <td>
+                                            <span class="badge <?= $p['estoque_atual'] > 5 ? 'bg-success' : 'bg-danger' ?> font-mono">
+                                                <?= $p['estoque_atual'] ?> <?= $p['unidade_medida'] ?>
+                                            </span>
+                                        </td>
+                                        <td class="font-mono fw-bold text-success">
+                                            R$ <?= number_format($p['preco_venda'], 2, ',', '.') ?>
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                onclick="adicionarAoCarrinho(<?= htmlspecialchars(json_encode($p)) ?>)">
+                                                <i class="fa-solid fa-plus"></i> Adicionar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna Direita: Carrinho da Venda e Fechamento -->
+            <div class="col-lg-5">
+                <div class="bg-mfx-panel p-3 rounded-3">
+                    <!-- Cliente -->
+                    <div class="mb-3">
+                        <label class="form-label small text-secondary fw-bold">CLIENTE / DESTINATÁRIO</label>
+                        <select name="cliente_id" id="selectCliente" class="form-select form-select-sm bg-dark text-white mb-2" onchange="atualizarNomeCliente(this)">
+                            <option value="">Consumidor Final / Venda Balcão</option>
+                            <?php foreach ($clientes as $c): ?>
+                                <option value="<?= $c['id'] ?>" data-nome="<?= htmlspecialchars($c['nomeFantasia'] ?: $c['nome']) ?>" data-doc="<?= htmlspecialchars($c['documento']) ?>">
+                                    <?= htmlspecialchars($c['nomeFantasia'] ?: $c['nome']) ?> (<?= $c['cidade'] ?>/<?= $c['estado'] ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <input type="hidden" name="cliente_nome" id="inputClienteNome" value="Consumidor Final / Venda Balcão">
+                        <input type="text" name="cliente_documento" id="inputClienteDoc" class="form-control form-control-sm bg-dark text-white" placeholder="CPF/CNPJ na Nota (Opcional)">
+                    </div>
+
+                    <!-- Itens Selecionados (Carrinho) -->
+                    <h6 class="fw-bold text-gold mb-2 d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-cart-shopping me-1"></i> Itens da Venda</span>
+                        <span id="contadorItensCarrinho" class="badge bg-secondary font-mono">0 itens</span>
+                    </h6>
+
+                    <div class="table-responsive mb-3" style="max-height: 220px;">
+                        <table class="table table-dark table-sm align-middle font-mono small" id="tabelaCarrinho">
+                            <thead>
+                                <tr class="text-secondary">
+                                    <th>Item</th>
+                                    <th>Qtd</th>
+                                    <th>Total</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="corpoCarrinho">
+                                <!-- Linhas dinâmicas inseridas via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Desconto e Totais -->
+                    <div class="bg-dark p-3 rounded-3 border border-secondary mb-3">
+                        <div class="d-flex justify-content-between small text-secondary mb-1">
+                            <span>Subtotal:</span>
+                            <span class="font-mono text-white" id="txtSubtotal">R$ 0,00</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center small mb-2">
+                            <span class="text-secondary">Desconto (R$):</span>
+                            <input type="number" step="0.01" min="0" name="valor_desconto" id="inputDesconto" value="0.00" 
+                                   class="form-control form-control-sm bg-dark text-white text-end font-mono" style="width: 100px;" oninput="calcularTotais()">
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top border-secondary">
+                            <span class="fs-6 fw-bold text-white">TOTAL A PAGAR:</span>
+                            <span class="fs-4 fw-bold text-success font-mono" id="txtTotalPagar">R$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <!-- Forma de Pagamento -->
+                    <div class="mb-3">
+                        <label class="form-label small text-secondary fw-bold">FORMA DE PAGAMENTO</label>
+                        <select name="forma_pagamento" id="selectFormaPagamento" class="form-select bg-dark text-white mb-2" onchange="ajustarPagamento(this.value)">
+                            <option value="PIX">⚡ PIX (Instantâneo)</option>
+                            <option value="DINHEIRO">💵 Dinheiro (com cálculo de troco)</option>
+                            <option value="CARTAO_CREDITO">💳 Cartão de Crédito</option>
+                            <option value="CARTAO_DEBITO">💳 Cartão de Débito</option>
+                            <option value="BOLETO">📄 Boleto / Faturado (28 DDL)</option>
+                        </select>
+                        <input type="text" name="detalhe_pagamento" id="inputDetalhePagamento" class="form-control form-control-sm bg-dark text-white" placeholder="Detalhes (ex: PIX Chave CNPJ)">
+                    </div>
+
+                    <!-- Campo Dinheiro / Troco -->
+                    <div id="boxDinheiro" class="bg-dark p-2 rounded mb-3 d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-secondary">Valor Recebido (R$):</small>
+                            <input type="number" step="0.01" name="valor_recebido" id="inputValorRecebido" class="form-control form-control-sm bg-dark text-white text-end font-mono" style="width: 110px;" oninput="calcularTroco()">
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-warning fw-bold">TROCO:</small>
+                            <span class="fw-bold text-success font-mono" id="txtTroco">R$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <!-- Botão Finalizar -->
+                    <button type="submit" class="btn btn-gold w-full py-2 fw-bold text-uppercase fs-6">
+                        <i class="fa-solid fa-check-circle me-1"></i> Finalizar Venda & Baixar Estoque
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+let carrinhoItens = [];
+
+function adicionarAoCarrinho(prod) {
+    const idx = carrinhoItens.findIndex(i => i.codigo === prod.codigo);
+    if (idx >= 0) {
+        carrinhoItens[idx].quantidade += 1;
+        carrinhoItens[idx].total = carrinhoItens[idx].quantidade * carrinhoItens[idx].preco;
+    } else {
+        carrinhoItens.push({
+            id: prod.id,
+            codigo: prod.codigo,
+            descricao: prod.descricao,
+            unidade: prod.unidade_medida || 'UN',
+            quantidade: 1,
+            preco: parseFloat(prod.preco_venda),
+            total: parseFloat(prod.preco_venda)
+        });
+    }
+    renderizarCarrinho();
+}
+
+function removerItem(index) {
+    carrinhoItens.splice(index, 1);
+    renderizarCarrinho();
+}
+
+function alterarQtd(index, novaQtd) {
+    novaQtd = parseFloat(novaQtd) || 1;
+    if (novaQtd <= 0) {
+        removerItem(index);
+        return;
+    }
+    carrinhoItens[index].quantidade = novaQtd;
+    carrinhoItens[index].total = novaQtd * carrinhoItens[index].preco;
+    renderizarCarrinho();
+}
+
+function renderizarCarrinho() {
+    const tbody = document.getElementById('corpoCarrinho');
+    tbody.innerHTML = '';
+
+    carrinhoItens.forEach((it, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = \`
+            <td>
+                <input type="hidden" name="item_produto_id[]" value="\${it.id}">
+                <input type="hidden" name="item_codigo[]" value="\${it.codigo}">
+                <input type="hidden" name="item_descricao[]" value="\${it.descricao}">
+                <input type="hidden" name="item_unidade[]" value="\${it.unidade}">
+                <input type="hidden" name="item_preco_unitario[]" value="\${it.preco}">
+                <input type="hidden" name="item_valor_total[]" value="\${it.total.toFixed(2)}">
+                <span class="text-warning fw-bold">\${it.codigo}</span>
+                <div class="text-truncate text-secondary" style="max-width: 140px;">\${it.descricao}</div>
+            </td>
+            <td style="width: 70px;">
+                <input type="number" min="1" step="1" name="item_quantidade[]" value="\${it.quantidade}" 
+                    class="form-control form-control-sm bg-dark text-white p-1 text-center font-mono"
+                    onchange="alterarQtd(\${idx}, this.value)">
+            </td>
+            <td class="text-success fw-bold text-end">
+                R$ \${it.total.toFixed(2).replace('.', ',')}
+            </td>
+            <td class="text-end">
+                <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="removerItem(\${idx})">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </td>
+        \`;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('contadorItensCarrinho').textContent = carrinhoItens.length + ' itens';
+    calcularTotais();
+}
+
+function calcularTotais() {
+    const subtotal = carrinhoItens.reduce((acc, it) => acc + it.total, 0);
+    const desconto = parseFloat(document.getElementById('inputDesconto').value) || 0;
+    const total = Math.max(0, subtotal - desconto);
+
+    document.getElementById('txtSubtotal').textContent = 'R$ ' + subtotal.toFixed(2).replace('.', ',');
+    document.getElementById('txtTotalPagar').textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
+    document.getElementById('inputSubtotal').value = subtotal.toFixed(2);
+    document.getElementById('inputTotalGeral').value = total.toFixed(2);
+
+    calcularTroco();
+}
+
+function ajustarPagamento(forma) {
+    const boxDinheiro = document.getElementById('boxDinheiro');
+    const inputDetalhe = document.getElementById('inputDetalhePagamento');
+
+    if (forma === 'DINHEIRO') {
+        boxDinheiro.classList.remove('d-none');
+        inputDetalhe.value = 'Pagamento em Dinheiro';
+    } else {
+        boxDinheiro.classList.add('d-none');
+        if (forma === 'PIX') inputDetalhe.value = 'PIX Chave CNPJ 52.148.963/0001-44';
+        if (forma === 'CARTAO_CREDITO') inputDetalhe.value = 'Cartão de Crédito à Vista';
+        if (forma === 'CARTAO_DEBITO') inputDetalhe.value = 'Cartão de Débito';
+        if (forma === 'BOLETO') inputDetalhe.value = 'Boleto Faturado 28 DDL';
+    }
+}
+
+function calcularTroco() {
+    const total = parseFloat(document.getElementById('inputTotalGeral').value) || 0;
+    const recebido = parseFloat(document.getElementById('inputValorRecebido')?.value) || 0;
+    const troco = Math.max(0, recebido - total);
+
+    const txtTroco = document.getElementById('txtTroco');
+    if (txtTroco) {
+        txtTroco.textContent = 'R$ ' + troco.toFixed(2).replace('.', ',');
+        document.getElementById('inputTroco').value = troco.toFixed(2);
+    }
+}
+
+function atualizarNomeCliente(select) {
+    const selectedOption = select.options[select.selectedIndex];
+    const inputNome = document.getElementById('inputClienteNome');
+    const inputDoc = document.getElementById('inputClienteDoc');
+
+    if (select.value === '') {
+        inputNome.value = 'Consumidor Final / Venda Balcão';
+        inputDoc.value = '';
+    } else {
+        inputNome.value = selectedOption.getAttribute('data-nome') || '';
+        inputDoc.value = selectedOption.getAttribute('data-doc') || '';
+    }
+}
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

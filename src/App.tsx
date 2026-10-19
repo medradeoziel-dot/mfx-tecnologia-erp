@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Cliente, OrdemServico, StatusOS, Compra, ItemEstoque } from './types';
-import { CLIENTES_INICIAIS, ORDENS_SERVICO_INICIAIS, ESTOQUE_INICIAL, COMPRAS_INICIAIS } from './data/initialData';
+import { Cliente, OrdemServico, StatusOS, Compra, ItemEstoque, Venda, MovimentoCaixa } from './types';
+import { CLIENTES_INICIAIS, ORDENS_SERVICO_INICIAIS, ESTOQUE_INICIAL, COMPRAS_INICIAIS, VENDAS_INICIAIS, MOVIMENTOS_CAIXA_INICIAIS } from './data/initialData';
 import { ErpSidebar, ErpModuleType } from './components/ErpSidebar';
 import { ErpTopbar } from './components/ErpTopbar';
 import { ErpStatusBar } from './components/ErpStatusBar';
@@ -19,6 +19,8 @@ import { DashboardView } from './components/DashboardView';
 import { PhpSourceExportView } from './components/PhpSourceExportView';
 import { EstoqueView } from './components/EstoqueView';
 import { ComprasView } from './components/ComprasView';
+import { PdvView } from './components/PdvView';
+import { FinanceiroView } from './components/FinanceiroView';
 
 export default function App() {
   // Estado de Clientes com persistência em localStorage
@@ -68,6 +70,28 @@ export default function App() {
     return COMPRAS_INICIAIS;
   });
 
+  // Estado de Vendas do PDV com persistência
+  const [vendas, setVendas] = useState<Venda[]>(() => {
+    try {
+      const salvo = localStorage.getItem('mfx_vendas');
+      if (salvo) return JSON.parse(salvo);
+    } catch (e) {
+      console.warn('Erro ao carregar vendas do localStorage:', e);
+    }
+    return VENDAS_INICIAIS;
+  });
+
+  // Estado de Movimentações de Caixa / Financeiro com persistência
+  const [movimentosCaixa, setMovimentosCaixa] = useState<MovimentoCaixa[]>(() => {
+    try {
+      const salvo = localStorage.getItem('mfx_caixa_movimentos');
+      if (salvo) return JSON.parse(salvo);
+    } catch (e) {
+      console.warn('Erro ao carregar movimentos de caixa do localStorage:', e);
+    }
+    return MOVIMENTOS_CAIXA_INICIAIS;
+  });
+
   // Navegação do ERP: Módulo ativo e sub-visão
   const [currentModule, setCurrentModule] = useState<ErpModuleType>('abertura');
   const [osSubView, setOsSubView] = useState<'listar' | 'nova' | 'imprimir'>('listar');
@@ -112,6 +136,22 @@ export default function App() {
     }
   }, [compras]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('mfx_vendas', JSON.stringify(vendas));
+    } catch (e) {
+      console.warn('Erro ao salvar vendas:', e);
+    }
+  }, [vendas]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mfx_caixa_movimentos', JSON.stringify(movimentosCaixa));
+    } catch (e) {
+      console.warn('Erro ao salvar movimentos de caixa:', e);
+    }
+  }, [movimentosCaixa]);
+
   // Ações de Compras e Atualização Automática de Estoque
   const handleSalvarCompra = (novaCompra: Compra) => {
     setCompras((prev) => [novaCompra, ...prev]);
@@ -133,6 +173,49 @@ export default function App() {
         return item;
       })
     );
+  };
+
+  // Ações do PDV: Finalizar Venda com baixa física no estoque e lançamento no caixa
+  const handleFinalizarVenda = (
+    novaVenda: Venda,
+    atualizacoesEstoque: { codigo: string; quantidade: number }[]
+  ) => {
+    // 1. Registra a venda
+    setVendas((prev) => [novaVenda, ...prev]);
+
+    // 2. Dá baixa física automática no saldo de cada produto do estoque
+    setEstoqueItens((prev) =>
+      prev.map((item) => {
+        const at = atualizacoesEstoque.find((a) => a.codigo === item.codigo);
+        if (at) {
+          const novoSaldo = Math.max(0, (item.estoqueAtual || 0) - at.quantidade);
+          return {
+            ...item,
+            estoqueAtual: novoSaldo,
+            dataAtualizacao: new Date().toISOString(),
+          };
+        }
+        return item;
+      })
+    );
+
+    // 3. Lança a entrada de receita no Financeiro / Caixa
+    const novoMovimento: MovimentoCaixa = {
+      id: `mov-${Date.now()}`,
+      tipo: 'ENTRADA',
+      origem: 'PDV',
+      referenciaId: novaVenda.id,
+      descricao: `Venda Balcão ${novaVenda.codigoVenda} - ${novaVenda.clienteNome}`,
+      formaPagamento: novaVenda.formaPagamento,
+      valor: novaVenda.valorTotal,
+      dataHora: `${novaVenda.dataVenda} ${novaVenda.horaVenda}`,
+      operador: novaVenda.operador || 'ADM - MEDRADE',
+    };
+    setMovimentosCaixa((prev) => [novoMovimento, ...prev]);
+  };
+
+  const handleAdicionarMovimentoCaixa = (novoMovimento: MovimentoCaixa) => {
+    setMovimentosCaixa((prev) => [novoMovimento, ...prev]);
   };
 
   // Ações de Clientes
@@ -397,8 +480,26 @@ export default function App() {
               />
             )}
 
+            {currentModule === 'pdv' && (
+              <PdvView
+                produtosEstoque={estoqueItens}
+                clientes={clientes}
+                vendas={vendas}
+                onFinalizarVenda={handleFinalizarVenda}
+                onIrParaEstoque={() => setCurrentModule('estoque')}
+                onIrParaFinanceiro={() => setCurrentModule('financeiro')}
+              />
+            )}
+
+            {currentModule === 'financeiro' && (
+              <FinanceiroView
+                movimentos={movimentosCaixa}
+                onAdicionarMovimento={handleAdicionarMovimentoCaixa}
+                onIrParaPdv={() => setCurrentModule('pdv')}
+              />
+            )}
+
             {(currentModule === 'fiscal' ||
-              currentModule === 'financeiro' ||
               currentModule === 'acesso' ||
               currentModule === 'configuracoes' ||
               currentModule === 'ajuda') && (
