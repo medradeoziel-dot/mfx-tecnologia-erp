@@ -441,7 +441,7 @@ export const NfseView: React.FC<NfseViewProps> = ({
               {historicoFiltrado.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-8 text-center text-slate-400">
-                    Nenhuma NFS-e emitida registrada no histórico municipal.
+                    Nenhuma NFS-e emitida até o momento
                   </td>
                 </tr>
               ) : (

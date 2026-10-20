@@ -6408,6 +6408,52 @@ require_once 'conexao.php';
 $mensagemSucesso = null;
 $mensagemErro = null;
 
+// Buscar Vendas de Balcão e OS concluídas reais do banco de dados elegíveis para NF-e
+$elegiveis = [];
+try {
+    // Vendas de Balcão (PDV)
+    $stmtVendas = $pdo->query("SELECT v.*, c.nome as cliente_nome, c.cnpj_cpf as cliente_documento 
+                               FROM vendas v 
+                               LEFT JOIN clientes c ON v.cliente_id = c.id 
+                               ORDER BY v.id DESC LIMIT 20");
+    while ($v = $stmtVendas->fetch(PDO::FETCH_ASSOC)) {
+        $elegiveis[] = [
+            'tipo' => 'PDV',
+            'numero' => $v['codigo_venda'] ?? ('PDV-' . str_pad($v['id'], 4, '0', STR_PAD_LEFT)),
+            'cliente' => $v['cliente_nome'] ?? 'Consumidor Final',
+            'descricao' => 'Produtos / Consumíveis de Venda de Balcão',
+            'valor' => (float)($v['valor_total'] ?? 0),
+        ];
+    }
+
+    // Ordens de Serviço concluídas com produtos/peças
+    $stmtOs = $pdo->query("SELECT os.*, c.nome as cliente_nome 
+                           FROM ordens_servico os 
+                           LEFT JOIN clientes c ON os.cliente_id = c.id 
+                           WHERE os.status IN ('Concluído', 'Faturado', 'Entregue') 
+                           ORDER BY os.id DESC LIMIT 20");
+    while ($o = $stmtOs->fetch(PDO::FETCH_ASSOC)) {
+        $elegiveis[] = [
+            'tipo' => 'OS',
+            'numero' => $o['numero_os'] ?? ('OS-' . $o['id']),
+            'cliente' => $o['cliente_nome'] ?? 'Cliente não informado',
+            'descricao' => 'Peças e Consumíveis de Manutenção',
+            'valor' => (float)($o['valor_produtos'] ?? ($o['valor_total'] ?? 0)),
+        ];
+    }
+} catch (Exception $e) {
+    $elegiveis = [];
+}
+
+// Histórico de NF-e emitidas (inicializado vazio sem mock data)
+$notasNfe = [];
+try {
+    $stmtNfe = $pdo->query("SELECT * FROM notas_nfe ORDER BY id DESC LIMIT 50");
+    $notasNfe = $stmtNfe->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    $notasNfe = [];
+}
+
 // Processar emissão de NF-e
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['acao'] === 'emitir_nfe') {
     $origemTipo = trim($_POST['origem_tipo'] ?? 'OS');
@@ -6515,15 +6561,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
                     </tr>
                 </thead>
                 <tbody>
+                    <?php if (empty($elegiveis)): ?>
                     <tr>
-                        <td><span class="badge bg-danger-subtle text-danger me-1">OS</span> OS-2026-0101</td>
-                        <td><strong>Metalúrgica Corte & Conformação Paulista Ltda</strong></td>
-                        <td>Lentes de Proteção 30x5mm, Bicos Duplos 1.5mm</td>
-                        <td class="text-end font-monospace fw-bold">R$ 2.450,00</td>
+                        <td colspan="5" class="text-center text-muted py-4">Nenhuma venda ou OS com produtos pendente de emissão de NF-e no momento.</td>
+                    </tr>
+                    <?php else: ?>
+                    <?php foreach ($elegiveis as $item): ?>
+                    <tr>
+                        <td><span class="badge <?= $item['tipo'] === 'OS' ? 'bg-danger-subtle text-danger' : 'bg-warning-subtle text-dark'; ?> me-1"><?= $item['tipo']; ?></span> <?= htmlspecialchars($item['numero']); ?></td>
+                        <td><strong><?= htmlspecialchars($item['cliente']); ?></strong></td>
+                        <td><?= htmlspecialchars($item['descricao']); ?></td>
+                        <td class="text-end font-monospace fw-bold">R$ <?= number_format($item['valor'], 2, ',', '.'); ?></td>
                         <td class="text-center">
-                            <button class="btn btn-dark btn-sm"><i class="fa-solid fa-receipt me-1"></i> Emitir NF-e</button>
+                            <form method="POST" class="d-inline">
+                                <input type="hidden" name="acao" value="emitir_nfe">
+                                <input type="hidden" name="origem_tipo" value="<?= $item['tipo']; ?>">
+                                <input type="hidden" name="origem_numero" value="<?= htmlspecialchars($item['numero']); ?>">
+                                <input type="hidden" name="cliente_nome" value="<?= htmlspecialchars($item['cliente']); ?>">
+                                <input type="hidden" name="valor_total" value="<?= $item['valor']; ?>">
+                                <button type="submit" class="btn btn-dark btn-sm"><i class="fa-solid fa-receipt me-1"></i> Emitir NF-e</button>
+                            </form>
                         </td>
                     </tr>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
@@ -6549,19 +6610,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
                     </tr>
                 </thead>
                 <tbody>
+                    <?php if (empty($notasNfe)): ?>
                     <tr>
-                        <td class="font-monospace fw-bold">000.001.239</td>
-                        <td>1</td>
-                        <td class="font-monospace small">3526 1052 1489 6300 0144 5500...</td>
-                        <td>Caldeiraria & Manutenção Bauruense</td>
-                        <td class="text-end font-monospace fw-bold">R$ 1.840,00</td>
-                        <td class="text-center"><span class="badge bg-success-subtle text-success">Autorizada</span></td>
+                        <td colspan="7" class="text-center text-muted py-4">Nenhuma NF-e emitida até o momento</td>
+                    </tr>
+                    <?php else: ?>
+                    <?php foreach ($notasNfe as $nota): ?>
+                    <tr>
+                        <td class="font-monospace fw-bold"><?= htmlspecialchars($nota['numero']); ?></td>
+                        <td><?= htmlspecialchars($nota['serie'] ?? '1'); ?></td>
+                        <td class="font-monospace small"><?= htmlspecialchars(substr($nota['chave_acesso'] ?? '', 0, 24)) . '...'; ?></td>
+                        <td><?= htmlspecialchars($nota['cliente_nome']); ?></td>
+                        <td class="text-end font-monospace fw-bold">R$ <?= number_format($nota['valor_total'], 2, ',', '.'); ?></td>
+                        <td class="text-center"><span class="badge bg-success-subtle text-success"><?= htmlspecialchars($nota['status'] ?? 'Autorizada'); ?></span></td>
                         <td class="text-center">
                             <button class="btn btn-light btn-sm"><i class="fa-solid fa-print me-1"></i> DANFE PDF</button>
                             <button class="btn btn-light btn-sm"><i class="fa-solid fa-download me-1"></i> Download XML</button>
                             <button class="btn btn-light btn-sm text-danger"><i class="fa-solid fa-ban me-1"></i> Cancelar Nota</button>
                         </td>
                     </tr>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
@@ -6584,6 +6653,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
 require_once 'conexao.php';
 
 $mensagemSucesso = null;
+
+// Buscar Ordens de Serviço concluídas/faturadas reais do banco de dados
+$osElegiveis = [];
+try {
+    $stmtOs = $pdo->query("SELECT os.*, c.nome as cliente_nome 
+                           FROM ordens_servico os 
+                           LEFT JOIN clientes c ON os.cliente_id = c.id 
+                           WHERE os.status IN ('Concluído', 'Faturado')
+                           ORDER BY os.id DESC");
+    if ($stmtOs) {
+        $osElegiveis = $stmtOs->fetchAll(PDO::FETCH_ASSOC);
+    }
+} catch (Exception $e) {
+    $osElegiveis = [];
+}
+
+// Histórico de NFS-e emitidas (inicialmente vazio)
+$notasNfse = [];
+try {
+    $stmtNfse = $pdo->query("SELECT * FROM notas_nfse ORDER BY id DESC");
+    if ($stmtNfse) {
+        $notasNfse = $stmtNfse->fetchAll(PDO::FETCH_ASSOC);
+    }
+} catch (Exception $e) {
+    $notasNfse = [];
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -6662,15 +6757,23 @@ $mensagemSucesso = null;
                     </tr>
                 </thead>
                 <tbody>
+                    <?php if (empty($osElegiveis)): ?>
                     <tr>
-                        <td><strong>OS-2026-0101</strong></td>
-                        <td>Metalúrgica Corte & Conformação Paulista Ltda</td>
-                        <td>Manutenção Corretiva da Cabeça de Corte Laser e Alinhamento Óptico</td>
-                        <td class="text-end font-monospace fw-bold">R$ 1.200,00</td>
+                        <td colspan="5" class="text-center text-muted py-4">Nenhuma Ordem de Serviço com mão de obra pendente de emissão de NFS-e no momento.</td>
+                    </tr>
+                    <?php else: ?>
+                    <?php foreach ($osElegiveis as $os): ?>
+                    <tr>
+                        <td><strong><?= htmlspecialchars($os['numero_os'] ?? 'OS-'.str_pad($os['id'], 4, '0', STR_PAD_LEFT)); ?></strong></td>
+                        <td><?= htmlspecialchars($os['cliente_nome'] ?? 'Cliente'); ?></td>
+                        <td><?= htmlspecialchars($os['observacoes_gerais'] ?? 'Manutenção técnica especializada'); ?></td>
+                        <td class="text-end font-monospace fw-bold">R$ <?= number_format($os['total_geral'] ?? 0, 2, ',', '.'); ?></td>
                         <td class="text-center">
                             <button class="btn btn-dark btn-sm"><i class="fa-solid fa-file-circle-check me-1"></i> Emitir NFS-e</button>
                         </td>
                     </tr>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
@@ -6697,19 +6800,27 @@ $mensagemSucesso = null;
                     </tr>
                 </thead>
                 <tbody>
+                    <?php if (empty($notasNfse)): ?>
                     <tr>
-                        <td class="font-monospace fw-bold">2026/000084</td>
-                        <td class="font-monospace small">K7D2-99B1-4A82</td>
-                        <td>Estruturas Metálicas & Galpões Agudos Ltda</td>
-                        <td>Revisão preventiva pneumática e calibração THC</td>
-                        <td class="text-end font-monospace fw-bold">R$ 850,00</td>
-                        <td class="text-end font-monospace text-muted">R$ 17,00</td>
+                        <td colspan="8" class="text-center text-muted py-4">Nenhuma NFS-e emitida até o momento</td>
+                    </tr>
+                    <?php else: ?>
+                    <?php foreach ($notasNfse as $nota): ?>
+                    <tr>
+                        <td class="font-monospace fw-bold"><?= htmlspecialchars($nota['numero']); ?></td>
+                        <td class="font-monospace small"><?= htmlspecialchars($nota['codigo_verificacao']); ?></td>
+                        <td><?= htmlspecialchars($nota['cliente_nome']); ?></td>
+                        <td><?= htmlspecialchars($nota['discriminacao_servico']); ?></td>
+                        <td class="text-end font-monospace fw-bold">R$ <?= number_format($nota['valor_servicos'], 2, ',', '.'); ?></td>
+                        <td class="text-end font-monospace text-muted">R$ <?= number_format($nota['valor_iss'], 2, ',', '.'); ?></td>
                         <td class="text-center"><span class="badge bg-success-subtle text-success">Autorizada</span></td>
                         <td class="text-center">
                             <button class="btn btn-light btn-sm"><i class="fa-solid fa-print me-1"></i> Imprimir NFS-e</button>
                             <button class="btn btn-light btn-sm"><i class="fa-solid fa-download me-1"></i> Download XML</button>
                         </td>
                     </tr>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>

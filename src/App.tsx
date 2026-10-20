@@ -134,9 +134,15 @@ export default function App() {
     return CONTAS_PAGAR_INICIAIS;
   });
 
-  // Estado de NF-e (Produtos) com persistência em localStorage
+  // Estado de NF-e (Produtos) com persistência em localStorage (inicializado vazio sem mock data)
   const [notasNfe, setNotasNfe] = useState<NotaFiscalNfe[]>(() => {
     try {
+      const resetFeito = localStorage.getItem('mfx_nfe_limpo_v1');
+      if (!resetFeito) {
+        localStorage.setItem('mfx_nfe_limpo_v1', 'true');
+        localStorage.setItem('mfx_notas_nfe', JSON.stringify([]));
+        return [];
+      }
       const salvo = localStorage.getItem('mfx_notas_nfe');
       if (salvo) return JSON.parse(salvo);
     } catch (e) {
@@ -145,9 +151,15 @@ export default function App() {
     return NOTAS_NFE_INICIAIS;
   });
 
-  // Estado de NFS-e (Serviços) com persistência em localStorage
+  // Estado de NFS-e (Serviços) com persistência em localStorage (inicializado vazio sem mock data)
   const [notasNfse, setNotasNfse] = useState<NotaFiscalNfse[]>(() => {
     try {
+      const resetFeito = localStorage.getItem('mfx_nfse_limpo_v1');
+      if (!resetFeito) {
+        localStorage.setItem('mfx_nfse_limpo_v1', 'true');
+        localStorage.setItem('mfx_notas_nfse', JSON.stringify([]));
+        return [];
+      }
       const salvo = localStorage.getItem('mfx_notas_nfse');
       if (salvo) return JSON.parse(salvo);
     } catch (e) {

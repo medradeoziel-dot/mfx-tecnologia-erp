@@ -522,7 +522,7 @@ export const NfeView: React.FC<NfeViewProps> = ({
               {historicoFiltrado.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-slate-400">
-                    Nenhuma NF-e emitida registrada no histórico.
+                    Nenhuma NF-e emitida até o momento
                   </td>
                 </tr>
               ) : (
