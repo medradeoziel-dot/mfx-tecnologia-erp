@@ -425,7 +425,7 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
             <span className="w-5 h-5 rounded-full bg-red-600 text-[11px] flex items-center justify-center font-mono">1</span>
             Identificação do Cliente e Tecnologia da Máquina
           </h2>
-          <span className="text-xs text-slate-400">Vínculo com tabela MySQL: clientes</span>
+          <span className="text-xs text-slate-400">Base Integrada de Clientes</span>
         </div>
 
         <div className="p-6">

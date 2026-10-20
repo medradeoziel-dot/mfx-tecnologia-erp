@@ -6395,6 +6395,332 @@ function abrirModalLiquidacao(id, fornecedor, categoria, valor) {
 </html>`
   },
   {
+    filename: 'nfe.php',
+    description: 'Módulo Exclusivo de Emissão e Gestão de NF-e (Modelo 55 / SEFAZ SP) para produtos e consumíveis, com DANFE, XML e cancelamento.',
+    language: 'php',
+    content: `<?php
+/**
+ * MFx Tecnologia Industrial - Sistema Integrado de Gestão Empresarial (ERP)
+ * Arquivo: nfe.php - Emissão e Gestão de NF-e (Produtos / SEFAZ SP)
+ */
+require_once 'conexao.php';
+
+$mensagemSucesso = null;
+$mensagemErro = null;
+
+// Processar emissão de NF-e
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['acao'] === 'emitir_nfe') {
+    $origemTipo = trim($_POST['origem_tipo'] ?? 'OS');
+    $origemNumero = trim($_POST['origem_numero'] ?? '');
+    $clienteNome = trim($_POST['cliente_nome'] ?? '');
+    $clienteDocumento = trim($_POST['cliente_documento'] ?? '');
+    $valorTotal = (float)($_POST['valor_total'] ?? 0);
+
+    if (!empty($origemNumero) && $valorTotal > 0) {
+        $ano = date('y');
+        $mes = date('m');
+        $cnpj = '52148963000144';
+        $mod = '55';
+        $serie = '001';
+        $nNF = str_pad(rand(1000, 9999), 9, '0', STR_PAD_LEFT);
+        $chave = "35{$ano}{$mes}{$cnpj}{$mod}{$serie}{$nNF}1" . rand(10000000, 99999999) . "7";
+        $protocolo = "135" . date('y') . rand(100000000, 999999999);
+        $numeroNota = substr($nNF, 0, 3) . '.' . substr($nNF, 3, 3) . '.' . substr($nNF, 6);
+
+        $mensagemSucesso = "NF-e nº {$numeroNota} emitida com sucesso! Protocolo SEFAZ SP: {$protocolo}";
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emissão e Gestão de NF-e (Produtos / SEFAZ SP) - MFx ERP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body { background-color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; font-size: 0.875rem; }
+        .card-stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1rem; }
+    </style>
+</head>
+<body class="p-4">
+<div class="container-fluid max-w-7xl">
+
+    <!-- Cabeçalho Exclusivo e Limpo -->
+    <div class="bg-white p-4 rounded-3 border border-slate-200 mb-4 d-flex justify-content-between align-items-center">
+        <div>
+            <div class="text-muted small text-uppercase fw-bold">SEFAZ SP • MODELO 55</div>
+            <h1 class="h4 fw-bold text-dark mb-1">Emissão e Gestão de NF-e (Produtos / SEFAZ SP)</h1>
+            <p class="text-secondary small mb-0">Faturamento e transmissão de notas fiscais eletrônicas modelo 55 de peças e consumíveis.</p>
+        </div>
+    </div>
+
+    <!-- Cards Superiores Finos e Neutros -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card-stat d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small text-uppercase fw-semibold">Certificado Digital</div>
+                    <div class="fw-bold text-dark mt-1"><i class="fa-solid fa-shield-halved text-success me-1"></i> A1 Válido (e-CNPJ)</div>
+                    <div class="text-secondary small">Vencimento: 20/12/2027 • ICP-Brasil</div>
+                </div>
+                <span class="badge bg-success-subtle text-success border border-success-subtle">Conectado</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card-stat d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small text-uppercase fw-semibold">Ambiente SEFAZ</div>
+                    <div class="fw-bold text-dark mt-1"><i class="fa-solid fa-server text-primary me-1"></i> Produção Ativo</div>
+                    <div class="text-secondary small">SEFAZ-SP • WebServices v4.00</div>
+                </div>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">0.18s ON</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card-stat d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small text-uppercase fw-semibold">Regime Tributário</div>
+                    <div class="fw-bold text-dark mt-1"><i class="fa-solid fa-building text-secondary me-1"></i> Simples Nacional</div>
+                    <div class="text-secondary small">CNAE 3314-7 • Agudos/SP • CFOP 5102</div>
+                </div>
+                <span class="badge bg-light text-dark border">Agudos / SP</span>
+            </div>
+        </div>
+    </div>
+
+    <?php if ($mensagemSucesso): ?>
+    <div class="alert alert-success d-flex align-items-center gap-2 mb-4">
+        <i class="fa-solid fa-check-circle"></i>
+        <span><?= htmlspecialchars($mensagemSucesso); ?></span>
+    </div>
+    <?php endif; ?>
+
+    <!-- Tabela: OS e Vendas Elegíveis para NF-e -->
+    <div class="card border-slate-200 mb-4 shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+            <h6 class="mb-0 fw-bold"><i class="fa-solid fa-receipt me-2 text-secondary"></i>OS e Vendas Elegíveis para NF-e</h6>
+            <span class="badge bg-secondary">Produtos e consumíveis pendentes</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nº Venda / OS</th>
+                        <th>Cliente</th>
+                        <th>Produtos / Consumíveis</th>
+                        <th class="text-end">Valor dos Produtos</th>
+                        <th class="text-center">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge bg-danger-subtle text-danger me-1">OS</span> OS-2026-0101</td>
+                        <td><strong>Metalúrgica Corte & Conformação Paulista Ltda</strong></td>
+                        <td>Lentes de Proteção 30x5mm, Bicos Duplos 1.5mm</td>
+                        <td class="text-end font-monospace fw-bold">R$ 2.450,00</td>
+                        <td class="text-center">
+                            <button class="btn btn-dark btn-sm"><i class="fa-solid fa-receipt me-1"></i> Emitir NF-e</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Tabela: Histórico de NF-e Emitidas -->
+    <div class="card border-slate-200 shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+            <h6 class="mb-0 fw-bold"><i class="fa-solid fa-file-invoice me-2 text-secondary"></i>Histórico de NF-e Emitidas</h6>
+            <span class="badge bg-light text-dark border">Ambiente SEFAZ Produção SP</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nº NF-e</th>
+                        <th>Série</th>
+                        <th>Chave de Acesso</th>
+                        <th>Destinatário</th>
+                        <th class="text-end">Valor Total</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="font-monospace fw-bold">000.001.239</td>
+                        <td>1</td>
+                        <td class="font-monospace small">3526 1052 1489 6300 0144 5500...</td>
+                        <td>Caldeiraria & Manutenção Bauruense</td>
+                        <td class="text-end font-monospace fw-bold">R$ 1.840,00</td>
+                        <td class="text-center"><span class="badge bg-success-subtle text-success">Autorizada</span></td>
+                        <td class="text-center">
+                            <button class="btn btn-light btn-sm"><i class="fa-solid fa-print me-1"></i> DANFE PDF</button>
+                            <button class="btn btn-light btn-sm"><i class="fa-solid fa-download me-1"></i> Download XML</button>
+                            <button class="btn btn-light btn-sm text-danger"><i class="fa-solid fa-ban me-1"></i> Cancelar Nota</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>`
+  },
+  {
+    filename: 'nfse.php',
+    description: 'Módulo Exclusivo de Emissão e Gestão de NFS-e (Serviços Industriais / Prefeitura Agudos - LC 116 Item 14.01) para mão de obra e manutenção.',
+    language: 'php',
+    content: `<?php
+/**
+ * MFx Tecnologia Industrial - Sistema Integrado de Gestão Empresarial (ERP)
+ * Arquivo: nfse.php - Emissão e Gestão de NFS-e (Serviços Industriais / Prefeitura Agudos)
+ */
+require_once 'conexao.php';
+
+$mensagemSucesso = null;
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emissão e Gestão de NFS-e (Serviços Industriais / Prefeitura Agudos) - MFx ERP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        body { background-color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; font-size: 0.875rem; }
+        .card-stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1rem; }
+    </style>
+</head>
+<body class="p-4">
+<div class="container-fluid max-w-7xl">
+
+    <!-- Cabeçalho Exclusivo e Limpo -->
+    <div class="bg-white p-4 rounded-3 border border-slate-200 mb-4 d-flex justify-content-between align-items-center">
+        <div>
+            <div class="text-muted small text-uppercase fw-bold">PREFEITURA MUNICIPAL DE AGUDOS • LC 116</div>
+            <h1 class="h4 fw-bold text-dark mb-1">Emissão e Gestão de NFS-e (Serviços Industriais / Prefeitura Agudos)</h1>
+            <p class="text-secondary small mb-0">Emissão de notas fiscais de serviço eletrônicas para mão de obra, assistência e manutenção técnica.</p>
+        </div>
+    </div>
+
+    <!-- Cards Superiores Finos e Neutros -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card-stat d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small text-uppercase fw-semibold">Alíquota ISS Municipal</div>
+                    <div class="fw-bold text-dark mt-1"><i class="fa-solid fa-percent text-info me-1"></i> 2.00% (Simples Nacional)</div>
+                    <div class="text-secondary small">Exigibilidade: Exigível no Município</div>
+                </div>
+                <span class="badge bg-info-subtle text-info border border-info-subtle">Agudos / SP</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card-stat d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small text-uppercase fw-semibold">Item LC 116 / 2003</div>
+                    <div class="fw-bold text-dark mt-1"><i class="fa-solid fa-wrench text-secondary me-1"></i> Item 14.01 - Manutenção</div>
+                    <div class="text-secondary small">Revisão, conserto e conservação de máquinas</div>
+                </div>
+                <span class="badge bg-light text-dark border">Atividade 1401</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card-stat d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small text-uppercase fw-semibold">Inscrição Municipal</div>
+                    <div class="fw-bold text-dark mt-1"><i class="fa-solid fa-landmark text-secondary me-1"></i> 1401-0 / 01-88</div>
+                    <div class="text-secondary small">Prefeitura Municipal de Agudos</div>
+                </div>
+                <span class="badge bg-light text-dark border">Ativo</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela: OS Elegíveis para NFS-e -->
+    <div class="card border-slate-200 mb-4 shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+            <h6 class="mb-0 fw-bold"><i class="fa-solid fa-screwdriver-wrench me-2 text-secondary"></i>OS Elegíveis para NFS-e</h6>
+            <span class="badge bg-secondary">Mão de obra e serviços concluídos</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nº OS</th>
+                        <th>Cliente / Tomador</th>
+                        <th>Discriminação do Serviço</th>
+                        <th class="text-end">Valor dos Serviços</th>
+                        <th class="text-center">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>OS-2026-0101</strong></td>
+                        <td>Metalúrgica Corte & Conformação Paulista Ltda</td>
+                        <td>Manutenção Corretiva da Cabeça de Corte Laser e Alinhamento Óptico</td>
+                        <td class="text-end font-monospace fw-bold">R$ 1.200,00</td>
+                        <td class="text-center">
+                            <button class="btn btn-dark btn-sm"><i class="fa-solid fa-file-circle-check me-1"></i> Emitir NFS-e</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Tabela: Histórico de NFS-e Emitidas -->
+    <div class="card border-slate-200 shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+            <h6 class="mb-0 fw-bold"><i class="fa-solid fa-file-lines me-2 text-secondary"></i>Histórico de NFS-e Emitidas</h6>
+            <span class="badge bg-light text-dark border">Tributação: Agudos / SP (LC 116)</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nº NFS-e</th>
+                        <th>Cód. Verificação</th>
+                        <th>Tomador</th>
+                        <th>Discriminação</th>
+                        <th class="text-end">Valor Serviços</th>
+                        <th class="text-end">ISS (2%)</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="font-monospace fw-bold">2026/000084</td>
+                        <td class="font-monospace small">K7D2-99B1-4A82</td>
+                        <td>Estruturas Metálicas & Galpões Agudos Ltda</td>
+                        <td>Revisão preventiva pneumática e calibração THC</td>
+                        <td class="text-end font-monospace fw-bold">R$ 850,00</td>
+                        <td class="text-end font-monospace text-muted">R$ 17,00</td>
+                        <td class="text-center"><span class="badge bg-success-subtle text-success">Autorizada</span></td>
+                        <td class="text-center">
+                            <button class="btn btn-light btn-sm"><i class="fa-solid fa-print me-1"></i> Imprimir NFS-e</button>
+                            <button class="btn btn-light btn-sm"><i class="fa-solid fa-download me-1"></i> Download XML</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>`
+  },
+  {
     filename: 'README_INSTALACAO.md',
     description: 'Instruções passo a passo de como rodar o projeto PHP e MySQL no XAMPP, WAMP, Docker ou cPanel.',
     language: 'markdown',

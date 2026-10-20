@@ -339,3 +339,57 @@ export interface ContaPagar {
   contaSaida?: string;
   observacoes?: string;
 }
+
+export interface NotaFiscalNfe {
+  id: string;
+  numero: string; // Ex: "000.001.240"
+  serie: string; // "1"
+  chaveAcesso: string; // 44 dígitos
+  dataEmissao: string;
+  origemTipo: 'OS' | 'PDV';
+  origemNumero: string; // Ex: "OS #2026-0101" ou "PDV #VD-0044"
+  clienteId?: string;
+  clienteNome: string;
+  clienteDocumento: string;
+  clienteCidade: string;
+  clienteEstado: string;
+  naturezaOperacao: string; // "Venda de mercadoria / consumíveis"
+  cfop: string; // "5102"
+  valorTotal: number;
+  status: 'Autorizada' | 'Cancelada';
+  protocoloAutorizacao: string;
+  motivoCancelamento?: string;
+  dataCancelamento?: string;
+  itens: {
+    codigo: string;
+    descricao: string;
+    ncm: string;
+    quantidade: number;
+    unidade: string;
+    valorUnitario: number;
+    valorTotal: number;
+  }[];
+}
+
+export interface NotaFiscalNfse {
+  id: string;
+  numero: string; // Ex: "2026/000085"
+  codigoVerificacao: string; // Ex: "A8F3-7C21-99B4"
+  dataEmissao: string;
+  origemTipo: 'OS';
+  origemNumero: string; // Ex: "OS #2026-0101"
+  clienteId?: string;
+  clienteNome: string;
+  clienteDocumento: string;
+  clienteCidade: string;
+  clienteEstado: string;
+  itemLc116: string; // "14.01"
+  descricaoLc116: string; // "Lubrificação, revisão, conserto, restauração e manutenção de máquinas"
+  discriminacaoServico: string;
+  valorServicos: number;
+  aliquotaIss: number; // 2.0
+  valorIss: number;
+  status: 'Autorizada' | 'Cancelada';
+  protocoloAutorizacao: string;
+}
+

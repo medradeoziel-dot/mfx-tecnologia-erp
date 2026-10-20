@@ -403,22 +403,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* Grid de Acesso aos 4 Arquivos Principais solicitados */}
+      {/* Grid de Acesso aos 4 Módulos Principais */}
       <div>
         <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3">
-          Estrutura do Sistema Solicitada (Arquivos & Funcionalidades)
+          Módulos Principais do Sistema
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           
-          {/* conexao.php */}
+          {/* Conexão e Banco */}
           <div 
             onClick={() => setActiveTab('codigo_php')}
             className="bg-white p-4 rounded-xl border border-slate-200 hover:border-slate-400 hover:shadow-md transition cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
-                1. conexao.php
+              <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded flex items-center gap-1.5">
+                <i className="fa-solid fa-database text-slate-700"></i>
+                <span>Conexão & Banco MySQL</span>
               </span>
               <span className="text-[10px] text-emerald-600 font-semibold">MySQL PDO</span>
             </div>
@@ -431,14 +432,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          {/* clientes.php */}
+          {/* Clientes */}
           <div 
             onClick={() => setActiveTab('clientes')}
             className="bg-white p-4 rounded-xl border border-slate-200 hover:border-red-400 hover:shadow-md transition cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
-                2. clientes.php
+              <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded flex items-center gap-1.5">
+                <i className="fa-solid fa-users text-blue-600"></i>
+                <span>Cadastro de Clientes</span>
               </span>
               <span className="text-[10px] text-blue-600 font-semibold">BrasilAPI</span>
             </div>
@@ -451,14 +453,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          {/* nova_os.php */}
+          {/* Nova OS */}
           <div 
             onClick={() => setActiveTab('nova_os')}
             className="bg-white p-4 rounded-xl border border-slate-200 hover:border-red-400 hover:shadow-md transition cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
-                3. nova_os.php
+              <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded flex items-center gap-1.5">
+                <i className="fa-solid fa-wrench text-red-600"></i>
+                <span>Nova Ordem de Serviço</span>
               </span>
               <span className="text-[10px] text-amber-600 font-semibold">Tempo Real</span>
             </div>
@@ -471,14 +474,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          {/* imprimir_os.php */}
+          {/* Imprimir OS */}
           <div 
             onClick={() => setActiveTab('imprimir_os')}
             className="bg-white p-4 rounded-xl border border-slate-200 hover:border-red-400 hover:shadow-md transition cursor-pointer group"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
-                4. imprimir_os.php
+              <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded flex items-center gap-1.5">
+                <i className="fa-solid fa-print text-amber-600"></i>
+                <span>Relatório & Impressão A4</span>
               </span>
               <span className="text-[10px] text-red-600 font-semibold">Padrão A4</span>
             </div>

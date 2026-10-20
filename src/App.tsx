@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Cliente, OrdemServico, StatusOS, Compra, ItemEstoque, Venda, MovimentoCaixa, Usuario, ContaReceber, ContaPagar, FormaPagamento } from './types';
-import { CLIENTES_INICIAIS, ORDENS_SERVICO_INICIAIS, ESTOQUE_INICIAL, COMPRAS_INICIAIS, VENDAS_INICIAIS, MOVIMENTOS_CAIXA_INICIAIS, USUARIOS_INICIAIS, CONTAS_RECEBER_INICIAIS, CONTAS_PAGAR_INICIAIS } from './data/initialData';
+import { Cliente, OrdemServico, StatusOS, Compra, ItemEstoque, Venda, MovimentoCaixa, Usuario, ContaReceber, ContaPagar, FormaPagamento, NotaFiscalNfe, NotaFiscalNfse } from './types';
+import { CLIENTES_INICIAIS, ORDENS_SERVICO_INICIAIS, ESTOQUE_INICIAL, COMPRAS_INICIAIS, VENDAS_INICIAIS, MOVIMENTOS_CAIXA_INICIAIS, USUARIOS_INICIAIS, CONTAS_RECEBER_INICIAIS, CONTAS_PAGAR_INICIAIS, NOTAS_NFE_INICIAIS, NOTAS_NFSE_INICIAIS } from './data/initialData';
 import { ErpSidebar, ErpModuleType } from './components/ErpSidebar';
 import { ErpTopbar } from './components/ErpTopbar';
 import { ErpStatusBar } from './components/ErpStatusBar';
@@ -23,6 +23,8 @@ import { PdvView } from './components/PdvView';
 import { FinanceiroView } from './components/FinanceiroView';
 import { ReceberView } from './components/ReceberView';
 import { PagarView } from './components/PagarView';
+import { NfeView } from './components/NfeView';
+import { NfseView } from './components/NfseView';
 import { AcessoView } from './components/AcessoView';
 import { LoginView } from './components/LoginView';
 import { ConfiguracoesView } from './components/ConfiguracoesView';
@@ -130,6 +132,28 @@ export default function App() {
       console.warn('Erro ao carregar contas a pagar do localStorage:', e);
     }
     return CONTAS_PAGAR_INICIAIS;
+  });
+
+  // Estado de NF-e (Produtos) com persistência em localStorage
+  const [notasNfe, setNotasNfe] = useState<NotaFiscalNfe[]>(() => {
+    try {
+      const salvo = localStorage.getItem('mfx_notas_nfe');
+      if (salvo) return JSON.parse(salvo);
+    } catch (e) {
+      console.warn('Erro ao carregar NF-e do localStorage:', e);
+    }
+    return NOTAS_NFE_INICIAIS;
+  });
+
+  // Estado de NFS-e (Serviços) com persistência em localStorage
+  const [notasNfse, setNotasNfse] = useState<NotaFiscalNfse[]>(() => {
+    try {
+      const salvo = localStorage.getItem('mfx_notas_nfse');
+      if (salvo) return JSON.parse(salvo);
+    } catch (e) {
+      console.warn('Erro ao carregar NFS-e do localStorage:', e);
+    }
+    return NOTAS_NFSE_INICIAIS;
   });
 
   // Estado de Usuários e Gestão de Acessos com persistência
@@ -254,6 +278,47 @@ export default function App() {
       console.warn('Erro ao salvar usuário logado:', e);
     }
   }, [usuarioLogado]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mfx_notas_nfe', JSON.stringify(notasNfe));
+    } catch (e) {
+      console.warn('Erro ao salvar NF-e:', e);
+    }
+  }, [notasNfe]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mfx_notas_nfse', JSON.stringify(notasNfse));
+    } catch (e) {
+      console.warn('Erro ao salvar NFS-e:', e);
+    }
+  }, [notasNfse]);
+
+  // Ações Fiscais: Emissão e Cancelamento de NF-e e NFS-e
+  const handleEmitirNfe = (novaNota: NotaFiscalNfe) => {
+    setNotasNfe((prev) => [novaNota, ...prev]);
+  };
+
+  const handleCancelarNfe = (notaId: string, motivo: string) => {
+    setNotasNfe((prev) =>
+      prev.map((n) => {
+        if (n.id === notaId) {
+          return {
+            ...n,
+            status: 'Cancelada' as const,
+            motivoCancelamento: motivo,
+            dataCancelamento: new Date().toISOString(),
+          };
+        }
+        return n;
+      })
+    );
+  };
+
+  const handleEmitirNfse = (novaNota: NotaFiscalNfse) => {
+    setNotasNfse((prev) => [novaNota, ...prev]);
+  };
 
   // Ações de Gestão de Usuários e Acesso
   const handleAddUsuario = (novoUsuario: Usuario) => {
@@ -848,14 +913,21 @@ export default function App() {
               />
             )}
 
-            {currentModule === 'fiscal' && (
-              <ErpModuleWorkspace
-                module={currentModule}
-                onNavigate={(mod) => setCurrentModule(mod)}
-                onAbrirNovaOs={() => {
-                  setCurrentModule('os');
-                  setOsSubView('nova');
-                }}
+            {(currentModule === 'nfe' || currentModule === 'fiscal') && (
+              <NfeView
+                ordens={ordens}
+                vendas={vendas}
+                notasEmitidas={notasNfe}
+                onEmitirNfe={handleEmitirNfe}
+                onCancelarNfe={handleCancelarNfe}
+              />
+            )}
+
+            {currentModule === 'nfse' && (
+              <NfseView
+                ordens={ordens}
+                notasEmitidas={notasNfse}
+                onEmitirNfse={handleEmitirNfse}
               />
             )}
           </div>

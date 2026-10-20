@@ -216,14 +216,64 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-5 max-w-7xl mx-auto pb-12">
       
+      {/* Sub-navegador no padrão OS */}
+      <div className="bg-white rounded-xl p-2 border border-slate-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-xs">
+          <span className="font-bold text-slate-800 flex items-center gap-1.5">
+            <ShoppingBag className="w-4 h-4 text-emerald-600" />
+            <span>Lançamento de Compras & Entrada de Insumos</span>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setTabAtiva('novo')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
+              tabAtiva === 'novo'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+            title="Lançar Nova Compra"
+          >
+            <PackagePlus className="w-3.5 h-3.5" />
+            <span>Lançar Compra</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setTabAtiva('historico')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
+              tabAtiva === 'historico'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+            title="Histórico de Compras"
+          >
+            <History className="w-3.5 h-3.5" />
+            <span>Histórico ({compras.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onIrParaEstoque}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer"
+            title="Consultar Saldo de Estoque"
+          >
+            <Boxes className="w-3.5 h-3.5 text-amber-600" />
+            <span>Saldo de Estoque</span>
+          </button>
+        </div>
+      </div>
+
       {/* 1. Header do Módulo de Compras */}
-      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-bold font-mono uppercase bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
-              Módulo: Compras & Entrada de NF-e
+              Módulo Compras & Entrada NF-e
             </span>
             <span className="text-xs text-slate-500 font-medium">| MFx Tecnologia Industrial</span>
           </div>

@@ -122,7 +122,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               MFx ERP INDUSTRIAL
             </span>
             <span className="text-[10px] text-slate-500 block">
-              Módulo de Autenticação & Controle de Sessão PHP
+              Módulo de Autenticação & Controle de Sessão
             </span>
           </div>
         </div>
@@ -132,10 +132,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
             <button
               onClick={onVerCodigoPhp}
               className="text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition font-medium"
-              title="Visualizar código-fonte PHP"
+              title="Visualizar código-fonte"
             >
               <i className="fa-solid fa-code text-emerald-400"></i>
-              <span>Código PHP</span>
+              <span>Código-Fonte</span>
             </button>
           )}
 
@@ -285,7 +285,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                     onChange={(e) => setLembrarSessao(e.target.checked)}
                     className="rounded border-slate-700 bg-slate-900 text-red-600 focus:ring-red-500/40 w-3.5 h-3.5"
                   />
-                  <span className="text-xs text-slate-400">Manter sessão PHP ativa</span>
+                  <span className="text-xs text-slate-400">Manter sessão conectada</span>
                 </label>
 
                 <span className="text-[11px] text-slate-500">
@@ -302,7 +302,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 {carregando ? (
                   <>
                     <i className="fa-solid fa-circle-notch animate-spin"></i>
-                    <span>Autenticando via PHP Session...</span>
+                    <span>Autenticando sessão...</span>
                   </>
                 ) : (
                   <>
@@ -395,7 +395,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           <div className="mt-6 text-center text-xs text-slate-500 space-y-1">
             <div>MFx Tecnologia Industrial • CNPJ 12.345.678/0001-90 • Agudos - SP</div>
             <div className="text-[10px] font-mono text-slate-600">
-              Autenticação PHP com PDO MySQL, Sessão Criptografada e Proteção CSRF
+              Autenticação com PDO MySQL, Sessão Criptografada e Proteção CSRF
             </div>
           </div>
 
@@ -406,7 +406,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
       <footer className="relative z-10 px-6 py-2 bg-[#0c0e12] border-t border-slate-900 text-[11px] text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span>Servidor Web Apache/PHP 8.2 • MySQL Conectado</span>
+          <span>Servidor Web Conectado • Banco MySQL Ativo</span>
         </div>
         <div className="font-mono text-[10px] text-slate-600">
           MFx ERP • Versão 2.4.0 • Build Industrial 2026

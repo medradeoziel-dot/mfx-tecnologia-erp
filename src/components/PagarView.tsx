@@ -196,15 +196,15 @@ export const PagarView: React.FC<PagarViewProps> = ({
         <div className="flex items-center gap-1.5">
           <button
             onClick={onIrParaReceber}
-            className="px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium text-xs flex items-center gap-1.5 transition cursor-pointer"
-            title="Contas a Receber"
+            className="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
+            title="Ir para Contas a Receber"
           >
             <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
             <span>Contas a Receber</span>
           </button>
 
           <button
-            className="px-3.5 py-1.5 rounded-lg bg-red-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs"
+            className="px-3 py-1.5 rounded-lg bg-red-600 text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs"
             title="Contas a Pagar"
           >
             <ArrowUpRight className="w-3.5 h-3.5" />
@@ -213,19 +213,21 @@ export const PagarView: React.FC<PagarViewProps> = ({
 
           <button
             onClick={onIrParaCaixa}
-            className="px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium text-xs flex items-center gap-1.5 transition cursor-pointer"
+            className="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
+            title="Ir para Fluxo de Caixa Geral"
           >
             <Wallet className="w-3.5 h-3.5 text-slate-500" />
-            <span>Fluxo de Caixa Geral</span>
+            <span>Fluxo de Caixa</span>
           </button>
         </div>
 
         <button
           onClick={() => setModalNovoAberto(true)}
-          className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg flex items-center gap-1.5 shadow-2xs transition cursor-pointer ml-auto"
+          className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg flex items-center gap-1.5 shadow-xs transition cursor-pointer ml-auto"
+          title="Cadastrar Nova Despesa Operacional"
         >
           <Plus className="w-3.5 h-3.5 text-red-400" />
-          <span>+ Nova Despesa a Pagar</span>
+          <span>+ Nova Despesa</span>
         </button>
       </div>
 

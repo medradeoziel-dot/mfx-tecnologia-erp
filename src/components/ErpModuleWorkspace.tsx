@@ -96,17 +96,56 @@ export const ErpModuleWorkspace: React.FC<ErpModuleWorkspaceProps> = ({
   if (module === 'fiscal') {
     return (
       <div className="space-y-6">
+        {/* Sub-navegador de Ações Fiscais no padrão OS */}
+        <div className="bg-white rounded-xl p-2 border border-slate-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="font-bold text-slate-800 flex items-center gap-1.5">
+              <i className="fa-solid fa-file-contract text-indigo-600"></i>
+              <span>Gestão Fiscal de Notas Eletrônicas</span>
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onNavigate('fiscal')}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+              title="Emissão e Gestão de NF-e de Mercadorias"
+            >
+              <i className="fa-solid fa-receipt"></i>
+              <span>NF-e Mercadorias</span>
+            </button>
+
+            <button
+              onClick={() => onNavigate('fiscal')}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 text-white shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+              title="Emissão e Gestão de NFS-e de Serviços"
+            >
+              <i className="fa-solid fa-file-invoice"></i>
+              <span>NFS-e Serviços</span>
+            </button>
+
+            <button
+              onClick={onAbrirNovaOs}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-600 hover:bg-red-700 text-white shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+              title="Abrir Nova Ordem de Serviço"
+            >
+              <i className="fa-solid fa-plus-circle"></i>
+              <span>Nova OS</span>
+            </button>
+          </div>
+        </div>
+
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-xs font-bold font-mono uppercase bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded">
-                Módulo: Fiscal
+                Módulo Fiscal
               </span>
               <span className="text-xs text-slate-500 font-medium">| SEFAZ SP</span>
             </div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               <i className="fa-solid fa-file-contract text-indigo-600"></i>
-              Módulo Fiscal (NF-e & NFS-e de Serviços Industriais)
+              Emissão de NF-e e NFS-e de Serviços Industriais
             </h1>
             <p className="text-sm text-slate-600 mt-1">
               Emissão de Notas Fiscais Eletrônicas vinculadas às Ordens de Serviço da MFx Tecnologia Industrial.

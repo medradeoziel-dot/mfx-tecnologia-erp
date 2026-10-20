@@ -274,9 +274,50 @@ export const EstoqueView: React.FC<EstoqueViewProps> = ({
     .reduce((acc, curr) => acc + (curr.estoqueAtual || 0) * curr.precoVenda, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Sub-navegador no padrão OS */}
+      <div className="bg-white rounded-xl p-2 border border-slate-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-xs">
+          <span className="font-bold text-slate-800 flex items-center gap-1.5">
+            <Boxes className="w-4 h-4 text-amber-600" />
+            <span>Catálogo de Produtos & Serviços</span>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleNovoItem('produto')}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+            title="Novo Produto ou Consumível"
+          >
+            <Package className="w-3.5 h-3.5" />
+            <span>+ Produto</span>
+          </button>
+
+          <button
+            onClick={() => handleNovoItem('servico')}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-700 hover:bg-purple-800 text-white shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+            title="Novo Serviço ou Mão de Obra"
+          >
+            <Wrench className="w-3.5 h-3.5" />
+            <span>+ Serviço</span>
+          </button>
+
+          {onAbrirNovaOs && (
+            <button
+              onClick={onAbrirNovaOs}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-600 hover:bg-red-700 text-white shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+              title="Abrir Nova Ordem de Serviço"
+            >
+              <Receipt className="w-3.5 h-3.5" />
+              <span>Nova OS</span>
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* 1. Header do Módulo */}
-      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">

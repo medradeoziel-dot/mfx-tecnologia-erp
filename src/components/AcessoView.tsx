@@ -307,10 +307,10 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
           <button
             onClick={onIrParaCodigoPhp}
             className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 font-medium px-3.5 py-2 rounded-lg text-xs flex items-center gap-2 transition cursor-pointer"
-            title="Visualizar código-fonte PHP do sistema"
+            title="Visualizar código-fonte do sistema"
           >
             <i className="fa-solid fa-code text-slate-400"></i>
-            <span>Código PHP</span>
+            <span>Código-Fonte</span>
           </button>
 
           <button

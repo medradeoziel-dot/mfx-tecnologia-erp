@@ -67,10 +67,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => setActiveTab('codigo_php')}
               className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-emerald-400 text-xs font-semibold px-3 py-2 rounded transition"
-              title="Ver e Baixar Arquivos PHP / MySQL"
+              title="Ver e Baixar Arquivos do Sistema"
             >
               <Code2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Código</span> PHP & SQL
+              <span className="hidden sm:inline">Código</span> Fonte & SQL
             </button>
           </div>
         </div>
@@ -152,7 +152,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <Code2 className="w-4 h-4 text-emerald-400" />
-            <span>Arquivos PHP & MySQL</span>
+            <span>Código-Fonte & SQL</span>
           </button>
         </nav>
       </div>

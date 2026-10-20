@@ -13,6 +13,8 @@ export type ErpModuleType =
   | 'pagar'
   | 'financeiro' 
   | 'fiscal' 
+  | 'nfe'
+  | 'nfse'
   | 'relatorios' 
   | 'acesso' 
   | 'configuracoes' 
@@ -109,12 +111,20 @@ export const ErpSidebar: React.FC<ErpSidebarProps> = ({
       color: 'text-slate-400',
     },
     {
-      id: 'fiscal' as ErpModuleType,
-      label: 'Fiscal',
-      sublabel: 'NF-e / NFS-e',
-      iconClass: 'fa-solid fa-file-contract',
+      id: 'nfe' as ErpModuleType,
+      label: 'NF-e Produtos',
+      sublabel: 'SEFAZ SP • Fiscal',
+      iconClass: 'fa-solid fa-receipt',
       badge: null,
-      color: 'text-indigo-400',
+      color: 'text-cyan-400',
+    },
+    {
+      id: 'nfse' as ErpModuleType,
+      label: 'NFS-e Serviços',
+      sublabel: 'Pref. Agudos • Fiscal',
+      iconClass: 'fa-solid fa-file-invoice',
+      badge: null,
+      color: 'text-teal-400',
     },
     {
       id: 'relatorios' as ErpModuleType,
@@ -150,10 +160,10 @@ export const ErpSidebar: React.FC<ErpSidebarProps> = ({
     },
     {
       id: 'codigo_php' as ErpModuleType,
-      label: 'Código PHP/SQL',
+      label: 'Código-Fonte',
       sublabel: 'Arquivos do Sistema',
       iconClass: 'fa-solid fa-code',
-      badge: 'PHP',
+      badge: 'DEV',
       color: 'text-emerald-400',
     },
   ];

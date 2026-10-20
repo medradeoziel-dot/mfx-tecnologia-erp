@@ -96,8 +96,8 @@ export const FinanceiroView: React.FC<FinanceiroViewProps> = ({
           {onIrParaReceber && (
             <button
               onClick={onIrParaReceber}
-              className="px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium text-xs flex items-center gap-1.5 transition cursor-pointer"
-              title="Contas a Receber"
+              className="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
+              title="Ir para Contas a Receber"
             >
               <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
               <span>Contas a Receber</span>
@@ -107,8 +107,8 @@ export const FinanceiroView: React.FC<FinanceiroViewProps> = ({
           {onIrParaPagar && (
             <button
               onClick={onIrParaPagar}
-              className="px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium text-xs flex items-center gap-1.5 transition cursor-pointer"
-              title="Contas a Pagar"
+              className="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
+              title="Ir para Contas a Pagar"
             >
               <ArrowUpRight className="w-3.5 h-3.5 text-red-500" />
               <span>Contas a Pagar</span>
@@ -116,19 +116,21 @@ export const FinanceiroView: React.FC<FinanceiroViewProps> = ({
           )}
 
           <button
-            className="px-3.5 py-1.5 rounded-lg bg-slate-900 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs"
+            className="px-3 py-1.5 rounded-lg bg-slate-900 text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs"
+            title="Fluxo de Caixa Geral"
           >
             <Wallet className="w-3.5 h-3.5" />
-            <span>Fluxo de Caixa Geral</span>
+            <span>Fluxo de Caixa</span>
           </button>
         </div>
 
         <button
           onClick={onIrParaPdv}
-          className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-lg transition flex items-center gap-1.5 shadow-xs cursor-pointer ml-auto"
+          className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shadow-xs cursor-pointer ml-auto"
+          title="Ir para PDV / Vendas"
         >
           <ShoppingCart className="w-3.5 h-3.5" />
-          <span>Abrir PDV / Vendas</span>
+          <span>PDV / Vendas</span>
         </button>
       </div>
 
@@ -158,18 +160,20 @@ export const FinanceiroView: React.FC<FinanceiroViewProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setModalSuprimentoAberto(true)}
-              className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center gap-1.5 border border-slate-700 shadow"
+              className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition flex items-center gap-1.5 border border-slate-700 shadow cursor-pointer"
+              title="Novo Lançamento Manual no Caixa"
             >
               <Plus className="w-4 h-4 text-emerald-400" />
-              <span>Novo Lançamento Manual</span>
+              <span>+ Novo Lançamento</span>
             </button>
 
             <button
               onClick={onIrParaPdv}
-              className="px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition flex items-center gap-1.5 shadow"
+              className="px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition flex items-center gap-1.5 shadow cursor-pointer"
+              title="Acessar Ponto de Venda"
             >
               <ShoppingCart className="w-4 h-4" />
-              <span>Abrir PDV / Vendas</span>
+              <span>PDV / Vendas</span>
             </button>
           </div>
         </div>
