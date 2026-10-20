@@ -24,6 +24,7 @@ import { FinanceiroView } from './components/FinanceiroView';
 import { AcessoView } from './components/AcessoView';
 import { LoginView } from './components/LoginView';
 import { ConfiguracoesView } from './components/ConfiguracoesView';
+import { AjudaView } from './components/AjudaView';
 
 export default function App() {
   // Estado de Clientes com persistência em localStorage
@@ -618,7 +619,20 @@ export default function App() {
 
             {currentModule === 'configuracoes' && <ConfiguracoesView />}
 
-            {(currentModule === 'fiscal' || currentModule === 'ajuda') && (
+            {currentModule === 'ajuda' && (
+              <AjudaView
+                onNavigate={(mod, extra) => {
+                  setCurrentModule(mod);
+                  if (mod === 'os') {
+                    if (extra === 'nova') setOsSubView('nova');
+                    else if (extra === 'imprimir') setOsSubView('imprimir');
+                    else setOsSubView('listar');
+                  }
+                }}
+              />
+            )}
+
+            {currentModule === 'fiscal' && (
               <ErpModuleWorkspace
                 module={currentModule}
                 onNavigate={(mod) => setCurrentModule(mod)}

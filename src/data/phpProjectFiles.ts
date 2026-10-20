@@ -4993,6 +4993,219 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
 </html>`
   },
   {
+    filename: 'ajuda.php',
+    description: 'Manual de Uso Rápido e Guia Operacional do ERP MFx em PHP/Bootstrap com passo a passo, atalhos de teclado e contatos de suporte técnico.',
+    language: 'php',
+    content: `<?php
+/**
+ * MFx Tecnologia Industrial - Sistema ERP
+ * Módulo: Ajuda, Manual de Uso & Suporte Técnico (ajuda.php)
+ */
+require_once 'conexao.php';
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual & Ajuda Operacional - MFx Tecnologia Industrial</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { background-color: #f8fafc; color: #1e293b; font-family: system-ui, -apple-system, sans-serif; }
+        .card-clean { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; }
+        .icon-box { width: 36px; height: 36px; border-radius: 8px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #334155; }
+        .kbd-custom { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 8px; font-family: monospace; font-size: 11px; font-weight: bold; color: #0f172a; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body class="p-4">
+
+<div class="container" style="max-width: 1000px;">
+    <!-- Topo -->
+    <div class="card-clean p-4 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="badge bg-light text-secondary border">MANUAL OPERACIONAL</span>
+                <small class="text-muted">| MFx Tecnologia Industrial</small>
+            </div>
+            <h4 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-book-open me-2 text-danger"></i> Guia Rápido de Uso do ERP</h4>
+            <small class="text-muted">Instruções passo a passo do fluxo operacional, atalhos de teclado e suporte técnico.</small>
+        </div>
+        <a href="nova_os.php" class="btn btn-danger btn-sm fw-bold px-3 py-2">
+            <i class="fa-solid fa-wrench me-1"></i> Nova Ordem de Serviço
+        </a>
+    </div>
+
+    <!-- 1. PASSO A PASSO OPERACIONAL DO SISTEMA -->
+    <h6 class="fw-bold text-uppercase text-secondary small mb-3">1. Passo a Passo Operacional do Sistema</h6>
+    <div class="row g-3 mb-4">
+        <!-- 1. Configurações -->
+        <div class="col-md-6">
+            <div class="card-clean p-4 h-100">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="icon-box"><i class="fa-solid fa-gear"></i></div>
+                    <h6 class="mb-0 fw-bold text-dark">⚙️ Configurações (Emitente)</h6>
+                </div>
+                <p class="text-secondary small mb-2">
+                    Cadastre os dados cadastrais da MFx, chave PIX, contas bancárias e defina a numeração inicial de Orçamentos, OS e Notas Fiscais.
+                </p>
+                <div class="bg-light p-2 rounded small text-muted">
+                    <i class="fa-solid fa-check text-success me-1"></i> Dica: Configure o ISS Municipal (2%) e o código LC 116 padrão.
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Clientes e Fornecedores -->
+        <div class="col-md-6">
+            <div class="card-clean p-4 h-100">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="icon-box"><i class="fa-solid fa-users"></i></div>
+                    <h6 class="mb-0 fw-bold text-dark">👥 Clientes e Fornecedores (Pessoas)</h6>
+                </div>
+                <p class="text-secondary small mb-2">
+                    Cadastre os clientes para emissão de Ordens de Serviço/Vendas e os fornecedores para controle de compras de insumos e matérias-primas.
+                </p>
+                <div class="bg-light p-2 rounded small text-muted">
+                    <i class="fa-solid fa-check text-success me-1"></i> Dica: Busca automática de CNPJ e CEP via Receita Federal.
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Produtos & Mão de Obra -->
+        <div class="col-md-6">
+            <div class="card-clean p-4 h-100">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="icon-box"><i class="fa-solid fa-boxes-stacked"></i></div>
+                    <h6 class="mb-0 fw-bold text-dark">📦 Produtos & Mão de Obra (Estoque)</h6>
+                </div>
+                <p class="text-secondary small mb-2">
+                    Mantenha o catálogo organizado. O sistema separa automaticamente Produtos (NF-e/SEFAZ com NCM) de Serviços (NFS-e/Municipal com LC 116).
+                </p>
+                <div class="bg-light p-2 rounded small text-muted">
+                    <i class="fa-solid fa-check text-success me-1"></i> Dica: Consumíveis físicos possuem controle de saldo e ponto de pedido.
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Compras -->
+        <div class="col-md-6">
+            <div class="card-clean p-4 h-100">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="icon-box"><i class="fa-solid fa-cart-flatbed"></i></div>
+                    <h6 class="mb-0 fw-bold text-dark">🛍️ Compras (Entrada de Estoque)</h6>
+                </div>
+                <p class="text-secondary small mb-2">
+                    Lance as notas de compra para alimentar o saldo de estoque físico e atualizar os custos dos produtos de forma automática.
+                </p>
+                <div class="bg-light p-2 rounded small text-muted">
+                    <i class="fa-solid fa-check text-success me-1"></i> Dica: A tela abre zerada e atualiza o saldo físico instantaneamente.
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Nova OS -->
+        <div class="col-md-6">
+            <div class="card-clean p-4 h-100">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="icon-box"><i class="fa-solid fa-wrench"></i></div>
+                    <h6 class="mb-0 fw-bold text-dark">🛠️ Ordem de Serviço (Nova OS)</h6>
+                </div>
+                <p class="text-secondary small mb-2">
+                    Selecione o cliente e a máquina (Laser, Plasma ou Oxicorte). Pressione ENTER para navegar rapidamente entre os campos de consumíveis/mão de obra.
+                </p>
+                <div class="bg-light p-2 rounded small text-muted">
+                    <i class="fa-solid fa-check text-success me-1"></i> Dica: Ao salvar, a tela é zerada automaticamente para o próximo chamado.
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. PDV - Vendas -->
+        <div class="col-md-6">
+            <div class="card-clean p-4 h-100">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="icon-box"><i class="fa-solid fa-cash-register"></i></div>
+                    <h6 class="mb-0 fw-bold text-dark">🛒 PDV - Vendas Balcão</h6>
+                </div>
+                <p class="text-secondary small mb-2">
+                    Faturamento rápido e direto de balcão sem poluição visual. Bipagem por código de barras, baixa imediata no estoque e registro financeiro no caixa.
+                </p>
+                <div class="bg-light p-2 rounded small text-muted">
+                    <i class="fa-solid fa-check text-success me-1"></i> Dica: Aceita PIX, Cartão e Boleto faturado.
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Acesso & Permissões -->
+        <div class="col-12">
+            <div class="card-clean p-4 h-100">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="icon-box"><i class="fa-solid fa-user-shield"></i></div>
+                    <h6 class="mb-0 fw-bold text-dark">🔐 Acesso & Permissões</h6>
+                </div>
+                <p class="text-secondary small mb-0">
+                    Crie logins individuais para operadores e técnicos definindo exatamente quais módulos cada funcionário pode visualizar e editar.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. ATALHOS RÁPIDOS DE TECLADO -->
+    <h6 class="fw-bold text-uppercase text-secondary small mb-3">2. Atalhos Rápidos de Teclado</h6>
+    <div class="card-clean p-4 mb-4">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="kbd-custom">ENTER</span>
+                        <strong class="small text-dark">Avanço & Inserção</strong>
+                    </div>
+                    <small class="text-secondary">Confirma o item atual, adiciona a linha e avança o cursor para o próximo campo da tabela.</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="kbd-custom">TAB</span>
+                        <strong class="small text-dark">Navegação Alternada</strong>
+                    </div>
+                    <small class="text-secondary">Navega sequencialmente entre os campos de formulário e inputs de cabeçalho.</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="kbd-custom">SALVAR OS</span>
+                        <strong class="small text-dark">Reset Automático</strong>
+                    </div>
+                    <small class="text-secondary">Grava o atendimento, emite aviso de sucesso e limpa o formulário para o próximo cliente.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. SUPORTE TÉCNICO MFX -->
+    <div class="card-clean p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="icon-box bg-dark text-warning"><i class="fa-solid fa-headset"></i></div>
+            <div>
+                <h6 class="mb-0 fw-bold text-dark">3. Suporte Técnico Interno MFx Tecnologia</h6>
+                <small class="text-muted">Plantão técnico para manutenção de máquinas industriais e suporte ao ERP.</small>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-3 small font-monospace">
+            <span class="bg-light p-2 px-3 rounded border text-secondary"><i class="fa-solid fa-phone me-1 text-muted"></i> (14) 3262-1080</span>
+            <span class="bg-light p-2 px-3 rounded border text-success fw-bold"><i class="fa-brands fa-whatsapp me-1"></i> (14) 99845-7721</span>
+            <span class="bg-light p-2 px-3 rounded border text-secondary"><i class="fa-solid fa-envelope me-1 text-muted"></i> contato@mfxindustrial.com.br</span>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>`
+  },
+  {
     filename: 'README_INSTALACAO.md',
     description: 'Instruções passo a passo de como rodar o projeto PHP e MySQL no XAMPP, WAMP, Docker ou cPanel.',
     language: 'markdown',
