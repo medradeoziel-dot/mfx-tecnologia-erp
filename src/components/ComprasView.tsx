@@ -218,10 +218,10 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
   return (
     <div className="space-y-5 max-w-7xl mx-auto pb-12">
       
-      {/* Sub-navegador no padrão OS */}
-      <div className="bg-white rounded-xl p-2 border border-slate-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 text-xs">
-          <span className="font-bold text-slate-800 flex items-center gap-1.5">
+      {/* Barra superior enxuta com título e ações do módulo */}
+      <div className="bg-white rounded-xl p-2.5 px-4 border border-slate-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-xs">
+          <span className="font-bold text-slate-800 flex items-center gap-2 text-sm">
             <ShoppingBag className="w-4 h-4 text-emerald-600" />
             <span>Lançamento de Compras & Entrada de Insumos</span>
           </span>
@@ -239,7 +239,7 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
             title="Lançar Nova Compra"
           >
             <PackagePlus className="w-3.5 h-3.5" />
-            <span>Lançar Compra</span>
+            <span>Lançar Nova Compra</span>
           </button>
 
           <button
@@ -263,64 +263,6 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
             title="Consultar Saldo de Estoque"
           >
             <Boxes className="w-3.5 h-3.5 text-amber-600" />
-            <span>Saldo de Estoque</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 1. Header do Módulo de Compras */}
-      <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-bold font-mono uppercase bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
-              Módulo Compras & Entrada NF-e
-            </span>
-            <span className="text-xs text-slate-500 font-medium">| MFx Tecnologia Industrial</span>
-          </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-            <ShoppingBag className="w-6 h-6 text-emerald-600" />
-            Lançamento de Compras & Entrada de Insumos
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-600 mt-1">
-            Entrada ágil de notas fiscais de peças e consumíveis para Laser Fibra, Plasma e Oxicorte com atualização imediata de estoque.
-          </p>
-        </div>
-
-        {/* Abas e Atalho para Estoque */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setTabAtiva('novo')}
-            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-              tabAtiva === 'novo'
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <PackagePlus className="w-4 h-4" />
-            <span>Lançar Nova Compra</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setTabAtiva('historico')}
-            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-              tabAtiva === 'historico'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <History className="w-4 h-4" />
-            <span>Histórico ({compras.length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onIrParaEstoque}
-            className="px-3.5 py-2 rounded-lg text-xs font-bold text-slate-700 hover:text-slate-900 border border-slate-300 hover:border-slate-400 bg-white transition flex items-center gap-1.5"
-            title="Abrir Tabela de Estoque"
-          >
-            <Boxes className="w-4 h-4 text-amber-600" />
             <span>Ver Saldo de Estoque</span>
           </button>
         </div>
