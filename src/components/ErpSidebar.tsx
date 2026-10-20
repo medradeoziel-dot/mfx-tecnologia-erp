@@ -9,6 +9,8 @@ export type ErpModuleType =
   | 'compras' 
   | 'pdv'
   | 'os' 
+  | 'receber'
+  | 'pagar'
   | 'financeiro' 
   | 'fiscal' 
   | 'relatorios' 
@@ -83,12 +85,28 @@ export const ErpSidebar: React.FC<ErpSidebarProps> = ({
       color: 'text-amber-400',
     },
     {
-      id: 'financeiro' as ErpModuleType,
-      label: 'Financeiro',
-      sublabel: 'Contas a Pagar/Rec.',
-      iconClass: 'fa-solid fa-hand-holding-dollar',
+      id: 'receber' as ErpModuleType,
+      label: 'Contas a Receber',
+      sublabel: 'OS, PDV & Cotações',
+      iconClass: 'fa-solid fa-arrow-down',
       badge: null,
-      color: 'text-emerald-500',
+      color: 'text-emerald-400',
+    },
+    {
+      id: 'pagar' as ErpModuleType,
+      label: 'Contas a Pagar',
+      sublabel: 'Compras & Despesas',
+      iconClass: 'fa-solid fa-arrow-up',
+      badge: null,
+      color: 'text-red-400',
+    },
+    {
+      id: 'financeiro' as ErpModuleType,
+      label: 'Fluxo de Caixa',
+      sublabel: 'Extrato & Saldo',
+      iconClass: 'fa-solid fa-wallet',
+      badge: null,
+      color: 'text-slate-400',
     },
     {
       id: 'fiscal' as ErpModuleType,

@@ -131,11 +131,11 @@ export const LoginView: React.FC<LoginViewProps> = ({
           {onVerCodigoPhp && (
             <button
               onClick={onVerCodigoPhp}
-              className="text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition font-mono"
-              title="Visualizar código login.php"
+              className="text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition font-medium"
+              title="Visualizar código-fonte PHP"
             >
               <i className="fa-solid fa-code text-emerald-400"></i>
-              <span>Ver login.php</span>
+              <span>Código PHP</span>
             </button>
           )}
 
@@ -409,7 +409,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           <span>Servidor Web Apache/PHP 8.2 • MySQL Conectado</span>
         </div>
         <div className="font-mono text-[10px] text-slate-600">
-          login.php • Versão 2.4.0 • Build Industrial 2026
+          MFx ERP • Versão 2.4.0 • Build Industrial 2026
         </div>
       </footer>
     </div>

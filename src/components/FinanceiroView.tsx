@@ -22,12 +22,16 @@ interface FinanceiroViewProps {
   movimentos: MovimentoCaixa[];
   onAdicionarMovimento: (novoMovimento: MovimentoCaixa) => void;
   onIrParaPdv: () => void;
+  onIrParaReceber?: () => void;
+  onIrParaPagar?: () => void;
 }
 
 export const FinanceiroView: React.FC<FinanceiroViewProps> = ({
   movimentos,
   onAdicionarMovimento,
   onIrParaPdv,
+  onIrParaReceber,
+  onIrParaPagar,
 }) => {
   const [filtroOrigem, setFiltroOrigem] = useState<string>('TODOS');
   const [modalSuprimentoAberto, setModalSuprimentoAberto] = useState(false);
@@ -86,6 +90,48 @@ export const FinanceiroView: React.FC<FinanceiroViewProps> = ({
   return (
     <div className="space-y-6">
       
+      {/* Top Switcher Navigation: Receber / Pagar / Caixa */}
+      <div className="bg-white rounded-xl p-2 border border-slate-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          {onIrParaReceber && (
+            <button
+              onClick={onIrParaReceber}
+              className="px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium text-xs flex items-center gap-1.5 transition cursor-pointer"
+              title="Contas a Receber"
+            >
+              <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Contas a Receber</span>
+            </button>
+          )}
+
+          {onIrParaPagar && (
+            <button
+              onClick={onIrParaPagar}
+              className="px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium text-xs flex items-center gap-1.5 transition cursor-pointer"
+              title="Contas a Pagar"
+            >
+              <ArrowUpRight className="w-3.5 h-3.5 text-red-500" />
+              <span>Contas a Pagar</span>
+            </button>
+          )}
+
+          <button
+            className="px-3.5 py-1.5 rounded-lg bg-slate-900 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs"
+          >
+            <Wallet className="w-3.5 h-3.5" />
+            <span>Fluxo de Caixa Geral</span>
+          </button>
+        </div>
+
+        <button
+          onClick={onIrParaPdv}
+          className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-lg transition flex items-center gap-1.5 shadow-xs cursor-pointer ml-auto"
+        >
+          <ShoppingCart className="w-3.5 h-3.5" />
+          <span>Abrir PDV / Vendas</span>
+        </button>
+      </div>
+
       {/* Cabeçalho do Módulo Financeiro */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg text-white">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

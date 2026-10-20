@@ -59,7 +59,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => setActiveTab('nova_os')}
               className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded shadow transition"
-              title="Abrir Nova Ordem de Serviço (nova_os.php)"
+              title="Abrir Nova Ordem de Serviço"
             >
               <FilePlus2 className="w-4 h-4" />
               <span>Nova OS</span>
@@ -102,7 +102,6 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded-full font-mono">
               {clientesCount}
             </span>
-            <span className="text-[10px] text-slate-400 hidden xl:inline">(clientes.php)</span>
           </button>
 
           <button
@@ -115,7 +114,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <FilePlus2 className="w-4 h-4" />
             <span>Nova OS</span>
-            <span className="text-[10px] text-slate-400 hidden xl:inline">(nova_os.php)</span>
           </button>
 
           <button
@@ -142,8 +140,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <Printer className="w-4 h-4 text-red-400" />
-            <span>Relatório de Impressão A4</span>
-            <span className="text-[10px] text-slate-400 hidden xl:inline">(imprimir_os.php)</span>
+            <span>Imprimir A4</span>
           </button>
 
           <button

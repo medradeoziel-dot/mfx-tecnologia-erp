@@ -25,8 +25,8 @@ export const ErpTopbar: React.FC<ErpTopbarProps> = ({
     { id: 'caixa', label: 'Caixa', icon: 'fa-solid fa-vault', color: 'hover:text-slate-800', module: 'financeiro' as ErpModuleType },
     { id: 'nfe', label: 'NF-e', icon: 'fa-solid fa-receipt', color: 'hover:text-cyan-600', module: 'fiscal' as ErpModuleType },
     { id: 'nfse', label: 'NFS-e', icon: 'fa-solid fa-file-invoice', color: 'hover:text-teal-600', module: 'fiscal' as ErpModuleType },
-    { id: 'receber', label: 'Receber', icon: 'fa-solid fa-arrow-down', iconColor: 'text-emerald-600', color: 'hover:text-emerald-700', module: 'financeiro' as ErpModuleType },
-    { id: 'pagar', label: 'Pagar', icon: 'fa-solid fa-arrow-up', iconColor: 'text-red-600', color: 'hover:text-red-700', module: 'financeiro' as ErpModuleType },
+    { id: 'receber', label: 'Receber', icon: 'fa-solid fa-arrow-down', iconColor: 'text-emerald-600', color: 'hover:text-emerald-700', module: 'receber' as ErpModuleType },
+    { id: 'pagar', label: 'Pagar', icon: 'fa-solid fa-arrow-up', iconColor: 'text-red-600', color: 'hover:text-red-700', module: 'pagar' as ErpModuleType },
     { id: 'nova_os', label: 'Nova OS', icon: 'fa-solid fa-plus-circle', iconColor: 'text-red-600', color: 'hover:text-red-700', action: 'nova_os' },
   ];
 

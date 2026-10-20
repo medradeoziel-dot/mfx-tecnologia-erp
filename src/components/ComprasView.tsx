@@ -453,7 +453,7 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
                             onChange={(e) => handleAtualizarItem(item.id, 'produtoId', e.target.value)}
                             className="w-full text-xs py-1.5 px-2 border border-slate-300 rounded font-medium bg-white focus:ring-1 focus:ring-emerald-500"
                           >
-                            <option value="" disabled selected>-- Selecione o Produto / Insumo --</option>
+                            <option value="" disabled>-- Selecione o Produto / Insumo --</option>
                             {produtosFisicos.map((p) => (
                               <option key={p.id} value={p.id}>
                                 {p.codigo} - {p.descricao.substring(0, 38)}... (Saldo: {p.estoqueAtual} {p.unidadeMedida})

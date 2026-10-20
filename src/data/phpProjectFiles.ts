@@ -336,9 +336,14 @@ $modulo = $_GET['modulo'] ?? 'abertura';
                 <span>Compras</span>
             </a>
 
-            <a href="#" class="sidebar-link">
-                <i class="fa-solid fa-hand-holding-dollar text-success"></i>
-                <span>Financeiro</span>
+            <a href="receber.php" class="sidebar-link">
+                <i class="fa-solid fa-arrow-down text-success"></i>
+                <span>Contas a Receber</span>
+            </a>
+
+            <a href="pagar.php" class="sidebar-link">
+                <i class="fa-solid fa-arrow-up text-danger"></i>
+                <span>Contas a Pagar</span>
             </a>
 
             <a href="#" class="sidebar-link">
@@ -408,11 +413,11 @@ $modulo = $_GET['modulo'] ?? 'abertura';
                     <i class="fa-solid fa-file-invoice text-primary"></i>
                     <span>NFS-e</span>
                 </a>
-                <a href="#" class="quick-btn text-receber" title="Contas a Receber">
+                <a href="receber.php" class="quick-btn text-receber" title="Contas a Receber">
                     <i class="fa-solid fa-arrow-down"></i>
                     <span>Receber</span>
                 </a>
-                <a href="#" class="quick-btn text-pagar" title="Contas a Pagar">
+                <a href="pagar.php" class="quick-btn text-pagar" title="Contas a Pagar">
                     <i class="fa-solid fa-arrow-up"></i>
                     <span>Pagar</span>
                 </a>
@@ -817,6 +822,60 @@ VALUES
 ('Eng. Marcos Medrade (Administrador)', 'medrade', 'medrade@mfxindustrial.com.br', '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', 'Administrador', 'Ativo', 1, 1, 1, 1, 1, 1, 1, 1, '2026-10-20 08:15:00'),
 ('Carlos Eduardo Silveira - Técnico Laser', 'carlos.laser', 'carlos@mfxindustrial.com.br', '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', 'Operador/Técnico', 'Ativo', 1, 1, 1, 0, 1, 0, 0, 0, '2026-10-19 17:40:00'),
 ('Ana Paula Ferreira - Vendas & Balcão', 'ana.vendas', 'ana.vendas@mfxindustrial.com.br', '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', 'Vendas/Financeiro', 'Ativo', 1, 1, 1, 1, 1, 1, 1, 0, '2026-10-20 09:10:00');
+
+-- 11. Tabela de Contas a Receber (receber.php)
+CREATE TABLE IF NOT EXISTS \`contas_receber\` (
+  \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+  \`cliente\` VARCHAR(150) NOT NULL,
+  \`cliente_documento\` VARCHAR(30) NULL,
+  \`origem_tipo\` ENUM('OS', 'PDV', 'COTACAO', 'MANUAL') NOT NULL DEFAULT 'OS',
+  \`origem_numero\` VARCHAR(60) NOT NULL,
+  \`origem_id\` VARCHAR(50) NULL,
+  \`valor_total\` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  \`data_lancamento\` DATE NOT NULL,
+  \`data_vencimento\` DATE NOT NULL,
+  \`status\` ENUM('Pendente', 'Pago', 'Cancelado') NOT NULL DEFAULT 'Pendente',
+  \`data_baixa\` DATE NULL,
+  \`forma_pagamento\` VARCHAR(40) NULL,
+  \`observacoes\` VARCHAR(255) NULL,
+  \`data_cadastro\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX \`idx_cr_status\` (\`status\`),
+  INDEX \`idx_cr_vencimento\` (\`data_vencimento\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO \`contas_receber\` 
+(\`cliente\`, \`cliente_documento\`, \`origem_tipo\`, \`origem_numero\`, \`origem_id\`, \`valor_total\`, \`data_lancamento\`, \`data_vencimento\`, \`status\`, \`observacoes\`)
+VALUES
+('Metalúrgica Corte & Conformação Paulista Ltda', '52.148.963/0001-44', 'OS', 'OS #2026-0101', 'os-01', 2457.50, '2026-10-15', '2026-10-28', 'Pendente', 'Manutenção Preventiva Cabeçote Raytools 3kW BM111'),
+('Caldeiraria & Estruturas Metálicas Agudos S/A', '61.854.210/0001-90', 'COTACAO', 'Cotação #COT-2026-0089', NULL, 1850.00, '2026-10-19', '2026-11-05', 'Pendente', 'Revisão Tocha Plasma Hypertherm Powermax 105');
+
+-- 12. Tabela de Contas a Pagar & Despesas Operacionais (pagar.php)
+CREATE TABLE IF NOT EXISTS \`contas_pagar\` (
+  \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+  \`fornecedor_ou_despesa\` VARCHAR(150) NOT NULL,
+  \`categoria\` VARCHAR(60) NOT NULL DEFAULT 'Insumos / Matéria-Prima',
+  \`origem_tipo\` ENUM('COMPRA', 'MANUAL') NOT NULL DEFAULT 'MANUAL',
+  \`origem_numero\` VARCHAR(60) NULL,
+  \`origem_id\` VARCHAR(50) NULL,
+  \`valor\` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  \`data_lancamento\` DATE NOT NULL,
+  \`data_vencimento\` DATE NOT NULL,
+  \`status\` ENUM('A Pagar', 'Pago', 'Cancelado') NOT NULL DEFAULT 'A Pagar',
+  \`data_baixa\` DATE NULL,
+  \`forma_pagamento\` VARCHAR(40) NULL,
+  \`conta_saida\` VARCHAR(80) NULL,
+  \`observacoes\` VARCHAR(255) NULL,
+  \`data_cadastro\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX \`idx_cp_status\` (\`status\`),
+  INDEX \`idx_cp_vencimento\` (\`data_vencimento\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO \`contas_pagar\`
+(\`fornecedor_ou_despesa\`, \`categoria\`, \`origem_tipo\`, \`origem_numero\`, \`origem_id\`, \`valor\`, \`data_lancamento\`, \`data_vencimento\`, \`status\`, \`observacoes\`)
+VALUES
+('Raytools Laser Optics & Consumables Co.', 'Insumos / Matéria-Prima', 'COMPRA', 'NF-e 048.912', 'cmp-01', 4890.00, '2026-10-14', '2026-10-25', 'A Pagar', 'Lote de Lentes de Foco e Bicos de Corte Laser Fibra'),
+('Imobiliária Modelo Agudos - Galpão Industrial', 'Aluguel', 'MANUAL', 'LOC-2026-10', NULL, 3200.00, '2026-10-01', '2026-11-10', 'A Pagar', 'Aluguel Unidade Operacional Rua Sargento Andiras 874'),
+('Jadlog Logística & Transportes Eireli', 'Frete / Logística', 'MANUAL', 'CTE-99812', NULL, 280.00, '2026-10-16', '2026-10-28', 'A Pagar', 'Frete expresso de eletrodos plasma para cliente Agudos');
 `
   },
   {
@@ -5202,6 +5261,1136 @@ require_once 'conexao.php';
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>`
+  },
+  {
+    filename: 'receber.php',
+    description: 'Módulo de Contas a Receber com conexão automática de OS faturadas, PDV e cotações, baixa inteligente no caixa geral e layout minimalista.',
+    language: 'php',
+    content: `<?php
+/**
+ * MFx Tecnologia Industrial - Sistema Integrado de Gestão Empresarial (ERP)
+ * Arquivo: receber.php - Módulo de Contas a Receber & Entradas Financeiras
+ */
+require_once 'conexao.php';
+
+$mensagemSucesso = null;
+$mensagemErro = null;
+
+// 1. Processamento de Baixa Inteligente
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao'])) {
+    if ($_POST['acao'] === 'dar_baixa') {
+        $id = (int)($_POST['id'] ?? 0);
+        $formaPagamento = trim($_POST['forma_pagamento'] ?? 'PIX');
+        $dataBaixa = trim($_POST['data_baixa'] ?? date('Y-m-d'));
+        $observacoes = trim($_POST['observacoes'] ?? '');
+
+        if ($id > 0) {
+            try {
+                $stmt = $pdo->prepare("SELECT * FROM contas_receber WHERE id = ?");
+                $stmt->execute([$id]);
+                $conta = $stmt->fetch();
+
+                if ($conta) {
+                    $pdo->beginTransaction();
+
+                    // Atualiza status do título
+                    $up = $pdo->prepare("UPDATE contas_receber SET status = 'Pago', data_baixa = ?, forma_pagamento = ?, observacoes = COALESCE(NULLIF(?, ''), observacoes) WHERE id = ?");
+                    $up->execute([$dataBaixa, $formaPagamento, $observacoes, $id]);
+
+                    // Lança automaticamente a entrada no Caixa Geral
+                    $desc = "Recebimento: " . $conta['origem_numero'] . " - " . $conta['cliente'];
+                    $dataHora = $dataBaixa . ' ' . date('H:i:s');
+                    $origem = ($conta['origem_tipo'] === 'OS') ? 'OS' : (($conta['origem_tipo'] === 'PDV') ? 'PDV' : 'MANUAL');
+
+                    $mov = $pdo->prepare("INSERT INTO movimentos_caixa (tipo, origem, referencia_id, descricao, forma_pagamento, valor, data_hora, operador) VALUES ('ENTRADA', ?, ?, ?, ?, ?, ?, 'ADM - MEDRADE')");
+                    $mov->execute([$origem, $conta['origem_id'] ?? (string)$id, $desc, $formaPagamento, $conta['valor_total'], $dataHora]);
+
+                    $pdo->commit();
+                    $mensagemSucesso = "Recebimento confirmado! Valor de R$ " . number_format($conta['valor_total'], 2, ',', '.') . " creditado no Caixa Geral.";
+                }
+            } catch (Exception $e) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
+                $mensagemErro = "Erro ao dar baixa no título: " . $e->getMessage();
+            }
+        }
+    } elseif ($_POST['acao'] === 'novo_titulo') {
+        $cliente = trim($_POST['cliente'] ?? '');
+        $doc = trim($_POST['cliente_documento'] ?? '');
+        $origemTipo = trim($_POST['origem_tipo'] ?? 'COTACAO');
+        $origemNumero = trim($_POST['origem_numero'] ?? '');
+        $valor = (float)str_replace(',', '.', $_POST['valor_total'] ?? '0');
+        $dataVenc = trim($_POST['data_vencimento'] ?? date('Y-m-d'));
+        $obs = trim($_POST['observacoes'] ?? '');
+
+        if (!empty($cliente) && $valor > 0) {
+            try {
+                if (empty($origemNumero)) {
+                    $origemNumero = $origemTipo . " #" . rand(1000, 9999);
+                }
+                $ins = $pdo->prepare("INSERT INTO contas_receber (cliente, cliente_documento, origem_tipo, origem_numero, valor_total, data_lancamento, data_vencimento, status, observacoes) VALUES (?, ?, ?, ?, ?, CURDATE(), ?, 'Pendente', ?)");
+                $ins->execute([$cliente, $doc, $origemTipo, $origemNumero, $valor, $dataVenc, $obs]);
+                $mensagemSucesso = "Novo título a receber cadastrado com sucesso!";
+            } catch (Exception $e) {
+                $mensagemErro = "Erro ao cadastrar título: " . $e->getMessage();
+            }
+        }
+    }
+}
+
+// 2. Consulta de Indicadores do Topo
+$totalPendente = (float)$pdo->query("SELECT COALESCE(SUM(valor_total), 0) FROM contas_receber WHERE status = 'Pendente'")->fetchColumn();
+$totalPago = (float)$pdo->query("SELECT COALESCE(SUM(valor_total), 0) FROM contas_receber WHERE status = 'Pago'")->fetchColumn();
+$qtdPendente = (int)$pdo->query("SELECT COUNT(*) FROM contas_receber WHERE status = 'Pendente'")->fetchColumn();
+$qtdPago = (int)$pdo->query("SELECT COUNT(*) FROM contas_receber WHERE status = 'Pago'")->fetchColumn();
+$totalPrevisto = $totalPendente + $totalPago;
+
+// 3. Filtros
+$filtroStatus = $_GET['status'] ?? 'TODOS';
+$busca = trim($_GET['busca'] ?? '');
+
+$sql = "SELECT * FROM contas_receber WHERE 1=1";
+$params = [];
+
+if ($filtroStatus === 'PENDENTES') {
+    $sql .= " AND status = 'Pendente'";
+} elseif ($filtroStatus === 'PAGOS') {
+    $sql .= " AND status = 'Pago'";
+}
+
+if (!empty($busca)) {
+    $sql .= " AND (cliente LIKE ? OR origem_numero LIKE ? OR cliente_documento LIKE ?)";
+    $params[] = "%$busca%";
+    $params[] = "%$busca%";
+    $params[] = "%$busca%";
+}
+
+$sql .= " ORDER BY status ASC, data_vencimento ASC";
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+$contas = $stmt->fetchAll();
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contas a Receber - MFx Tecnologia Industrial</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 Free -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        :root {
+            --mfx-bg: #f8fafc;
+            --mfx-border: #e2e8f0;
+            --mfx-text: #0f172a;
+            --mfx-muted: #64748b;
+        }
+        body {
+            background-color: var(--mfx-bg);
+            color: var(--mfx-text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 24px;
+        }
+        .container-custom {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card-clean {
+            background: #ffffff;
+            border: 1px solid var(--mfx-border);
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        }
+        .badge-status {
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .badge-pendente {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+        .badge-pago {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        .table thead th {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--mfx-muted);
+            background-color: #f8fafc;
+            border-bottom: 1px solid var(--mfx-border);
+            padding: 12px 16px;
+        }
+        .table tbody td {
+            font-size: 12.5px;
+            padding: 14px 16px;
+            vertical-align: middle;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .nav-switcher-btn {
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .nav-switcher-btn.active {
+            background-color: #059669;
+            color: #ffffff;
+        }
+        .nav-switcher-btn.inactive {
+            color: #475569;
+            background-color: transparent;
+        }
+        .nav-switcher-btn.inactive:hover {
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-custom">
+
+    <!-- Switcher Superior de Navegação Financeira -->
+    <div class="card-clean p-2 mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <a href="receber.php" class="nav-switcher-btn active">
+                <i class="fa-solid fa-arrow-down me-1"></i> Contas a Receber
+            </a>
+            <a href="pagar.php" class="nav-switcher-btn inactive">
+                <i class="fa-solid fa-arrow-up text-danger me-1"></i> Contas a Pagar
+            </a>
+            <a href="index.php" class="nav-switcher-btn inactive">
+                <i class="fa-solid fa-house me-1"></i> Início ERP
+            </a>
+        </div>
+
+        <button type="button" class="btn btn-dark btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#modalNovoTitulo">
+            <i class="fa-solid fa-plus text-success me-1"></i> + Novo Título a Receber
+        </button>
+    </div>
+
+    <!-- Mensagens de Alerta -->
+    <?php if ($mensagemSucesso): ?>
+        <div class="alert alert-success alert-dismissible fade show text-sm py-2 px-3 border-0 shadow-sm" role="alert">
+            <i class="fa-solid fa-check-circle me-1"></i> <?= htmlspecialchars($mensagemSucesso); ?>
+            <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($mensagemErro): ?>
+        <div class="alert alert-danger alert-dismissible fade show text-sm py-2 px-3 border-0 shadow-sm" role="alert">
+            <i class="fa-solid fa-circle-exclamation me-1"></i> <?= htmlspecialchars($mensagemErro); ?>
+            <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <!-- Cabeçalho Limpo e Indicadores Finos -->
+    <div class="card-clean p-4 mb-4">
+        <div class="row align-items-center g-3">
+            <div class="col-lg-5">
+                <span class="badge bg-light text-success border border-success-subtle font-monospace text-uppercase mb-1" style="font-size: 10px;">
+                    Financeiro • Entradas
+                </span>
+                <h4 class="fw-bold mb-1">Contas a Receber</h4>
+                <p class="text-secondary small mb-0">
+                    Conexão direta de Ordens de Serviço faturadas, vendas PDV e cotações aprovadas.
+                </p>
+            </div>
+
+            <!-- Cards Finos de Resumo -->
+            <div class="col-lg-7">
+                <div class="row g-2">
+                    <div class="col-sm-4">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted small">Total a Receber</span>
+                                <span class="badge bg-warning-subtle text-warning-emphasis font-monospace"><?= $qtdPendente; ?> pend.</span>
+                            </div>
+                            <div class="fs-5 fw-bold font-monospace text-warning-emphasis">
+                                R$ <?= number_format($totalPendente, 2, ',', '.'); ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted small">Total Recebido</span>
+                                <span class="badge bg-success-subtle text-success-emphasis font-monospace"><?= $qtdPago; ?> pagos</span>
+                            </div>
+                            <div class="fs-5 fw-bold font-monospace text-success">
+                                R$ <?= number_format($totalPago, 2, ',', '.'); ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <span class="text-muted small d-block mb-1">Total Faturado</span>
+                            <div class="fs-5 fw-bold font-monospace text-dark">
+                                R$ <?= number_format($totalPrevisto, 2, ',', '.'); ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra de Filtros e Busca -->
+    <div class="card-clean p-3 mb-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <!-- Filtros Sutis -->
+        <div class="d-flex align-items-center gap-1">
+            <a href="receber.php" class="btn btn-sm <?= ($filtroStatus === 'TODOS') ? 'btn-dark' : 'btn-outline-secondary border-0'; ?>">
+                Todos (<?= count($contas); ?>)
+            </a>
+            <a href="receber.php?status=PENDENTES" class="btn btn-sm <?= ($filtroStatus === 'PENDENTES') ? 'btn-warning' : 'btn-outline-secondary border-0'; ?>">
+                Pendentes (<?= $qtdPendente; ?>)
+            </a>
+            <a href="receber.php?status=PAGOS" class="btn btn-sm <?= ($filtroStatus === 'PAGOS') ? 'btn-success' : 'btn-outline-secondary border-0'; ?>">
+                Recebidos (<?= $qtdPago; ?>)
+            </a>
+        </div>
+
+        <!-- Formulário de Busca -->
+        <form method="GET" class="d-flex gap-2" style="max-width: 320px; width: 100%;">
+            <input type="hidden" name="status" value="<?= htmlspecialchars($filtroStatus); ?>">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" name="busca" class="form-control border-start-0 bg-light" placeholder="Buscar por cliente, OS..." value="<?= htmlspecialchars($busca); ?>">
+                <?php if (!empty($busca)): ?>
+                    <a href="receber.php?status=<?= htmlspecialchars($filtroStatus); ?>" class="btn btn-outline-secondary">×</a>
+                <?php endif; ?>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabela de Títulos a Receber -->
+    <div class="card-clean overflow-hidden">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Origem</th>
+                        <th class="text-end">Valor Total</th>
+                        <th>Vencimento</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-end">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($contas)): ?>
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="fa-solid fa-inbox fs-3 mb-2 d-block text-secondary"></i>
+                                Nenhum título a receber encontrado.
+                            </td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($contas as $conta): ?>
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold text-dark"><?= htmlspecialchars($conta['cliente']); ?></div>
+                                    <?php if (!empty($conta['cliente_documento'])): ?>
+                                        <small class="text-muted font-monospace"><?= htmlspecialchars($conta['cliente_documento']); ?></small>
+                                    <?php endif; ?>
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-light text-dark border font-monospace">
+                                        <?= htmlspecialchars($conta['origem_numero']); ?>
+                                    </span>
+                                    <?php if (!empty($conta['observacoes'])): ?>
+                                        <div class="text-muted small text-truncate mt-1" style="max-width: 250px;">
+                                            <?= htmlspecialchars($conta['observacoes']); ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </td>
+
+                                <td class="text-end font-monospace fw-bold text-dark fs-6">
+                                    R$ <?= number_format($conta['valor_total'], 2, ',', '.'); ?>
+                                </td>
+
+                                <td>
+                                    <div class="text-secondary">
+                                        <i class="fa-regular fa-calendar me-1"></i>
+                                        <?= date('d/m/Y', strtotime($conta['data_vencimento'])); ?>
+                                    </div>
+                                    <?php if (!empty($conta['data_baixa'])): ?>
+                                        <small class="text-success d-block">
+                                            Baixado: <?= date('d/m/Y', strtotime($conta['data_baixa'])); ?>
+                                        </small>
+                                    <?php endif; ?>
+                                </td>
+
+                                <td class="text-center">
+                                    <?php if ($conta['status'] === 'Pendente'): ?>
+                                        <span class="badge-status badge-pendente">
+                                            <i class="fa-solid fa-circle" style="font-size: 6px;"></i> Pendente
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge-status badge-pago">
+                                            <i class="fa-solid fa-circle" style="font-size: 6px;"></i> Pago (<?= htmlspecialchars($conta['forma_pagamento'] ?? 'PIX'); ?>)
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+
+                                <td class="text-end">
+                                    <?php if ($conta['status'] === 'Pendente'): ?>
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-success btn-sm fw-semibold"
+                                            onclick="abrirModalBaixa(<?= $conta['id']; ?>, '<?= htmlspecialchars(addslashes($conta['cliente'])); ?>', '<?= htmlspecialchars(addslashes($conta['origem_numero'])); ?>', '<?= number_format($conta['valor_total'], 2, ',', '.'); ?>')"
+                                        >
+                                            <i class="fa-solid fa-check me-1"></i> Dar Baixa
+                                        </button>
+                                    <?php else: ?>
+                                        <span class="text-muted small fst-italic">Liquidado</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL DE BAIXA / CONFIRMAR RECEBIMENTO -->
+<div class="modal fade" id="modalBaixa" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark fs-6">
+                    <i class="fa-solid fa-check-circle text-success me-2"></i> Confirmar Recebimento (Baixa)
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <input type="hidden" name="acao" value="dar_baixa">
+                <input type="hidden" name="id" id="baixaId">
+
+                <div class="modal-body">
+                    <!-- Resumo -->
+                    <div class="p-3 bg-light rounded-3 border mb-3">
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>Cliente:</span>
+                            <strong class="text-dark" id="baixaCliente"></strong>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted mb-2">
+                            <span>Documento:</span>
+                            <span class="font-monospace" id="baixaNumero"></span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                            <span class="fw-bold text-dark small">Valor a Receber:</span>
+                            <span class="fs-5 fw-bold font-monospace text-success" id="baixaValor"></span>
+                        </div>
+                    </div>
+
+                    <!-- Forma de Pagamento -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Forma de Pagamento:</label>
+                        <select name="forma_pagamento" class="form-select form-select-sm">
+                            <option value="PIX">PIX (Chave Oficial MFx)</option>
+                            <option value="BOLETO">Boleto Bancário</option>
+                            <option value="CARTAO_CREDITO">Cartão de Crédito</option>
+                            <option value="CARTAO_DEBITO">Cartão de Débito</option>
+                            <option value="DINHEIRO">Dinheiro em Espécie</option>
+                        </select>
+                    </div>
+
+                    <!-- Data da Baixa -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Data do Recebimento:</label>
+                        <input type="date" name="data_baixa" class="form-control form-control-sm" value="<?= date('Y-m-d'); ?>" required>
+                    </div>
+
+                    <div class="alert alert-light border small text-muted py-2 mb-3">
+                        <i class="fa-solid fa-vault text-success me-1"></i>
+                        O valor será somado e registrado automaticamente no <strong>Caixa Geral</strong>.
+                    </div>
+
+                    <!-- Observações -->
+                    <div class="mb-2">
+                        <label class="form-label small text-secondary">Observações da Quitação:</label>
+                        <input type="text" name="observacoes" class="form-control form-control-sm" placeholder="Ex: Comprovante arquivado">
+                    </div>
+                </div>
+
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success btn-sm fw-bold px-3">Confirmar Recebimento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL NOVO TÍTULO MANUAL -->
+<div class="modal fade" id="modalNovoTitulo" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark fs-6">
+                    <i class="fa-solid fa-plus-circle text-primary me-2"></i> Novo Título a Receber
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <input type="hidden" name="acao" value="novo_titulo">
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Cliente / Razão Social: *</label>
+                        <input type="text" name="cliente" class="form-control form-control-sm" placeholder="Nome do cliente" required>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small text-secondary">CPF / CNPJ:</label>
+                            <input type="text" name="cliente_documento" class="form-control form-control-sm" placeholder="00.000.000/0000-00">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-secondary">Origem:</label>
+                            <select name="origem_tipo" class="form-select form-select-sm">
+                                <option value="COTACAO">Cotação / Orçamento</option>
+                                <option value="OS">Ordem de Serviço (OS)</option>
+                                <option value="PDV">Venda PDV / Balcão</option>
+                                <option value="MANUAL">Duplicata Manual</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small text-secondary">Nº do Documento:</label>
+                            <input type="text" name="origem_numero" class="form-control form-control-sm" placeholder="Ex: Cotação #104">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-secondary">Valor Total (R$): *</label>
+                            <input type="text" name="valor_total" class="form-control form-control-sm font-monospace fw-bold" placeholder="0,00" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Data de Vencimento: *</label>
+                        <input type="date" name="data_vencimento" class="form-control form-control-sm" value="<?= date('Y-m-d', strtotime('+15 days')); ?>" required>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small text-secondary">Observações:</label>
+                        <input type="text" name="observacoes" class="form-control form-control-sm" placeholder="Ex: 50% de entrada na aprovação">
+                    </div>
+                </div>
+
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-dark btn-sm fw-bold px-3">Salvar Título</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function abrirModalBaixa(id, cliente, numero, valor) {
+    document.getElementById('baixaId').value = id;
+    document.getElementById('baixaCliente').textContent = cliente;
+    document.getElementById('baixaNumero').textContent = numero;
+    document.getElementById('baixaValor').textContent = 'R$ ' + valor;
+    new bootstrap.Modal(document.getElementById('modalBaixa')).show();
+}
+</script>
+</body>
+</html>`
+  },
+  {
+    filename: 'pagar.php',
+    description: 'Módulo de Contas a Pagar & Despesas Operacionais com conexão de compras de matéria-prima, baixa com seleção de conta de saída/PIX e layout leve.',
+    language: 'php',
+    content: `<?php
+/**
+ * MFx Tecnologia Industrial - Sistema Integrado de Gestão Empresarial (ERP)
+ * Arquivo: pagar.php - Módulo de Contas a Pagar & Saídas Financeiras
+ */
+require_once 'conexao.php';
+
+$mensagemSucesso = null;
+$mensagemErro = null;
+
+// 1. Processamento de Liquidação / Baixa de Despesa
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao'])) {
+    if ($_POST['acao'] === 'liquidar') {
+        $id = (int)($_POST['id'] ?? 0);
+        $formaPagamento = trim($_POST['forma_pagamento'] ?? 'PIX');
+        $contaSaida = trim($_POST['conta_saida'] ?? 'Banco Itaú / PIX MFx');
+        $dataBaixa = trim($_POST['data_baixa'] ?? date('Y-m-d'));
+        $observacoes = trim($_POST['observacoes'] ?? '');
+
+        if ($id > 0) {
+            try {
+                $stmt = $pdo->prepare("SELECT * FROM contas_pagar WHERE id = ?");
+                $stmt->execute([$id]);
+                $conta = $stmt->fetch();
+
+                if ($conta) {
+                    $pdo->beginTransaction();
+
+                    // Atualiza status para Pago
+                    $up = $pdo->prepare("UPDATE contas_pagar SET status = 'Pago', data_baixa = ?, forma_pagamento = ?, conta_saida = ?, observacoes = COALESCE(NULLIF(?, ''), observacoes) WHERE id = ?");
+                    $up->execute([$dataBaixa, $formaPagamento, $contaSaida, $observacoes, $id]);
+
+                    // Lança automaticamente saída no Caixa Geral
+                    $desc = "Pagamento: " . $conta['fornecedor_ou_despesa'] . " (" . $conta['categoria'] . ")";
+                    $dataHora = $dataBaixa . ' ' . date('H:i:s');
+                    $origem = ($conta['origem_tipo'] === 'COMPRA') ? 'COMPRA' : 'MANUAL';
+
+                    $mov = $pdo->prepare("INSERT INTO movimentos_caixa (tipo, origem, referencia_id, descricao, forma_pagamento, valor, data_hora, operador) VALUES ('SAIDA', ?, ?, ?, ?, ?, ?, 'ADM - MEDRADE')");
+                    $mov->execute([$origem, $conta['origem_id'] ?? (string)$id, $desc, $formaPagamento, $conta['valor'], $dataHora]);
+
+                    $pdo->commit();
+                    $mensagemSucesso = "Pagamento liquidado com sucesso! R$ " . number_format($conta['valor'], 2, ',', '.') . " debitado no Caixa Geral.";
+                }
+            } catch (Exception $e) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
+                $mensagemErro = "Erro ao liquidar despesa: " . $e->getMessage();
+            }
+        }
+    } elseif ($_POST['acao'] === 'nova_despesa') {
+        $fornecedor = trim($_POST['fornecedor_ou_despesa'] ?? '');
+        $categoria = trim($_POST['categoria'] ?? 'Aluguel');
+        $origemNumero = trim($_POST['origem_numero'] ?? '');
+        $valor = (float)str_replace(',', '.', $_POST['valor'] ?? '0');
+        $dataVenc = trim($_POST['data_vencimento'] ?? date('Y-m-d'));
+        $obs = trim($_POST['observacoes'] ?? '');
+
+        if (!empty($fornecedor) && $valor > 0) {
+            try {
+                if (empty($origemNumero)) {
+                    $origemNumero = "DESP #" . rand(1000, 9999);
+                }
+                $ins = $pdo->prepare("INSERT INTO contas_pagar (fornecedor_ou_despesa, categoria, origem_tipo, origem_numero, valor, data_lancamento, data_vencimento, status, observacoes) VALUES (?, ?, 'MANUAL', ?, ?, CURDATE(), ?, 'A Pagar', ?)");
+                $ins->execute([$fornecedor, $categoria, $origemNumero, $valor, $dataVenc, $obs]);
+                $mensagemSucesso = "Despesa lançada com sucesso em Contas a Pagar!";
+            } catch (Exception $e) {
+                $mensagemErro = "Erro ao lançar despesa: " . $e->getMessage();
+            }
+        }
+    }
+}
+
+// 2. Consulta de Indicadores do Topo
+$totalAPagar = (float)$pdo->query("SELECT COALESCE(SUM(valor), 0) FROM contas_pagar WHERE status = 'A Pagar'")->fetchColumn();
+$totalPago = (float)$pdo->query("SELECT COALESCE(SUM(valor), 0) FROM contas_pagar WHERE status = 'Pago'")->fetchColumn();
+$qtdAPagar = (int)$pdo->query("SELECT COUNT(*) FROM contas_pagar WHERE status = 'A Pagar'")->fetchColumn();
+$qtdPago = (int)$pdo->query("SELECT COUNT(*) FROM contas_pagar WHERE status = 'Pago'")->fetchColumn();
+$totalGeral = $totalAPagar + $totalPago;
+
+// 3. Filtros
+$filtroStatus = $_GET['status'] ?? 'TODOS';
+$filtroCategoria = $_GET['categoria'] ?? 'TODAS';
+$busca = trim($_GET['busca'] ?? '');
+
+$sql = "SELECT * FROM contas_pagar WHERE 1=1";
+$params = [];
+
+if ($filtroStatus === 'A_PAGAR') {
+    $sql .= " AND status = 'A Pagar'";
+} elseif ($filtroStatus === 'PAGOS') {
+    $sql .= " AND status = 'Pago'";
+}
+
+if ($filtroCategoria !== 'TODAS') {
+    $sql .= " AND categoria = ?";
+    $params[] = $filtroCategoria;
+}
+
+if (!empty($busca)) {
+    $sql .= " AND (fornecedor_ou_despesa LIKE ? OR origem_numero LIKE ? OR categoria LIKE ?)";
+    $params[] = "%$busca%";
+    $params[] = "%$busca%";
+    $params[] = "%$busca%";
+}
+
+$sql .= " ORDER BY status ASC, data_vencimento ASC";
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+$contas = $stmt->fetchAll();
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contas a Pagar & Despesas - MFx Tecnologia Industrial</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 Free -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        :root {
+            --mfx-bg: #f8fafc;
+            --mfx-border: #e2e8f0;
+            --mfx-text: #0f172a;
+            --mfx-muted: #64748b;
+        }
+        body {
+            background-color: var(--mfx-bg);
+            color: var(--mfx-text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 24px;
+        }
+        .container-custom {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card-clean {
+            background: #ffffff;
+            border: 1px solid var(--mfx-border);
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        }
+        .badge-status {
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .badge-apagar {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .badge-pago {
+            background-color: #f1f5f9;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+        }
+        .table thead th {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--mfx-muted);
+            background-color: #f8fafc;
+            border-bottom: 1px solid var(--mfx-border);
+            padding: 12px 16px;
+        }
+        .table tbody td {
+            font-size: 12.5px;
+            padding: 14px 16px;
+            vertical-align: middle;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .nav-switcher-btn {
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .nav-switcher-btn.active {
+            background-color: #dc2626;
+            color: #ffffff;
+        }
+        .nav-switcher-btn.inactive {
+            color: #475569;
+            background-color: transparent;
+        }
+        .nav-switcher-btn.inactive:hover {
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-custom">
+
+    <!-- Switcher Superior de Navegação Financeira -->
+    <div class="card-clean p-2 mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <a href="receber.php" class="nav-switcher-btn inactive">
+                <i class="fa-solid fa-arrow-down text-success me-1"></i> Contas a Receber
+            </a>
+            <a href="pagar.php" class="nav-switcher-btn active">
+                <i class="fa-solid fa-arrow-up me-1"></i> Contas a Pagar
+            </a>
+            <a href="index.php" class="nav-switcher-btn inactive">
+                <i class="fa-solid fa-house me-1"></i> Início ERP
+            </a>
+        </div>
+
+        <button type="button" class="btn btn-dark btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#modalNovaDespesa">
+            <i class="fa-solid fa-plus text-danger me-1"></i> + Nova Despesa a Pagar
+        </button>
+    </div>
+
+    <!-- Mensagens de Alerta -->
+    <?php if ($mensagemSucesso): ?>
+        <div class="alert alert-success alert-dismissible fade show text-sm py-2 px-3 border-0 shadow-sm" role="alert">
+            <i class="fa-solid fa-check-circle me-1"></i> <?= htmlspecialchars($mensagemSucesso); ?>
+            <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($mensagemErro): ?>
+        <div class="alert alert-danger alert-dismissible fade show text-sm py-2 px-3 border-0 shadow-sm" role="alert">
+            <i class="fa-solid fa-circle-exclamation me-1"></i> <?= htmlspecialchars($mensagemErro); ?>
+            <button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <!-- Cabeçalho Limpo e Indicadores Finos -->
+    <div class="card-clean p-4 mb-4">
+        <div class="row align-items-center g-3">
+            <div class="col-lg-5">
+                <span class="badge bg-light text-danger border border-danger-subtle font-monospace text-uppercase mb-1" style="font-size: 10px;">
+                    Financeiro • Saídas
+                </span>
+                <h4 class="fw-bold mb-1">Contas a Pagar & Despesas</h4>
+                <p class="text-secondary small mb-0">
+                    Conexão de compras de matéria-prima e custos fixos operacionais (aluguel, energia, fretes).
+                </p>
+            </div>
+
+            <!-- Cards Finos de Resumo -->
+            <div class="col-lg-7">
+                <div class="row g-2">
+                    <div class="col-sm-4">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted small">Total a Pagar</span>
+                                <span class="badge bg-danger-subtle text-danger font-monospace"><?= $qtdAPagar; ?> pend.</span>
+                            </div>
+                            <div class="fs-5 fw-bold font-monospace text-danger">
+                                R$ <?= number_format($totalAPagar, 2, ',', '.'); ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted small">Total Quitado</span>
+                                <span class="badge bg-secondary-subtle text-dark font-monospace"><?= $qtdPago; ?> pagos</span>
+                            </div>
+                            <div class="fs-5 fw-bold font-monospace text-dark">
+                                R$ <?= number_format($totalPago, 2, ',', '.'); ?>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <span class="text-muted small d-block mb-1">Total de Despesas</span>
+                            <div class="fs-5 fw-bold font-monospace text-dark">
+                                R$ <?= number_format($totalGeral, 2, ',', '.'); ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra de Filtros e Busca -->
+    <div class="card-clean p-3 mb-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <!-- Filtros Sutis -->
+        <div class="d-flex align-items-center gap-1 flex-wrap">
+            <a href="pagar.php" class="btn btn-sm <?= ($filtroStatus === 'TODOS') ? 'btn-dark' : 'btn-outline-secondary border-0'; ?>">
+                Todos (<?= count($contas); ?>)
+            </a>
+            <a href="pagar.php?status=A_PAGAR" class="btn btn-sm <?= ($filtroStatus === 'A_PAGAR') ? 'btn-danger' : 'btn-outline-secondary border-0'; ?>">
+                A Pagar (<?= $qtdAPagar; ?>)
+            </a>
+            <a href="pagar.php?status=PAGOS" class="btn btn-sm <?= ($filtroStatus === 'PAGOS') ? 'btn-secondary' : 'btn-outline-secondary border-0'; ?>">
+                Pagos (<?= $qtdPago; ?>)
+            </a>
+        </div>
+
+        <!-- Formulário de Busca -->
+        <form method="GET" class="d-flex gap-2" style="max-width: 320px; width: 100%;">
+            <input type="hidden" name="status" value="<?= htmlspecialchars($filtroStatus); ?>">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                <input type="text" name="busca" class="form-control border-start-0 bg-light" placeholder="Buscar fornecedor, conta..." value="<?= htmlspecialchars($busca); ?>">
+                <?php if (!empty($busca)): ?>
+                    <a href="pagar.php?status=<?= htmlspecialchars($filtroStatus); ?>" class="btn btn-outline-secondary">×</a>
+                <?php endif; ?>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabela de Contas a Pagar -->
+    <div class="card-clean overflow-hidden">
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Fornecedor / Despesa</th>
+                        <th>Categoria</th>
+                        <th class="text-end">Valor</th>
+                        <th>Vencimento</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-end">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($contas)): ?>
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="fa-solid fa-inbox fs-3 mb-2 d-block text-secondary"></i>
+                                Nenhuma despesa ou conta a pagar encontrada.
+                            </td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($contas as $conta): ?>
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold text-dark"><?= htmlspecialchars($conta['fornecedor_ou_despesa']); ?></div>
+                                    <?php if (!empty($conta['origem_numero'])): ?>
+                                        <small class="text-muted font-monospace"><i class="fa-solid fa-file-invoice me-1"></i><?= htmlspecialchars($conta['origem_numero']); ?></small>
+                                    <?php endif; ?>
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-light text-secondary border">
+                                        <?= htmlspecialchars($conta['categoria']); ?>
+                                    </span>
+                                    <?php if (!empty($conta['observacoes'])): ?>
+                                        <div class="text-muted small text-truncate mt-1" style="max-width: 250px;">
+                                            <?= htmlspecialchars($conta['observacoes']); ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </td>
+
+                                <td class="text-end font-monospace fw-bold text-dark fs-6">
+                                    R$ <?= number_format($conta['valor'], 2, ',', '.'); ?>
+                                </td>
+
+                                <td>
+                                    <div class="text-secondary">
+                                        <i class="fa-regular fa-calendar me-1"></i>
+                                        <?= date('d/m/Y', strtotime($conta['data_vencimento'])); ?>
+                                    </div>
+                                    <?php if (!empty($conta['data_baixa'])): ?>
+                                        <small class="text-muted d-block">
+                                            Quitado: <?= date('d/m/Y', strtotime($conta['data_baixa'])); ?>
+                                        </small>
+                                    <?php endif; ?>
+                                </td>
+
+                                <td class="text-center">
+                                    <?php if ($conta['status'] === 'A Pagar'): ?>
+                                        <span class="badge-status badge-apagar">
+                                            <i class="fa-solid fa-circle" style="font-size: 6px;"></i> A Pagar
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge-status badge-pago">
+                                            <i class="fa-solid fa-circle" style="font-size: 6px;"></i> Quitado (<?= htmlspecialchars($conta['conta_saida'] ?? 'PIX'); ?>)
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+
+                                <td class="text-end">
+                                    <?php if ($conta['status'] === 'A Pagar'): ?>
+                                        <button 
+                                            type="button" 
+                                            class="btn btn-danger btn-sm fw-semibold"
+                                            onclick="abrirModalLiquidacao(<?= $conta['id']; ?>, '<?= htmlspecialchars(addslashes($conta['fornecedor_ou_despesa'])); ?>', '<?= htmlspecialchars(addslashes($conta['categoria'])); ?>', '<?= number_format($conta['valor'], 2, ',', '.'); ?>')"
+                                        >
+                                            <i class="fa-solid fa-check me-1"></i> Liquidar
+                                        </button>
+                                    <?php else: ?>
+                                        <span class="text-muted small fst-italic">Liquidado</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL DE LIQUIDAÇÃO / BAIXA DE DESPESA -->
+<div class="modal fade" id="modalLiquidacao" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark fs-6">
+                    <i class="fa-solid fa-check-circle text-danger me-2"></i> Liquidar Pagamento (Baixa)
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <input type="hidden" name="acao" value="liquidar">
+                <input type="hidden" name="id" id="liqId">
+
+                <div class="modal-body">
+                    <!-- Resumo -->
+                    <div class="p-3 bg-light rounded-3 border mb-3">
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span>Favorecido:</span>
+                            <strong class="text-dark" id="liqFornecedor"></strong>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted mb-2">
+                            <span>Categoria:</span>
+                            <span class="badge bg-secondary-subtle text-dark" id="liqCategoria"></span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                            <span class="fw-bold text-dark small">Valor a Liquidar:</span>
+                            <span class="fs-5 fw-bold font-monospace text-danger" id="liqValor"></span>
+                        </div>
+                    </div>
+
+                    <!-- Conta de Saída -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Conta de Saída / Origem:</label>
+                        <select name="conta_saida" class="form-select form-select-sm">
+                            <option value="Banco Itaú / PIX MFx">Banco Itaú (PIX Chave MFx)</option>
+                            <option value="Conta Corrente Banco do Brasil">Conta Corrente Banco do Brasil</option>
+                            <option value="Caixa Interno Operacional">Caixa Interno em Espécie</option>
+                            <option value="Cartão de Crédito Corporativo">Cartão de Crédito Corporativo</option>
+                        </select>
+                    </div>
+
+                    <!-- Método de Quitação -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Método:</label>
+                        <select name="forma_pagamento" class="form-select form-select-sm">
+                            <option value="PIX">PIX</option>
+                            <option value="BOLETO">Boleto Débito em Conta</option>
+                            <option value="CARTAO_CREDITO">Cartão Corporativo</option>
+                            <option value="DINHEIRO">Dinheiro</option>
+                        </select>
+                    </div>
+
+                    <!-- Data da Quitação -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Data da Quitação:</label>
+                        <input type="date" name="data_baixa" class="form-control form-control-sm" value="<?= date('Y-m-d'); ?>" required>
+                    </div>
+
+                    <div class="alert alert-light border small text-muted py-2 mb-3">
+                        <i class="fa-solid fa-receipt text-danger me-1"></i>
+                        O valor será lançado automaticamente como <strong>SAÍDA</strong> no Caixa Geral.
+                    </div>
+
+                    <!-- Observações -->
+                    <div class="mb-2">
+                        <label class="form-label small text-secondary">Observações / Autenticação Bancária:</label>
+                        <input type="text" name="observacoes" class="form-control form-control-sm" placeholder="Ex: Autenticação internet banking">
+                    </div>
+                </div>
+
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger btn-sm fw-bold px-3">Confirmar Quitação</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL NOVA DESPESA MANUAL -->
+<div class="modal fade" id="modalNovaDespesa" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark fs-6">
+                    <i class="fa-solid fa-plus-circle text-danger me-2"></i> Nova Despesa a Pagar
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <input type="hidden" name="acao" value="nova_despesa">
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Fornecedor / Favorecido: *</label>
+                        <input type="text" name="fornecedor_ou_despesa" class="form-control form-control-sm" placeholder="Ex: CPFL Energia, Imobiliária, Transportadora" required>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small text-secondary">Categoria:</label>
+                            <select name="categoria" class="form-select form-select-sm">
+                                <option value="Insumos / Matéria-Prima">Insumos / Matéria-Prima</option>
+                                <option value="Aluguel">Aluguel</option>
+                                <option value="Energia / Água">Energia / Água</option>
+                                <option value="Frete / Logística">Frete / Logística</option>
+                                <option value="Peças de Reposição">Peças de Reposição</option>
+                                <option value="Folha / Pró-labore">Folha / Pró-labore</option>
+                                <option value="Manutenção">Manutenção</option>
+                                <option value="Impostos / Taxas">Impostos / Taxas</option>
+                                <option value="Outros">Outros</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-secondary">Nº Documento / Fatura:</label>
+                            <input type="text" name="origem_numero" class="form-control form-control-sm" placeholder="Ex: Boleto 4492">
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-secondary">Valor (R$): *</label>
+                            <input type="text" name="valor" class="form-control form-control-sm font-monospace fw-bold" placeholder="0,00" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-secondary">Vencimento: *</label>
+                            <input type="date" name="data_vencimento" class="form-control form-control-sm" value="<?= date('Y-m-d', strtotime('+10 days')); ?>" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small text-secondary">Observações / Descrição:</label>
+                        <input type="text" name="observacoes" class="form-control form-control-sm" placeholder="Ex: Manutenção preventiva compressor de ar">
+                    </div>
+                </div>
+
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger btn-sm fw-bold px-3">Lançar Despesa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function abrirModalLiquidacao(id, fornecedor, categoria, valor) {
+    document.getElementById('liqId').value = id;
+    document.getElementById('liqFornecedor').textContent = fornecedor;
+    document.getElementById('liqCategoria').textContent = categoria;
+    document.getElementById('liqValor').textContent = 'R$ ' + valor;
+    new bootstrap.Modal(document.getElementById('modalLiquidacao')).show();
+}
+</script>
 </body>
 </html>`
   },

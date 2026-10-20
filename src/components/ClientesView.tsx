@@ -346,8 +346,8 @@ export const ClientesView: React.FC<ClientesViewProps> = ({
       <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-bold font-mono uppercase tracking-wider bg-red-100 text-red-700 px-2 py-0.5 rounded">
-              Módulo: clientes.php
+            <span className="text-xs font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+              Clientes & Fornecedores
             </span>
             <span className="text-xs text-slate-500 font-medium">| MFx Tecnologia Industrial (CNPJ: 34.375.789/0001-87)</span>
           </div>

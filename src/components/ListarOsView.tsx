@@ -70,8 +70,8 @@ export const ListarOsView: React.FC<ListarOsViewProps> = ({
       <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-bold font-mono uppercase tracking-wider bg-red-100 text-red-700 px-2 py-0.5 rounded">
-              Módulo: listar_os.php
+            <span className="text-xs font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+              Ordens de Serviço
             </span>
             <span className="text-xs text-slate-500 font-medium">| MFx Tecnologia Industrial</span>
           </div>
@@ -87,9 +87,10 @@ export const ListarOsView: React.FC<ListarOsViewProps> = ({
         <button
           onClick={onNovaOsClick}
           className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-lg shadow transition self-start md:self-auto text-sm"
+          title="Abrir Nova Ordem de Serviço"
         >
           <Plus className="w-4 h-4" />
-          <span>Abrir Nova OS (nova_os.php)</span>
+          <span>Nova OS</span>
         </button>
       </div>
 
@@ -206,7 +207,7 @@ export const ListarOsView: React.FC<ListarOsViewProps> = ({
                         <button
                           onClick={() => onImprimirClick(os.id)}
                           className="inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 px-2.5 py-1 rounded font-bold text-xs transition shadow-2xs"
-                          title="Visualizar e Imprimir Relatório Formal A4 (imprimir_os.php)"
+                          title="Visualizar e Imprimir Relatório Formal A4"
                         >
                           <Printer className="w-3.5 h-3.5" />
                           Imprimir A4

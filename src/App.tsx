@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Cliente, OrdemServico, StatusOS, Compra, ItemEstoque, Venda, MovimentoCaixa, Usuario } from './types';
-import { CLIENTES_INICIAIS, ORDENS_SERVICO_INICIAIS, ESTOQUE_INICIAL, COMPRAS_INICIAIS, VENDAS_INICIAIS, MOVIMENTOS_CAIXA_INICIAIS, USUARIOS_INICIAIS } from './data/initialData';
+import { Cliente, OrdemServico, StatusOS, Compra, ItemEstoque, Venda, MovimentoCaixa, Usuario, ContaReceber, ContaPagar, FormaPagamento } from './types';
+import { CLIENTES_INICIAIS, ORDENS_SERVICO_INICIAIS, ESTOQUE_INICIAL, COMPRAS_INICIAIS, VENDAS_INICIAIS, MOVIMENTOS_CAIXA_INICIAIS, USUARIOS_INICIAIS, CONTAS_RECEBER_INICIAIS, CONTAS_PAGAR_INICIAIS } from './data/initialData';
 import { ErpSidebar, ErpModuleType } from './components/ErpSidebar';
 import { ErpTopbar } from './components/ErpTopbar';
 import { ErpStatusBar } from './components/ErpStatusBar';
@@ -21,6 +21,8 @@ import { EstoqueView } from './components/EstoqueView';
 import { ComprasView } from './components/ComprasView';
 import { PdvView } from './components/PdvView';
 import { FinanceiroView } from './components/FinanceiroView';
+import { ReceberView } from './components/ReceberView';
+import { PagarView } from './components/PagarView';
 import { AcessoView } from './components/AcessoView';
 import { LoginView } from './components/LoginView';
 import { ConfiguracoesView } from './components/ConfiguracoesView';
@@ -106,6 +108,28 @@ export default function App() {
       console.warn('Erro ao carregar movimentos de caixa do localStorage:', e);
     }
     return MOVIMENTOS_CAIXA_INICIAIS;
+  });
+
+  // Estado de Contas a Receber (receber.php) com persistência
+  const [contasReceber, setContasReceber] = useState<ContaReceber[]>(() => {
+    try {
+      const salvo = localStorage.getItem('mfx_contas_receber');
+      if (salvo) return JSON.parse(salvo);
+    } catch (e) {
+      console.warn('Erro ao carregar contas a receber do localStorage:', e);
+    }
+    return CONTAS_RECEBER_INICIAIS;
+  });
+
+  // Estado de Contas a Pagar (pagar.php) com persistência
+  const [contasPagar, setContasPagar] = useState<ContaPagar[]>(() => {
+    try {
+      const salvo = localStorage.getItem('mfx_contas_pagar');
+      if (salvo) return JSON.parse(salvo);
+    } catch (e) {
+      console.warn('Erro ao carregar contas a pagar do localStorage:', e);
+    }
+    return CONTAS_PAGAR_INICIAIS;
   });
 
   // Estado de Usuários e Gestão de Acessos com persistência
@@ -201,6 +225,22 @@ export default function App() {
 
   useEffect(() => {
     try {
+      localStorage.setItem('mfx_contas_receber', JSON.stringify(contasReceber));
+    } catch (e) {
+      console.warn('Erro ao salvar contas a receber:', e);
+    }
+  }, [contasReceber]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mfx_contas_pagar', JSON.stringify(contasPagar));
+    } catch (e) {
+      console.warn('Erro ao salvar contas a pagar:', e);
+    }
+  }, [contasPagar]);
+
+  useEffect(() => {
+    try {
       localStorage.setItem('mfx_usuarios', JSON.stringify(usuarios));
     } catch (e) {
       console.warn('Erro ao salvar usuários:', e);
@@ -242,6 +282,27 @@ export default function App() {
   // Ações de Compras e Atualização Automática de Estoque
   const handleSalvarCompra = (novaCompra: Compra) => {
     setCompras((prev) => [novaCompra, ...prev]);
+
+    // Conexão automática com Contas a Pagar (pagar.php)
+    const hoje = new Date().toISOString().split('T')[0];
+    const dVenc = new Date();
+    dVenc.setDate(dVenc.getDate() + 28);
+    const dataVencimento = dVenc.toISOString().split('T')[0];
+
+    const novaContaPagar: ContaPagar = {
+      id: `pag-cmp-${novaCompra.id}`,
+      fornecedorOuDespesa: novaCompra.fornecedor,
+      categoria: 'Insumos / Matéria-Prima',
+      origemTipo: 'COMPRA',
+      origemNumero: novaCompra.numeroNota || 'NF-e Entrada',
+      origemId: novaCompra.id,
+      valor: novaCompra.valorTotal,
+      dataLancamento: novaCompra.dataCompra || hoje,
+      dataVencimento,
+      status: 'A Pagar',
+      observacoes: novaCompra.observacoes || 'Importação e compra de insumos de corte',
+    };
+    setContasPagar((prev) => [novaContaPagar, ...prev]);
   };
 
   const handleAtualizarEstoquePorCompra = (
@@ -299,10 +360,120 @@ export default function App() {
       operador: novaVenda.operador || 'ADM - MEDRADE',
     };
     setMovimentosCaixa((prev) => [novoMovimento, ...prev]);
+
+    // 4. Conexão automática com Contas a Receber (Venda Balcão já entra como Pago)
+    const novaContaReceber: ContaReceber = {
+      id: `rec-vnd-${novaVenda.id}`,
+      cliente: novaVenda.clienteNome,
+      clienteDocumento: novaVenda.clienteDocumento,
+      origemTipo: 'PDV',
+      origemNumero: `PDV #${novaVenda.codigoVenda}`,
+      origemId: novaVenda.id,
+      valorTotal: novaVenda.valorTotal,
+      dataLancamento: novaVenda.dataVenda,
+      dataVencimento: novaVenda.dataVenda,
+      status: 'Pago',
+      dataBaixa: novaVenda.dataVenda,
+      formaPagamento: novaVenda.formaPagamento,
+      observacoes: `Venda balcão (${novaVenda.itens.length} itens)`,
+    };
+    setContasReceber((prev) => [novaContaReceber, ...prev]);
   };
 
   const handleAdicionarMovimentoCaixa = (novoMovimento: MovimentoCaixa) => {
     setMovimentosCaixa((prev) => [novoMovimento, ...prev]);
+  };
+
+  // Ações de Contas a Receber (receber.php)
+  const handleDarBaixaReceber = (
+    id: string,
+    formaPagamento: FormaPagamento,
+    dataBaixa: string,
+    observacoes?: string
+  ) => {
+    const agora = new Date();
+    const hora = agora.toTimeString().split(' ')[0].substring(0, 5);
+    const dataHora = `${dataBaixa} ${hora}`;
+
+    setContasReceber((prev) =>
+      prev.map((conta) => {
+        if (conta.id === id) {
+          // Lança entrada automática no Caixa Geral
+          const novoMov: MovimentoCaixa = {
+            id: `mov-${Date.now()}`,
+            tipo: 'ENTRADA',
+            origem: conta.origemTipo === 'OS' ? 'OS' : (conta.origemTipo === 'PDV' ? 'PDV' : 'MANUAL'),
+            referenciaId: conta.origemId || conta.id,
+            descricao: `Recebimento: ${conta.origemNumero} - ${conta.cliente}`,
+            formaPagamento,
+            valor: conta.valorTotal,
+            dataHora,
+            operador: usuarioLogado?.nome || 'ADM - MEDRADE',
+          };
+          setMovimentosCaixa((m) => [novoMov, ...m]);
+
+          return {
+            ...conta,
+            status: 'Pago',
+            dataBaixa,
+            formaPagamento,
+            observacoes: observacoes || conta.observacoes,
+          };
+        }
+        return conta;
+      })
+    );
+  };
+
+  const handleAdicionarContaReceber = (novaConta: ContaReceber) => {
+    setContasReceber((prev) => [novaConta, ...prev]);
+  };
+
+  // Ações de Contas a Pagar (pagar.php)
+  const handleDarBaixaPagar = (
+    id: string,
+    formaPagamento: FormaPagamento,
+    contaSaida: string,
+    dataBaixa: string,
+    observacoes?: string
+  ) => {
+    const agora = new Date();
+    const hora = agora.toTimeString().split(' ')[0].substring(0, 5);
+    const dataHora = `${dataBaixa} ${hora}`;
+
+    setContasPagar((prev) =>
+      prev.map((conta) => {
+        if (conta.id === id) {
+          // Lança saída automática no Caixa Geral
+          const novoMov: MovimentoCaixa = {
+            id: `mov-${Date.now()}`,
+            tipo: 'SAIDA',
+            origem: conta.origemTipo === 'COMPRA' ? 'COMPRA' : 'MANUAL',
+            referenciaId: conta.origemId || conta.id,
+            descricao: `Pagamento: ${conta.fornecedorOuDespesa} (${conta.categoria})`,
+            formaPagamento,
+            valor: conta.valor,
+            dataHora,
+            operador: usuarioLogado?.nome || 'ADM - MEDRADE',
+          };
+          setMovimentosCaixa((m) => [novoMov, ...m]);
+
+          return {
+            ...conta,
+            status: 'Pago',
+            dataBaixa,
+            formaPagamento,
+            contaSaida,
+            observacoes: observacoes || conta.observacoes,
+          };
+        }
+        return conta;
+      })
+    );
+  };
+
+  const handleAdicionarContaPagar = (novaConta: ContaPagar) => {
+    setContasPagar((prev) => [novaConta, ...prev]);
   };
 
   // Ações de Clientes
@@ -330,6 +501,26 @@ export default function App() {
   const handleSalvarOS = (novaOS: OrdemServico, abrirImpressao = true, manterNaTela = false) => {
     setOrdens((prev) => [novaOS, ...prev]);
     setOsSelecionadaId(novaOS.id);
+
+    // Conexão automática com Contas a Receber (receber.php)
+    const hoje = new Date().toISOString().split('T')[0];
+    const novaContaReceber: ContaReceber = {
+      id: `rec-os-${novaOS.id}`,
+      cliente: novaOS.clienteNome,
+      clienteDocumento: novaOS.clienteDocumento,
+      origemTipo: 'OS',
+      origemNumero: novaOS.numeroOS,
+      origemId: novaOS.id,
+      valorTotal: novaOS.valorTotalGeral,
+      dataLancamento: novaOS.dataAbertura || hoje,
+      dataVencimento: novaOS.dataPrevisao || hoje,
+      status: novaOS.status === 'Faturado' ? 'Pago' : 'Pendente',
+      dataBaixa: novaOS.status === 'Faturado' ? (novaOS.dataConclusao || hoje) : undefined,
+      formaPagamento: novaOS.status === 'Faturado' ? 'BOLETO' : undefined,
+      observacoes: novaOS.observacoesGerais || `${novaOS.equipamentoTipo} - Manutenção & Peças`,
+    };
+    setContasReceber((prev) => [novaContaReceber, ...prev]);
+
     if (!manterNaTela) {
       setCurrentModule('os');
       if (abrirImpressao) {
@@ -466,7 +657,7 @@ export default function App() {
                   }`}
                 >
                   <i className="fa-solid fa-plus-circle"></i>
-                  <span>Nova OS (nova_os.php)</span>
+                  <span>Nova OS</span>
                 </button>
 
                 <button
@@ -478,7 +669,7 @@ export default function App() {
                   }`}
                 >
                   <i className="fa-solid fa-print"></i>
-                  <span>Relatório A4 (imprimir_os.php)</span>
+                  <span>Imprimir A4</span>
                 </button>
               </div>
             </div>
@@ -596,11 +787,36 @@ export default function App() {
               />
             )}
 
+            {currentModule === 'receber' && (
+              <ReceberView
+                contas={contasReceber}
+                ordens={ordens}
+                vendas={vendas}
+                onDarBaixa={handleDarBaixaReceber}
+                onAdicionarConta={handleAdicionarContaReceber}
+                onIrParaPagar={() => setCurrentModule('pagar')}
+                onIrParaCaixa={() => setCurrentModule('financeiro')}
+              />
+            )}
+
+            {currentModule === 'pagar' && (
+              <PagarView
+                contas={contasPagar}
+                compras={compras}
+                onDarBaixa={handleDarBaixaPagar}
+                onAdicionarConta={handleAdicionarContaPagar}
+                onIrParaReceber={() => setCurrentModule('receber')}
+                onIrParaCaixa={() => setCurrentModule('financeiro')}
+              />
+            )}
+
             {currentModule === 'financeiro' && (
               <FinanceiroView
                 movimentos={movimentosCaixa}
                 onAdicionarMovimento={handleAdicionarMovimentoCaixa}
                 onIrParaPdv={() => setCurrentModule('pdv')}
+                onIrParaReceber={() => setCurrentModule('receber')}
+                onIrParaPagar={() => setCurrentModule('pagar')}
               />
             )}
 

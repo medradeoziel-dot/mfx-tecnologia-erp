@@ -1155,7 +1155,7 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
               className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 px-4 rounded-lg border border-slate-700 transition text-xs flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Receipt className="w-3.5 h-3.5 text-amber-400" />
-              <span>Salvar e Imprimir Relatório A4 (imprimir_os.php)</span>
+              <span>Salvar e Imprimir Relatório A4</span>
             </button>
             <button
               type="button"

@@ -291,3 +291,51 @@ export interface ConfiguracaoEmitente {
   cfopServicoPadrao: string;
   informacoesFisco: string;
 }
+
+// MÓDULO FINANCEIRO: CONTAS A RECEBER & CONTAS A PAGAR
+export type StatusContaReceber = 'Pendente' | 'Pago' | 'Cancelado';
+export type StatusContaPagar = 'A Pagar' | 'Pago' | 'Cancelado';
+
+export type CategoriaDespesa = 
+  | 'Insumos / Matéria-Prima'
+  | 'Aluguel'
+  | 'Energia / Água'
+  | 'Frete / Logística'
+  | 'Peças de Reposição'
+  | 'Folha / Pró-labore'
+  | 'Manutenção'
+  | 'Impostos / Taxas'
+  | 'Outros';
+
+export interface ContaReceber {
+  id: string;
+  cliente: string;
+  clienteDocumento?: string;
+  origemTipo: 'OS' | 'PDV' | 'COTACAO' | 'MANUAL';
+  origemNumero: string; // Ex: "OS #2026-0101", "PDV #VD-202610-001", "Cotação #COT-104"
+  origemId?: string;
+  valorTotal: number;
+  dataLancamento: string;
+  dataVencimento: string;
+  status: StatusContaReceber;
+  dataBaixa?: string;
+  formaPagamento?: FormaPagamento | string;
+  observacoes?: string;
+}
+
+export interface ContaPagar {
+  id: string;
+  fornecedorOuDespesa: string;
+  categoria: CategoriaDespesa;
+  origemTipo: 'COMPRA' | 'MANUAL';
+  origemNumero?: string; // Ex: "NF-e 048.912"
+  origemId?: string;
+  valor: number;
+  dataLancamento: string;
+  dataVencimento: string;
+  status: StatusContaPagar;
+  dataBaixa?: string;
+  formaPagamento?: FormaPagamento | string;
+  contaSaida?: string;
+  observacoes?: string;
+}

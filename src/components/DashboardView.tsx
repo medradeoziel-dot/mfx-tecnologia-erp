@@ -150,23 +150,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               onClick={() => setActiveTab('nova_os')}
               className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2 text-xs transition active:scale-95"
+              title="Abrir Nova Ordem de Serviço"
             >
               <FilePlus2 className="w-4 h-4" />
-              <span>Abrir Nova OS (nova_os.php)</span>
+              <span>Nova OS</span>
             </button>
             <button
               onClick={() => setActiveTab('clientes')}
               className="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold px-4 py-2.5 rounded-lg border border-slate-700 flex items-center gap-2 text-xs transition"
+              title="Cadastro e Gestão de Clientes"
             >
               <Users className="w-4 h-4 text-amber-400" />
-              <span>Clientes & BrasilAPI (clientes.php)</span>
+              <span>Clientes & Pessoas</span>
             </button>
             <button
               onClick={() => setActiveTab('codigo_php')}
               className="bg-slate-800 hover:bg-slate-700 text-emerald-400 font-semibold px-4 py-2.5 rounded-lg border border-slate-700 flex items-center gap-2 text-xs transition"
+              title="Código-Fonte PHP e Banco MySQL"
             >
               <Code2 className="w-4 h-4" />
-              <span>Código PHP / MySQL Completo</span>
+              <span>Código PHP / MySQL</span>
             </button>
           </div>
         </div>
