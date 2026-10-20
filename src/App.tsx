@@ -313,6 +313,10 @@ export default function App() {
   };
 
   const handleCancelarNfe = (notaId: string, motivo: string) => {
+    const agora = new Date();
+    const dataHora = `${agora.toLocaleDateString('pt-BR')} ${agora.toLocaleTimeString('pt-BR')}`;
+    const protocoloCancelamento = `1352600${Math.floor(1000000 + Math.random() * 9000000)}`;
+
     setNotasNfe((prev) =>
       prev.map((n) => {
         if (n.id === notaId) {
@@ -320,7 +324,8 @@ export default function App() {
             ...n,
             status: 'Cancelada' as const,
             motivoCancelamento: motivo,
-            dataCancelamento: new Date().toISOString(),
+            dataCancelamento: dataHora,
+            protocoloCancelamento,
           };
         }
         return n;
@@ -330,6 +335,27 @@ export default function App() {
 
   const handleEmitirNfse = (novaNota: NotaFiscalNfse) => {
     setNotasNfse((prev) => [novaNota, ...prev]);
+  };
+
+  const handleCancelarNfse = (notaId: string, motivo: string) => {
+    const agora = new Date();
+    const dataHora = `${agora.toLocaleDateString('pt-BR')} ${agora.toLocaleTimeString('pt-BR')}`;
+    const protocoloCancelamento = `CAN-${agora.getFullYear()}${Math.floor(10000 + Math.random() * 90000)}`;
+
+    setNotasNfse((prev) =>
+      prev.map((n) => {
+        if (n.id === notaId) {
+          return {
+            ...n,
+            status: 'Cancelada' as const,
+            motivoCancelamento: motivo,
+            dataCancelamento: dataHora,
+            protocoloCancelamento,
+          };
+        }
+        return n;
+      })
+    );
   };
 
   // Ações de Gestão de Usuários e Acesso
@@ -940,6 +966,7 @@ export default function App() {
                 ordens={ordens}
                 notasEmitidas={notasNfse}
                 onEmitirNfse={handleEmitirNfse}
+                onCancelarNfse={handleCancelarNfse}
               />
             )}
           </div>

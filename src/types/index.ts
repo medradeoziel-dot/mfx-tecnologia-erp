@@ -360,6 +360,7 @@ export interface NotaFiscalNfe {
   protocoloAutorizacao: string;
   motivoCancelamento?: string;
   dataCancelamento?: string;
+  protocoloCancelamento?: string;
   itens: {
     codigo: string;
     descricao: string;
@@ -391,5 +392,8 @@ export interface NotaFiscalNfse {
   valorIss: number;
   status: 'Autorizada' | 'Cancelada';
   protocoloAutorizacao: string;
+  motivoCancelamento?: string;
+  dataCancelamento?: string;
+  protocoloCancelamento?: string;
 }
 

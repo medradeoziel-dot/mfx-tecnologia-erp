@@ -41,6 +41,7 @@ export const NfeView: React.FC<NfeViewProps> = ({
   const [notaSelecionadaDanfe, setNotaSelecionadaDanfe] = useState<NotaFiscalNfe | null>(null);
   const [notaParaCancelar, setNotaParaCancelar] = useState<NotaFiscalNfe | null>(null);
   const [motivoCancelamento, setMotivoCancelamento] = useState('');
+  const [confirmadoOperador, setConfirmadoOperador] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const exibirToast = (msg: string) => {
@@ -86,7 +87,8 @@ export const NfeView: React.FC<NfeViewProps> = ({
         });
 
         const valorProdutos = itensProdutos.reduce((acc, it) => acc + (it.valorTotal || 0), 0);
-        const jaEmitida = notasEmitidas.some(n => n.origemTipo === 'OS' && n.origemNumero === os.numeroOS && n.status === 'Autorizada');
+        const notaVinculada = notasEmitidas.find(n => n.origemTipo === 'OS' && n.origemNumero === os.numeroOS);
+        const jaEmitida = Boolean(notaVinculada);
 
         return {
           id: `os-${os.id}`,
@@ -110,7 +112,8 @@ export const NfeView: React.FC<NfeViewProps> = ({
   const elegiveisPDV = useMemo(() => {
     return vendas
       .map((vnd) => {
-        const jaEmitida = notasEmitidas.some(n => n.origemTipo === 'PDV' && n.origemNumero === vnd.codigoVenda && n.status === 'Autorizada');
+        const notaVinculada = notasEmitidas.find(n => n.origemTipo === 'PDV' && n.origemNumero === vnd.codigoVenda);
+        const jaEmitida = Boolean(notaVinculada);
         return {
           id: `pdv-${vnd.id}`,
           origemId: vnd.id,
@@ -210,10 +213,15 @@ export const NfeView: React.FC<NfeViewProps> = ({
       alert('A justificativa de cancelamento na SEFAZ deve conter no mínimo 15 caracteres.');
       return;
     }
+    if (!confirmadoOperador) {
+      alert('Por favor, confirme a solicitação no checkbox de segurança antes de prosseguir.');
+      return;
+    }
     onCancelarNfe(notaParaCancelar.id, motivoCancelamento.trim());
     exibirToast(`NF-e nº ${notaParaCancelar.numero} cancelada com homologação SEFAZ SP.`);
     setNotaParaCancelar(null);
     setMotivoCancelamento('');
+    setConfirmadoOperador(false);
   };
 
   // Handler: Download XML
@@ -560,6 +568,11 @@ export const NfeView: React.FC<NfeViewProps> = ({
                       <div className="text-[10px] text-slate-400 font-mono">
                         {nota.origemNumero} • {nota.clienteDocumento}
                       </div>
+                      {nota.status === 'Cancelada' && nota.motivoCancelamento && (
+                        <div className="text-[10px] text-slate-500 bg-slate-50 border border-slate-200/80 rounded px-1.5 py-0.5 mt-1 max-w-xs truncate" title={`Justificativa SEFAZ: ${nota.motivoCancelamento} | Protocolo: ${nota.protocoloCancelamento || 'Homologado'}`}>
+                          <span className="font-medium text-slate-600">Motivo:</span> "{nota.motivoCancelamento}"
+                        </div>
+                      )}
                     </td>
                     <td className="py-2.5 px-4 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
                       {formatCurrency(nota.valorTotal)}
@@ -571,10 +584,17 @@ export const NfeView: React.FC<NfeViewProps> = ({
                           Autorizada
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded text-[10px] font-medium font-mono">
-                          <Ban className="w-3 h-3 text-red-600" />
-                          Cancelada
-                        </span>
+                        <div className="inline-flex flex-col items-center">
+                          <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 border border-slate-300 px-2 py-0.5 rounded text-[10px] font-medium font-mono" title={nota.motivoCancelamento ? `Motivo: ${nota.motivoCancelamento}` : undefined}>
+                            <Ban className="w-3 h-3 text-slate-500" />
+                            Cancelada
+                          </span>
+                          {nota.dataCancelamento && (
+                            <span className="text-[9px] text-slate-400 font-mono mt-0.5" title={`Protocolo SEFAZ SP: ${nota.protocoloCancelamento || 'Homologado'}`}>
+                              {nota.dataCancelamento}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </td>
                     <td className="py-2.5 px-4 text-center whitespace-nowrap">
@@ -597,14 +617,27 @@ export const NfeView: React.FC<NfeViewProps> = ({
                           <span>Download XML</span>
                         </button>
 
-                        {nota.status === 'Autorizada' && (
+                        {nota.status === 'Autorizada' ? (
                           <button
-                            onClick={() => setNotaParaCancelar(nota)}
-                            className="px-2.5 py-1 rounded-lg text-red-600 hover:text-red-800 hover:bg-red-50 text-xs font-medium transition flex items-center gap-1.5 cursor-pointer border border-red-200/60"
-                            title="Cancelar nota fiscal na SEFAZ"
+                            onClick={() => {
+                              setNotaParaCancelar(nota);
+                              setMotivoCancelamento('');
+                              setConfirmadoOperador(false);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-red-700 text-xs font-medium transition flex items-center gap-1.5 cursor-pointer border border-slate-200/60"
+                            title="Cancelar NF-e na SEFAZ SP"
                           >
-                            <Ban className="w-3.5 h-3.5" />
-                            <span>Cancelar Nota</span>
+                            <Ban className="w-3.5 h-3.5 text-slate-500" />
+                            <span>Cancelar NF-e</span>
+                          </button>
+                        ) : (
+                          <button
+                            disabled
+                            className="px-2.5 py-1 rounded-lg bg-slate-50 text-slate-400 text-xs font-medium flex items-center gap-1.5 cursor-not-allowed border border-slate-200/40"
+                            title={nota.motivoCancelamento ? `Cancelada: ${nota.motivoCancelamento}` : 'Reemissão desabilitada'}
+                          >
+                            <Ban className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Cancelada</span>
                           </button>
                         )}
                       </div>
@@ -779,41 +812,101 @@ export const NfeView: React.FC<NfeViewProps> = ({
         </div>
       )}
 
-      {/* 6. MODAL CANCELAMENTO */}
+      {/* 6. MODAL CANCELAMENTO NF-E (SEFAZ SP) */}
       {notaParaCancelar && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full border border-slate-200 p-5 animate-fadeIn">
-            <div className="flex items-center gap-2 text-red-600 font-bold text-sm mb-3">
-              <AlertCircle className="w-5 h-5" />
-              <span>Cancelamento de NF-e na SEFAZ</span>
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden animate-fadeIn">
+            {/* Cabeçalho */}
+            <div className="bg-slate-50 border-b border-slate-200 px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center">
+                  <Ban className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900">Cancelamento de NF-e</h3>
+                  <p className="text-[11px] text-slate-500 font-mono">SEFAZ SP • Modelo 55 • Homologação Fiscal</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setNotaParaCancelar(null);
+                  setMotivoCancelamento('');
+                  setConfirmadoOperador(false);
+                }}
+                className="text-slate-400 hover:text-slate-700 transition p-1 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            <p className="text-xs text-slate-600 mb-3">
-              Você está cancelando a <strong>NF-e nº {notaParaCancelar.numero}</strong> referente a <strong>{notaParaCancelar.clienteNome}</strong> no valor de <strong>{formatCurrency(notaParaCancelar.valorTotal)}</strong>.
-            </p>
+            {/* Conteúdo */}
+            <div className="p-5 space-y-4 text-xs">
+              {/* Resumo da Nota */}
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200 space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-medium">Nº NF-e / Série:</span>
+                  <span className="font-mono font-bold text-slate-800">{notaParaCancelar.numero} (Série {notaParaCancelar.serie})</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-medium">Destinatário:</span>
+                  <span className="font-semibold text-slate-800">{notaParaCancelar.clienteNome}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-medium">Origem da Emissão:</span>
+                  <span className="font-mono text-slate-700">{notaParaCancelar.origemNumero}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-medium">Valor Total Faturado:</span>
+                  <span className="font-mono font-bold text-slate-900">{formatCurrency(notaParaCancelar.valorTotal)}</span>
+                </div>
+              </div>
 
-            <div className="space-y-2 mb-4">
-              <label className="block text-xs font-semibold text-slate-700">
-                Justificativa do Cancelamento (Mínimo 15 caracteres) <span className="text-red-500">*</span>:
-              </label>
-              <textarea
-                rows={3}
-                value={motivoCancelamento}
-                onChange={(e) => setMotivoCancelamento(e.target.value)}
-                placeholder="Ex: Cancelamento solicitado pelo cliente devido a reemissão do pedido."
-                className="w-full p-2.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-red-500"
-              />
-              <div className="text-[10px] text-slate-400 text-right">
-                {motivoCancelamento.trim().length}/15 caracteres
+              {/* Justificativa */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-slate-700">
+                    Motivo / Justificativa do Cancelamento <span className="text-red-500">*</span>
+                  </label>
+                  <span className={`text-[10px] font-mono ${motivoCancelamento.trim().length >= 15 ? 'text-emerald-600 font-bold' : 'text-slate-400'}`}>
+                    {motivoCancelamento.trim().length}/15 caracteres mínimos
+                  </span>
+                </div>
+                <textarea
+                  rows={3}
+                  value={motivoCancelamento}
+                  onChange={(e) => setMotivoCancelamento(e.target.value)}
+                  placeholder="Ex: Cancelamento solicitado pelo cliente em virtude de readequação dos itens do pedido."
+                  className="w-full p-2.5 bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-slate-400 text-xs"
+                />
+                <p className="text-[11px] text-slate-400">
+                  Regra SEFAZ SP: A justificativa deve conter no mínimo 15 caracteres claros e objetivos.
+                </p>
+              </div>
+
+              {/* Confirmação de Segurança do Operador */}
+              <div className="pt-2 border-t border-slate-100">
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={confirmadoOperador}
+                    onChange={(e) => setConfirmadoOperador(e.target.checked)}
+                    className="mt-0.5 rounded border-slate-300 text-slate-900 focus:ring-slate-400"
+                  />
+                  <span className="text-slate-600 leading-snug text-xs">
+                    Confirmo o pedido de cancelamento desta NF-e junto à SEFAZ SP. Estou ciente de que a operação é irreversível e o documento será invalidado.
+                  </span>
+                </label>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2">
+            {/* Rodapé de Ações */}
+            <div className="bg-slate-50 border-t border-slate-200 px-5 py-3 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setNotaParaCancelar(null);
                   setMotivoCancelamento('');
+                  setConfirmadoOperador(false);
                 }}
                 className="px-3.5 py-1.5 rounded-lg border border-slate-300 text-xs font-medium text-slate-700 hover:bg-slate-100 transition cursor-pointer"
               >
@@ -822,10 +915,11 @@ export const NfeView: React.FC<NfeViewProps> = ({
               <button
                 type="button"
                 onClick={handleConfirmarCancelamento}
-                disabled={motivoCancelamento.trim().length < 15}
-                className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs rounded-lg transition disabled:opacity-50 cursor-pointer"
+                disabled={motivoCancelamento.trim().length < 15 || !confirmadoOperador}
+                className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5"
               >
-                Confirmar Cancelamento
+                <Ban className="w-3.5 h-3.5 text-slate-300" />
+                <span>Confirmar Cancelamento</span>
               </button>
             </div>
           </div>

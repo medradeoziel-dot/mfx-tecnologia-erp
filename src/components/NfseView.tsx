@@ -15,19 +15,22 @@ import {
   Check, 
   X,
   Eye,
-  Wrench
+  Wrench,
+  Ban
 } from 'lucide-react';
 
 interface NfseViewProps {
   ordens: OrdemServico[];
   notasEmitidas: NotaFiscalNfse[];
   onEmitirNfse: (novaNota: NotaFiscalNfse) => void;
+  onCancelarNfse?: (notaId: string, motivo: string) => void;
 }
 
 export const NfseView: React.FC<NfseViewProps> = ({
   ordens,
   notasEmitidas,
   onEmitirNfse,
+  onCancelarNfse,
 }) => {
   const [busca, setBusca] = useState('');
   const [codigoCopiado, setCodigoCopiado] = useState<string | null>(null);
@@ -35,6 +38,12 @@ export const NfseView: React.FC<NfseViewProps> = ({
   // Modal de Impressão / Espelho da NFS-e
   const [notaSelecionadaImpressao, setNotaSelecionadaImpressao] = useState<NotaFiscalNfse | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  // Modal de Cancelamento de NFS-e (Prefeitura de Agudos)
+  const [notaParaCancelar, setNotaParaCancelar] = useState<NotaFiscalNfse | null>(null);
+  const [motivoSelecionado, setMotivoSelecionado] = useState('Erro de digitação / Dados cadastrais incorretos');
+  const [justificativaDetalhe, setJustificativaDetalhe] = useState('');
+  const [confirmacaoOperador, setConfirmacaoOperador] = useState(false);
 
   const exibirToast = (msg: string) => {
     setToastMsg(msg);
