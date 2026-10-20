@@ -17,7 +17,7 @@ import { ListarOsView } from './components/ListarOsView';
 import { ImprimirOsView } from './components/ImprimirOsView';
 import { DashboardView } from './components/DashboardView';
 import { PhpSourceExportView } from './components/PhpSourceExportView';
-import { EstoqueView } from './components/EstoqueView';
+import { ProductsView as EstoqueView } from './components/ProductsView';
 import { ComprasView } from './components/ComprasView';
 import { PdvView } from './components/PdvView';
 import { FinanceiroView } from './components/FinanceiroView';

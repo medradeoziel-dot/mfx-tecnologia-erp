@@ -3187,27 +3187,21 @@ $itens = $stmt->fetchAll();
 
 <div class="container-fluid px-4 my-4">
     
-    <!-- Topo: Título e Botões de Ação -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-        <div>
-            <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="badge bg-warning text-dark font-monospace text-uppercase">Módulo de Estoque e Serviços</span>
-                <span class="text-muted small">MFx Tecnologia Industrial</span>
-            </div>
-            <h3 class="fw-bold text-dark mb-0">
-                <i class="fa-solid fa-boxes-stacked text-warning"></i> Catálogo de Produtos, Consumíveis & Mão de Obra
-            </h3>
-            <p class="text-muted small mb-0">Diferenciação automática entre NF-e Mod. 55 (Produtos) e NFS-e Municipal (Serviços e Mão de Obra).</p>
+    <!-- Barra Superior Enxuta: Título + Atalhos Compactos -->
+    <div class="card card-custom p-3 px-4 mb-4 bg-white border-0 shadow-sm d-flex flex-row justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-boxes-stacked text-warning fs-5"></i>
+            <h5 class="fw-bold text-dark mb-0">Catálogo de Produtos & Serviços</h5>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-purple fw-bold btn-sm shadow-sm" style="color: #6b21a8; border-color: #6b21a8;" onclick="abrirModal('servico')">
-                <i class="fa-solid fa-wrench me-1"></i> + Mão de Obra (NFS-e)
+            <button class="btn btn-warning btn-sm shadow-sm d-flex align-items-center justify-content-center p-2 rounded-3" style="width: 36px; height: 36px; color: #b45309; border-color: #fde68a; background-color: #fefce8;" onclick="abrirModal('produto')" title="Novo Produto" data-bs-toggle="tooltip">
+                <i class="fa-solid fa-box-open"></i>
             </button>
-            <button class="btn btn-warning fw-bold btn-sm shadow-sm" onclick="abrirModal('produto')">
-                <i class="fa-solid fa-box-open me-1"></i> + Produto / Peça (NF-e)
+            <button class="btn btn-outline-purple btn-sm shadow-sm d-flex align-items-center justify-content-center p-2 rounded-3" style="width: 36px; height: 36px; color: #6b21a8; border-color: #d8b4fe; background-color: #faf5ff;" onclick="abrirModal('servico')" title="Novo Serviço" data-bs-toggle="tooltip">
+                <i class="fa-solid fa-wrench"></i>
             </button>
-            <a href="nova_os.php" class="btn btn-danger fw-bold btn-sm shadow-sm">
-                <i class="fa-solid fa-file-circle-plus me-1"></i> Abrir Nova OS
+            <a href="nova_os.php" class="btn btn-danger btn-sm shadow-sm d-flex align-items-center justify-content-center p-2 rounded-3" style="width: 36px; height: 36px; color: #b91c1c; border-color: #fecaca; background-color: #fef2f2;" title="Nova OS" data-bs-toggle="tooltip">
+                <i class="fa-solid fa-plus"></i>
             </a>
         </div>
     </div>
@@ -3220,40 +3214,6 @@ $itens = $stmt->fetchAll();
         </div>
     <?php endif; ?>
 
-    <!-- Métricas do Catálogo -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card card-custom p-3 bg-white border-start border-warning border-4">
-                <span class="text-muted small text-uppercase fw-bold">Produtos & Consumíveis (NF-e)</span>
-                <h4 class="fw-bold text-warning mb-0 mt-1"><?= $totalProdutos; ?> <small class="text-muted fs-6">(<?= $saldoFisico; ?> un)</small></h4>
-                <span class="text-muted" style="font-size: 11px;">Enquadramento NCM / CSOSN 0102</span>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card card-custom p-3 bg-white border-start border-primary border-4" style="border-left-color: #6b21a8 !important;">
-                <span class="text-muted small text-uppercase fw-bold">Mão de Obra & Serviços (NFS-e)</span>
-                <h4 class="fw-bold mb-0 mt-1" style="color: #6b21a8;"><?= $totalServicos; ?> <small class="text-muted fs-6">especialidades</small></h4>
-                <span class="text-muted" style="font-size: 11px;">LC 116 (14.01) / ISS Municipal</span>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card card-custom p-3 bg-white border-start border-success border-4">
-                <span class="text-muted small text-uppercase fw-bold">Valor em Estoque</span>
-                <h4 class="fw-bold text-success mb-0 mt-1">R$ <?= number_format($valorEstoque, 2, ',', '.'); ?></h4>
-                <span class="text-muted" style="font-size: 11px;">Consumíveis a pronta entrega</span>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card card-custom p-3 text-white" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
-                <span class="small text-uppercase fw-bold text-warning">Regras Fiscais MFx</span>
-                <div class="small mt-1 text-light">
-                    • NFS-e: LC 116: 14.01 / ISS Agudos 2%<br>
-                    • NF-e: NCM Peças / CSOSN 0102 / CFOP 5102
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Tabela e Filtros -->
     <div class="card card-custom">
         <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -3265,12 +3225,17 @@ $itens = $stmt->fetchAll();
                 <a href="estoque.php?tipo=servico" class="btn btn-outline-purple <?= $filtro_tipo === 'servico' ? 'active' : ''; ?>" style="color: #6b21a8; border-color: #6b21a8;">Mão de Obra NFS-e (<?= $totalServicos; ?>)</a>
             </div>
 
-            <!-- Busca -->
-            <form method="GET" action="estoque.php" class="d-flex gap-2">
-                <input type="hidden" name="tipo" value="<?= htmlspecialchars($filtro_tipo); ?>">
-                <input type="text" name="busca" class="form-control form-control-sm" placeholder="Buscar código, descrição, NCM ou LC 116..." value="<?= htmlspecialchars($busca); ?>">
-                <button type="submit" class="btn btn-sm btn-dark"><i class="fa-solid fa-search"></i></button>
-            </form>
+            <!-- Busca e Cadastro -->
+            <div class="d-flex gap-2">
+                <form method="GET" action="estoque.php" class="d-flex gap-2">
+                    <input type="hidden" name="tipo" value="<?= htmlspecialchars($filtro_tipo); ?>">
+                    <input type="text" name="busca" class="form-control form-control-sm" placeholder="Buscar código, descrição, NCM ou LC 116..." value="<?= htmlspecialchars($busca); ?>">
+                    <button type="submit" class="btn btn-sm btn-dark"><i class="fa-solid fa-search"></i></button>
+                </form>
+                <button class="btn btn-sm btn-dark fw-semibold text-nowrap" onclick="abrirModal('produto')" title="Cadastrar novo produto ou serviço">
+                    <i class="fa-solid fa-plus text-success me-1"></i> + Cadastrar Item
+                </button>
+            </div>
         </div>
 
         <div class="table-responsive">

@@ -530,7 +530,7 @@ export const NfeView: React.FC<NfeViewProps> = ({
               {historicoFiltrado.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-slate-400">
-                    Nenhuma NF-e emitida até o momento
+                    Nenhuma nota emitida até o momento
                   </td>
                 </tr>
               ) : (
@@ -683,6 +683,22 @@ export const NfeView: React.FC<NfeViewProps> = ({
 
             {/* Espelho do DANFE */}
             <div className="p-6 text-xs text-slate-800 space-y-4 max-h-[75vh] overflow-y-auto">
+              {notaSelecionadaDanfe.status === 'Cancelada' && (
+                <div className="bg-slate-100 border border-slate-300 text-slate-800 p-3 rounded text-center">
+                  <div className="font-bold text-xs uppercase tracking-wider text-red-700">
+                    NF-E CANCELADA JUNTO À SEFAZ SP — DOCUMENTO SEM EFICÁCIA FISCAL
+                  </div>
+                  <div className="text-[11px] mt-0.5 font-mono text-slate-600">
+                    Data: {notaSelecionadaDanfe.dataCancelamento || 'Homologado'} • Protocolo SEFAZ: {notaSelecionadaDanfe.protocoloCancelamento || '135260000000000'}
+                  </div>
+                  {notaSelecionadaDanfe.motivoCancelamento && (
+                    <div className="text-[11px] text-slate-700 mt-1 italic">
+                      Justificativa: "{notaSelecionadaDanfe.motivoCancelamento}"
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Topo DANFE */}
               <div className="border border-slate-300 rounded p-4 grid grid-cols-1 md:grid-cols-12 gap-3">
                 <div className="md:col-span-4 border-r border-slate-200 pr-3">
