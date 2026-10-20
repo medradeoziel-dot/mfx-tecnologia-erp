@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Cliente, OrdemServico, StatusOS, Compra, ItemEstoque, Venda, MovimentoCaixa } from './types';
-import { CLIENTES_INICIAIS, ORDENS_SERVICO_INICIAIS, ESTOQUE_INICIAL, COMPRAS_INICIAIS, VENDAS_INICIAIS, MOVIMENTOS_CAIXA_INICIAIS } from './data/initialData';
+import { Cliente, OrdemServico, StatusOS, Compra, ItemEstoque, Venda, MovimentoCaixa, Usuario } from './types';
+import { CLIENTES_INICIAIS, ORDENS_SERVICO_INICIAIS, ESTOQUE_INICIAL, COMPRAS_INICIAIS, VENDAS_INICIAIS, MOVIMENTOS_CAIXA_INICIAIS, USUARIOS_INICIAIS } from './data/initialData';
 import { ErpSidebar, ErpModuleType } from './components/ErpSidebar';
 import { ErpTopbar } from './components/ErpTopbar';
 import { ErpStatusBar } from './components/ErpStatusBar';
@@ -21,6 +21,8 @@ import { EstoqueView } from './components/EstoqueView';
 import { ComprasView } from './components/ComprasView';
 import { PdvView } from './components/PdvView';
 import { FinanceiroView } from './components/FinanceiroView';
+import { AcessoView } from './components/AcessoView';
+import { LoginView } from './components/LoginView';
 
 export default function App() {
   // Estado de Clientes com persistência em localStorage
@@ -48,6 +50,12 @@ export default function App() {
   // Estado de Estoque de Produtos e Serviços com persistência
   const [estoqueItens, setEstoqueItens] = useState<ItemEstoque[]>(() => {
     try {
+      const resetFeito = localStorage.getItem('mfx_estoque_limpo_modelo_v2');
+      if (!resetFeito) {
+        localStorage.setItem('mfx_estoque_limpo_modelo_v2', 'true');
+        localStorage.setItem('mfx_estoque_itens', JSON.stringify(ESTOQUE_INICIAL));
+        return ESTOQUE_INICIAL;
+      }
       const salvo = localStorage.getItem('mfx_estoque_itens');
       if (salvo) {
         const parsed = JSON.parse(salvo);
@@ -91,6 +99,37 @@ export default function App() {
     }
     return MOVIMENTOS_CAIXA_INICIAIS;
   });
+
+  // Estado de Usuários e Gestão de Acessos com persistência
+  const [usuarios, setUsuarios] = useState<Usuario[]>(() => {
+    try {
+      const salvo = localStorage.getItem('mfx_usuarios');
+      if (salvo) {
+        const parsed = JSON.parse(salvo);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar usuários do localStorage:', e);
+    }
+    return USUARIOS_INICIAIS;
+  });
+
+  // Usuário atualmente autenticado na sessão
+  const [usuarioLogado, setUsuarioLogado] = useState<Usuario>(() => {
+    try {
+      const salvo = localStorage.getItem('mfx_usuario_logado');
+      if (salvo) {
+        const parsed = JSON.parse(salvo);
+        if (parsed && parsed.login) return parsed;
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar usuário logado do localStorage:', e);
+    }
+    return USUARIOS_INICIAIS[0]; // medrade
+  });
+
+  // Controle de exibição da tela cheia de login (login.php)
+  const [mostrarTelaLogin, setMostrarTelaLogin] = useState<boolean>(false);
 
   // Navegação do ERP: Módulo ativo e sub-visão
   const [currentModule, setCurrentModule] = useState<ErpModuleType>('abertura');
@@ -151,6 +190,46 @@ export default function App() {
       console.warn('Erro ao salvar movimentos de caixa:', e);
     }
   }, [movimentosCaixa]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mfx_usuarios', JSON.stringify(usuarios));
+    } catch (e) {
+      console.warn('Erro ao salvar usuários:', e);
+    }
+  }, [usuarios]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mfx_usuario_logado', JSON.stringify(usuarioLogado));
+    } catch (e) {
+      console.warn('Erro ao salvar usuário logado:', e);
+    }
+  }, [usuarioLogado]);
+
+  // Ações de Gestão de Usuários e Acesso
+  const handleAddUsuario = (novoUsuario: Usuario) => {
+    setUsuarios((prev) => [...prev, novoUsuario]);
+  };
+
+  const handleUpdateUsuario = (usuarioAtualizado: Usuario) => {
+    setUsuarios((prev) =>
+      prev.map((u) => (u.id === usuarioAtualizado.id ? usuarioAtualizado : u))
+    );
+    if (usuarioLogado.id === usuarioAtualizado.id) {
+      setUsuarioLogado(usuarioAtualizado);
+    }
+  };
+
+  const handleDeleteUsuario = (id: string) => {
+    setUsuarios((prev) => prev.filter((u) => u.id !== id));
+  };
+
+  const handleLoginSucesso = (usuarioAutenticado: Usuario) => {
+    setUsuarioLogado(usuarioAutenticado);
+    setMostrarTelaLogin(false);
+    setCurrentModule('abertura');
+  };
 
   // Ações de Compras e Atualização Automática de Estoque
   const handleSalvarCompra = (novaCompra: Compra) => {
@@ -290,6 +369,20 @@ export default function App() {
     }
   };
 
+  if (mostrarTelaLogin) {
+    return (
+      <LoginView
+        usuarios={usuarios}
+        onLoginSucesso={handleLoginSucesso}
+        onCancelar={() => setMostrarTelaLogin(false)}
+        onVerCodigoPhp={() => {
+          setMostrarTelaLogin(false);
+          setCurrentModule('codigo_php');
+        }}
+      />
+    );
+  }
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#eef2f6] text-slate-800 antialiased font-sans">
       
@@ -318,6 +411,8 @@ export default function App() {
             setCurrentModule(mod);
             if (mod === 'os') setOsSubView('listar');
           }}
+          usuarioLogado={usuarioLogado}
+          onAbrirLogin={() => setMostrarTelaLogin(true)}
         />
 
         {/* 3. Área Central (Content Workspace / Tela de Abertura) */}
@@ -501,8 +596,20 @@ export default function App() {
               />
             )}
 
+            {currentModule === 'acesso' && (
+              <AcessoView
+                usuarios={usuarios}
+                onAddUsuario={handleAddUsuario}
+                onUpdateUsuario={handleUpdateUsuario}
+                onDeleteUsuario={handleDeleteUsuario}
+                usuarioLogado={usuarioLogado}
+                onTrocarUsuarioLogado={(u) => setUsuarioLogado(u)}
+                onAbrirLogin={() => setMostrarTelaLogin(true)}
+                onIrParaCodigoPhp={() => setCurrentModule('codigo_php')}
+              />
+            )}
+
             {(currentModule === 'fiscal' ||
-              currentModule === 'acesso' ||
               currentModule === 'configuracoes' ||
               currentModule === 'ajuda') && (
               <ErpModuleWorkspace

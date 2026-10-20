@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Compra, ItemCompra, ItemEstoque, UnidadeMedida } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Compra, ItemCompra, ItemEstoque } from '../types';
 import { formatCurrency, formatNumber } from '../utils/formatters';
 import { 
   ShoppingBag, 
@@ -10,7 +10,6 @@ import {
   Receipt, 
   Building2, 
   CheckCircle2, 
-  Sparkles, 
   FileText, 
   History, 
   Boxes, 
@@ -28,6 +27,19 @@ interface ComprasViewProps {
   onIrParaEstoque: () => void;
 }
 
+// Cria uma linha 100% limpa / zerada
+const criarItemEmBranco = (): ItemCompra => ({
+  id: `it-cmp-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+  produtoId: '',
+  codigo: '',
+  descricao: '',
+  categoria: 'Consumíveis',
+  unidadeMedida: 'UN',
+  quantidade: '' as unknown as number,
+  precoCustoUnitario: '' as unknown as number,
+  valorTotal: 0,
+});
+
 export const ComprasView: React.FC<ComprasViewProps> = ({
   produtosEstoque,
   onAtualizarEstoque,
@@ -41,123 +53,37 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
   // Estado da Guia Ativa: 'novo' ou 'historico'
   const [tabAtiva, setTabAtiva] = useState<'novo' | 'historico'>('novo');
 
-  // Dados do Cabeçalho da Compra
+  // Ref para auto-foco
+  const fornecedorInputRef = useRef<HTMLInputElement>(null);
+
+  // Dados do Cabeçalho da Compra (iniciam 100% limpos)
   const [fornecedor, setFornecedor] = useState('');
   const [numeroNota, setNumeroNota] = useState('');
   const [dataCompra, setDataCompra] = useState(() => new Date().toISOString().split('T')[0]);
   const [observacoes, setObservacoes] = useState('');
 
-  // Itens da Compra
-  const [itens, setItens] = useState<ItemCompra[]>([
-    {
-      id: `it-cmp-${Date.now()}-1`,
-      produtoId: produtosFisicos.length > 0 ? produtosFisicos[0].id : '',
-      codigo: produtosFisicos.length > 0 ? produtosFisicos[0].codigo : 'MFX-LP30-15',
-      descricao: produtosFisicos.length > 0 ? produtosFisicos[0].descricao : 'Lente de Proteção Laser Fibra D30 x 1.5mm',
-      categoria: 'Consumíveis',
-      unidadeMedida: 'UN',
-      quantidade: 20,
-      precoCustoUnitario: 55.00,
-      valorTotal: 1100.00,
-    },
-  ]);
+  // Itens da Compra: inicia com 1 linha completamente limpa / zerada
+  const [itens, setItens] = useState<ItemCompra[]>([criarItemEmBranco()]);
 
   // Mensagem de Feedback
   const [sucessoMsg, setSucessoMsg] = useState<string | null>(null);
 
-  // Fornecedores Sugeridos / Frequentes da Linha Laser, Plasma e Oxicorte
-  const FORNECEDORES_FREQUENTES = [
-    'Raytools Óptica & Laser Co.',
-    'Hypertherm do Brasil Térmicos',
-    'WSX Laser Heads Industrial',
-    'Maxphotonics & Raycus Brasil',
-    'Oxicorte Brasil Peças & Tochas',
-    'Precitec Lentes & Sensores',
-    'Belms Bicos Cerâmicos & Anéis',
-  ];
-
-  // Presets Rápidos de Consumíveis Frequentes
-  const INSUMOS_RAPIDOS = [
-    {
-      codigo: 'MFX-LP30-15',
-      descricao: 'Lente de Proteção Laser Fibra D30 x 1.5mm Quartzo',
-      unidade: 'UN' as UnidadeMedida,
-      custoSugerido: 55.00,
-      categoria: 'Consumíveis Laser',
-    },
-    {
-      codigo: 'MFX-BD-15',
-      descricao: 'Bico Laser Duplo Cromado D32 H15 1.5mm',
-      unidade: 'UN' as UnidadeMedida,
-      custoSugerido: 42.50,
-      categoria: 'Consumíveis Laser',
-    },
-    {
-      codigo: 'MFX-BP-105',
-      descricao: 'Bico de Plasma Alta Definição 105A',
-      unidade: 'UN' as UnidadeMedida,
-      custoSugerido: 52.00,
-      categoria: 'Consumíveis Plasma',
-    },
-    {
-      codigo: 'MFX-EP-100',
-      descricao: 'Eletrodo de Plasma Cobre/Háfnio 100A',
-      unidade: 'UN' as UnidadeMedida,
-      custoSugerido: 58.00,
-      categoria: 'Consumíveis Plasma',
-    },
-    {
-      codigo: 'MFX-BO-1502',
-      descricao: 'Bico de Corte Oxicorte 1502 GLP/Oxigênio nº 02',
-      unidade: 'UN' as UnidadeMedida,
-      custoSugerido: 38.00,
-      categoria: 'Consumíveis Oxicorte',
-    },
-    {
-      codigo: 'MFX-CABO-SEN',
-      descricao: 'Cabo Sensor de Altura Capacitivo SMA/BNC',
-      unidade: 'UN' as UnidadeMedida,
-      custoSugerido: 250.00,
-      categoria: 'Peças & Acessórios',
-    },
-  ];
+  // Foco automático ao abrir ou alternar para a guia de novo lançamento
+  useEffect(() => {
+    if (tabAtiva === 'novo') {
+      setTimeout(() => {
+        fornecedorInputRef.current?.focus();
+      }, 80);
+    }
+  }, [tabAtiva]);
 
   // Cálculos Automáticos
   const totalPecas = itens.reduce((acc, it) => acc + (Number(it.quantidade) || 0), 0);
   const valorTotalNota = itens.reduce((acc, it) => acc + (Number(it.valorTotal) || 0), 0);
 
-  // Adicionar linha vazia
+  // Adicionar nova linha limpa
   const handleAdicionarItemVazio = () => {
-    const defaultProd = produtosFisicos[0];
-    const novoItem: ItemCompra = {
-      id: `it-cmp-${Date.now()}-${itens.length + 1}`,
-      produtoId: defaultProd?.id || '',
-      codigo: defaultProd?.codigo || '',
-      descricao: defaultProd?.descricao || '',
-      categoria: defaultProd?.categoria || 'Consumíveis',
-      unidadeMedida: defaultProd?.unidadeMedida || 'UN',
-      quantidade: 10,
-      precoCustoUnitario: defaultProd ? +(defaultProd.precoVenda * 0.55).toFixed(2) : 50.00,
-      valorTotal: defaultProd ? +(10 * (defaultProd.precoVenda * 0.55)).toFixed(2) : 500.00,
-    };
-    setItens([...itens, novoItem]);
-  };
-
-  // Adicionar a partir de Preset Rápido
-  const handleAdicionarPreset = (preset: typeof INSUMOS_RAPIDOS[0]) => {
-    const prodCadastrado = produtosFisicos.find((p) => p.codigo === preset.codigo);
-    const novoItem: ItemCompra = {
-      id: `it-cmp-${Date.now()}-${itens.length + 1}`,
-      produtoId: prodCadastrado?.id || '',
-      codigo: preset.codigo,
-      descricao: preset.descricao,
-      categoria: preset.categoria,
-      unidadeMedida: preset.unidade,
-      quantidade: 20,
-      precoCustoUnitario: preset.custoSugerido,
-      valorTotal: +(20 * preset.custoSugerido).toFixed(2),
-    };
-    setItens([...itens, novoItem]);
+    setItens((prev) => [...prev, criarItemEmBranco()]);
   };
 
   // Atualizar campo do item
@@ -168,7 +94,7 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
 
         const itemAtualizado = { ...item, [campo]: valor };
 
-        // Se alterou o produto selecionado
+        // Se alterou o produto selecionado no dropdown
         if (campo === 'produtoId') {
           const prod = produtosFisicos.find((p) => p.id === valor);
           if (prod) {
@@ -179,6 +105,11 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
             if (!itemAtualizado.precoCustoUnitario || itemAtualizado.precoCustoUnitario === 0) {
               itemAtualizado.precoCustoUnitario = +(prod.precoVenda * 0.55).toFixed(2);
             }
+          } else {
+            itemAtualizado.codigo = '';
+            itemAtualizado.descricao = '';
+            itemAtualizado.unidadeMedida = 'UN';
+            itemAtualizado.precoCustoUnitario = '' as unknown as number;
           }
         }
 
@@ -192,13 +123,12 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
     );
   };
 
-  // Remover item
+  // Remover item da tabela
   const handleRemoverItem = (id: string) => {
-    if (itens.length === 1) {
-      alert('A compra deve conter ao menos um item.');
-      return;
-    }
-    setItens(itens.filter((it) => it.id !== id));
+    setItens((prev) => {
+      const filtrados = prev.filter((it) => it.id !== id);
+      return filtrados.length === 0 ? [criarItemEmBranco()] : filtrados;
+    });
   };
 
   // Submissão: Salvar Compra e Atualizar Estoque
@@ -207,16 +137,37 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
 
     if (!fornecedor.trim()) {
       alert('Informe o nome ou razão social do Fornecedor.');
+      fornecedorInputRef.current?.focus();
       return;
     }
     if (!numeroNota.trim()) {
       alert('Informe o Número da Nota Fiscal de Compra.');
       return;
     }
-    if (itens.length === 0) {
-      alert('Adicione ao menos um produto à compra.');
+
+    // Filtrar itens que possuem código, descrição ou quantidade preenchida
+    const itensValidos = itens.filter(
+      (it) => it.codigo.trim() || it.descricao.trim() || Number(it.quantidade) > 0
+    );
+
+    if (itensValidos.length === 0) {
+      alert('Adicione ao menos um produto com dados válidos à compra.');
       return;
     }
+
+    for (const it of itensValidos) {
+      if (!it.codigo.trim() && !it.descricao.trim()) {
+        alert('Informe o código ou descrição de todos os itens.');
+        return;
+      }
+      if (!it.quantidade || Number(it.quantidade) <= 0) {
+        alert(`Informe a quantidade comprada do item "${it.codigo || it.descricao}".`);
+        return;
+      }
+    }
+
+    const valorTotalValidos = itensValidos.reduce((acc, it) => acc + (Number(it.valorTotal) || 0), 0);
+    const totalPecasValidos = itensValidos.reduce((acc, it) => acc + (Number(it.quantidade) || 0), 0);
 
     const novaCompra: Compra = {
       id: `cmp-${Date.now()}`,
@@ -224,8 +175,8 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
       fornecedor: fornecedor.trim(),
       dataCompra,
       observacoes: observacoes.trim(),
-      itens: [...itens],
-      valorTotal: valorTotalNota,
+      itens: [...itensValidos],
+      valorTotal: valorTotalValidos,
       dataCadastro: new Date().toISOString(),
     };
 
@@ -233,7 +184,7 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
     onSalvarCompra(novaCompra);
 
     // 2. Atualizar automaticamente os saldos do estoque correspondente
-    const atualizacoes = itens.map((it) => ({
+    const atualizacoes = itensValidos.map((it) => ({
       codigo: it.codigo,
       quantidade: Number(it.quantidade) || 0,
       novoCusto: Number(it.precoCustoUnitario) || undefined,
@@ -242,25 +193,23 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
 
     // 3. Exibir mensagem de sucesso
     setSucessoMsg(
-      `Compra "${novaCompra.numeroNota}" do fornecedor "${novaCompra.fornecedor}" registrada com sucesso! ${totalPecas} unidades foram adicionadas imediatamente ao estoque físico.`
+      `✅ Compra "${novaCompra.numeroNota}" do fornecedor "${novaCompra.fornecedor}" registrada com sucesso! +${totalPecasValidos} unidades adicionadas imediatamente ao estoque físico.`
     );
 
-    // 4. Limpar formulário para novo lançamento
+    // 4. Limpeza automática completa ao salvar compra (Reset limpo):
+    // a) Limpa cabeçalho da nota
+    setFornecedor('');
     setNumeroNota('');
+    setDataCompra(new Date().toISOString().split('T')[0]);
     setObservacoes('');
-    setItens([
-      {
-        id: `it-cmp-${Date.now()}-1`,
-        produtoId: produtosFisicos.length > 0 ? produtosFisicos[0].id : '',
-        codigo: produtosFisicos.length > 0 ? produtosFisicos[0].codigo : 'MFX-LP30-15',
-        descricao: produtosFisicos.length > 0 ? produtosFisicos[0].descricao : 'Lente de Proteção Laser Fibra D30 x 1.5mm',
-        categoria: 'Consumíveis',
-        unidadeMedida: 'UN',
-        quantidade: 10,
-        precoCustoUnitario: 55.00,
-        valorTotal: 550.00,
-      },
-    ]);
+
+    // b) Esvazia e reseta tabela de produtos para 1 linha limpa
+    setItens([criarItemEmBranco()]);
+
+    // c) Foco automático no campo Fornecedor para iniciar nova entrada imediatamente
+    setTimeout(() => {
+      fornecedorInputRef.current?.focus();
+    }, 60);
 
     // Role para o topo suavemente
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -377,6 +326,7 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
                     Fornecedor / Razão Social <span className="text-red-500">*</span>
                   </label>
                   <input
+                    ref={fornecedorInputRef}
                     type="text"
                     required
                     value={fornecedor}
@@ -384,21 +334,6 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
                     placeholder="Ex: Raytools Óptica & Laser Co. ou Hypertherm do Brasil"
                     className="w-full text-xs py-2 px-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                   />
-                  
-                  {/* Pílulas de seleção rápida de fornecedores frequentes */}
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] text-slate-500 font-bold uppercase">Sugeridos:</span>
-                    {FORNECEDORES_FREQUENTES.map((f, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setFornecedor(f)}
-                        className="text-[10px] bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300 px-2 py-0.5 rounded transition font-medium"
-                      >
-                        {f.split(' ')[0]}
-                      </button>
-                    ))}
-                  </div>
                 </div>
 
                 {/* Número da Nota Fiscal */}
@@ -469,37 +404,15 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
                 </div>
               </div>
 
+              {/* Botão Único Limpo para Adicionar Item */}
               <button
                 type="button"
                 onClick={handleAdicionarItemVazio}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-2xs"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-2xs cursor-pointer active:scale-95"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>+ Adicionar Item à Compra</span>
+                <span>+ Adicionar Item</span>
               </button>
-            </div>
-
-            {/* Inserção rápida por consumível frequente */}
-            <div className="p-4 bg-slate-50 border-b border-slate-200">
-              <div className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                Inserção Rápida de Consumíveis de Alto Giro (Clique para incluir na nota):
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {INSUMOS_RAPIDOS.map((ins, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleAdicionarPreset(ins)}
-                    className="bg-white hover:bg-emerald-50 border border-slate-300 hover:border-emerald-400 text-slate-800 text-xs px-2.5 py-1 rounded transition flex items-center gap-1.5 shadow-2xs"
-                    title={`Adicionar ${ins.codigo}`}
-                  >
-                    <Plus className="w-3 h-3 text-emerald-600" />
-                    <span className="font-mono font-bold text-slate-900">{ins.codigo}</span>
-                    <span className="text-[11px] text-slate-500 font-medium">({ins.categoria})</span>
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Tabela de Itens */}
@@ -522,7 +435,7 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
                 <tbody className="divide-y divide-slate-200">
                   {itens.map((item, idx) => {
                     const prodCadastrado = produtosFisicos.find(
-                      (p) => p.id === item.produtoId || p.codigo === item.codigo
+                      (p) => p.id === item.produtoId || (item.codigo && p.codigo === item.codigo)
                     );
                     const saldoAtual = prodCadastrado?.estoqueAtual ?? 0;
 
@@ -540,7 +453,7 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
                             onChange={(e) => handleAtualizarItem(item.id, 'produtoId', e.target.value)}
                             className="w-full text-xs py-1.5 px-2 border border-slate-300 rounded font-medium bg-white focus:ring-1 focus:ring-emerald-500"
                           >
-                            <option value="">-- Selecione ou digite manualmente --</option>
+                            <option value="" disabled selected>-- Selecione o Produto / Insumo --</option>
                             {produtosFisicos.map((p) => (
                               <option key={p.id} value={p.id}>
                                 {p.codigo} - {p.descricao.substring(0, 38)}... (Saldo: {p.estoqueAtual} {p.unidadeMedida})
@@ -568,7 +481,7 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
                             required
                             value={item.descricao}
                             onChange={(e) => handleAtualizarItem(item.id, 'descricao', e.target.value)}
-                            placeholder="Descrição conforme a NF-e do fornecedor..."
+                            placeholder="Descrição completa conforme NF-e..."
                             className="w-full text-xs py-1 px-2 border border-slate-300 rounded bg-white"
                           />
                         </td>
@@ -592,13 +505,15 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
                         <td className="py-2.5 px-3 text-center">
                           <span
                             className={`inline-block font-mono text-[11px] font-bold px-2 py-0.5 rounded ${
-                              saldoAtual <= 5
+                              !prodCadastrado || !item.codigo
+                                ? 'bg-slate-100 text-slate-400'
+                                : saldoAtual <= 5
                                 ? 'bg-red-100 text-red-800 border border-red-200'
                                 : 'bg-slate-100 text-slate-700'
                             }`}
                             title="Saldo físico atual deste item antes da entrada desta compra"
                           >
-                            {saldoAtual} {item.unidadeMedida}
+                            {prodCadastrado && item.codigo ? `${saldoAtual} ${item.unidadeMedida}` : '-'}
                           </span>
                         </td>
 
@@ -609,10 +524,15 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
                             min="1"
                             step="1"
                             required
-                            value={item.quantidade}
+                            value={item.quantidade === 0 || !item.quantidade ? '' : item.quantidade}
                             onChange={(e) =>
-                              handleAtualizarItem(item.id, 'quantidade', parseFloat(e.target.value) || 0)
+                              handleAtualizarItem(
+                                item.id,
+                                'quantidade',
+                                e.target.value === '' ? '' : parseFloat(e.target.value) || 0
+                              )
                             }
+                            placeholder="0"
                             className="w-full text-xs py-1 px-2 text-center font-mono font-bold border border-emerald-300 bg-emerald-50/40 rounded focus:ring-1 focus:ring-emerald-500"
                           />
                         </td>
@@ -624,10 +544,15 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
                             min="0"
                             step="0.01"
                             required
-                            value={item.precoCustoUnitario}
+                            value={item.precoCustoUnitario === 0 || !item.precoCustoUnitario ? '' : item.precoCustoUnitario}
                             onChange={(e) =>
-                              handleAtualizarItem(item.id, 'precoCustoUnitario', parseFloat(e.target.value) || 0)
+                              handleAtualizarItem(
+                                item.id,
+                                'precoCustoUnitario',
+                                e.target.value === '' ? '' : parseFloat(e.target.value) || 0
+                              )
                             }
+                            placeholder="0,00"
                             className="w-full text-xs py-1 px-2 text-right font-mono font-bold border border-slate-300 rounded bg-white focus:ring-1 focus:ring-emerald-500"
                           />
                         </td>
@@ -642,7 +567,7 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
                           <button
                             type="button"
                             onClick={() => handleRemoverItem(item.id)}
-                            className="text-slate-400 hover:text-red-600 p-1 rounded transition"
+                            className="text-slate-400 hover:text-red-600 p-1 rounded transition cursor-pointer"
                             title="Remover linha"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -673,19 +598,11 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
               </table>
             </div>
 
-            {/* Painel inferior de Ação & Conclusão */}
+            {/* Painel inferior de Ação & Conclusão (Sem botão duplicado) */}
             <div className="p-6 bg-slate-50 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleAdicionarItemVazio}
-                  className="bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition shadow-2xs"
-                >
-                  <Plus className="w-4 h-4 text-emerald-600" />
-                  <span>+ Adicionar Outro Item</span>
-                </button>
-                <span className="text-xs text-slate-500">
-                  {itens.length} {itens.length === 1 ? 'item lançado' : 'itens lançados'} na NF
+                <span className="text-xs text-slate-500 font-medium">
+                  {itens.filter((it) => it.codigo.trim() || it.descricao.trim()).length} {itens.filter((it) => it.codigo.trim() || it.descricao.trim()).length === 1 ? 'item lançado' : 'itens lançados'} na NF
                 </span>
               </div>
 
@@ -695,10 +612,10 @@ export const ComprasView: React.FC<ComprasViewProps> = ({
                   <div className="text-xl font-black font-mono text-emerald-700">{formatCurrency(valorTotalNota)}</div>
                 </div>
 
-                {/* 3. BOTÃO DE CONCLUSÃO */}
+                {/* BOTÃO DE CONCLUSÃO */}
                 <button
                   type="submit"
-                  className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm px-6 py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition transform active:scale-95"
+                  className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm px-6 py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm transition transform active:scale-95 cursor-pointer"
                 >
                   <PackagePlus className="w-5 h-5" />
                   <span>Salvar Compra e Atualizar Estoque</span>

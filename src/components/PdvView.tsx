@@ -65,31 +65,8 @@ export const PdvView: React.FC<PdvViewProps> = ({
   const [documentoConsumidor, setDocumentoConsumidor] = useState<string>('');
   const [nomeConsumidor, setNomeConsumidor] = useState<string>('Consumidor Final / Venda Balcão');
 
-  // Itens da venda atual (Carrinho)
-  const [carrinho, setCarrinho] = useState<ItemVenda[]>([
-    {
-      id: `it-cart-init-1`,
-      produtoId: produtosDisponiveis.find(p => p.codigo === 'MFX-LP30-15')?.id || 'est-01',
-      codigo: 'MFX-LP30-15',
-      descricao: 'Lente de Proteção Laser Fibra D30 x 1.5mm Quartzo Fundido 1064nm',
-      categoria: 'Consumíveis',
-      unidadeMedida: 'UN',
-      quantidade: 2,
-      precoUnitario: 120.00,
-      valorTotal: 240.00,
-    },
-    {
-      id: `it-cart-init-2`,
-      produtoId: produtosDisponiveis.find(p => p.codigo === 'MFX-BD-15')?.id || 'est-02',
-      codigo: 'MFX-BD-15',
-      descricao: 'Bico Laser Duplo Cromado D32 H15 Calibre 1.5mm',
-      categoria: 'Consumíveis',
-      unidadeMedida: 'UN',
-      quantidade: 1,
-      precoUnitario: 85.00,
-      valorTotal: 85.00,
-    }
-  ]);
+  // Itens da venda atual (Carrinho limpo para novo lançamento)
+  const [carrinho, setCarrinho] = useState<ItemVenda[]>([]);
 
   // Desconto e Acréscimo
   const [tipoDesconto, setTipoDesconto] = useState<'reais' | 'porcento'>('reais');

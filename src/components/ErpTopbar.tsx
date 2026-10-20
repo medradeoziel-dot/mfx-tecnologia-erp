@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
 import { ErpModuleType } from './ErpSidebar';
 
+import { Usuario } from '../types';
+
 interface ErpTopbarProps {
   onQuickAction: (action: string) => void;
   onSelectModule: (module: ErpModuleType) => void;
+  usuarioLogado?: Usuario;
+  onAbrirLogin?: () => void;
 }
 
-export const ErpTopbar: React.FC<ErpTopbarProps> = ({ onQuickAction, onSelectModule }) => {
+export const ErpTopbar: React.FC<ErpTopbarProps> = ({
+  onQuickAction,
+  onSelectModule,
+  usuarioLogado,
+  onAbrirLogin,
+}) => {
   const [notificacoesAbertas, setNotificacoesAbertas] = useState(false);
 
   const quickButtons = [
@@ -93,23 +102,46 @@ export const ErpTopbar: React.FC<ErpTopbarProps> = ({ onQuickAction, onSelectMod
         </div>
 
         {/* Informações da Empresa / Operador */}
-        <div className="hidden lg:flex flex-col text-right text-xs leading-none">
-          <span className="font-bold text-slate-800">MFx Tecnologia Industrial</span>
-          <span className="text-[10px] text-slate-500 font-mono mt-0.5">Operador: ADM - MEDRADE</span>
+        <div className="hidden sm:flex items-center gap-2.5">
+          <button
+            onClick={() => {
+              if (onAbrirLogin) {
+                onAbrirLogin();
+              } else {
+                onSelectModule('acesso');
+              }
+            }}
+            className="flex items-center gap-2 text-right hover:opacity-85 transition p-1 rounded-lg group"
+            title="Clique para trocar de usuário ou gerenciar acessos"
+          >
+            <div className="w-8 h-8 rounded-lg bg-red-600/10 border border-red-500/20 text-red-600 flex items-center justify-center font-bold text-xs shrink-0 group-hover:bg-red-600 group-hover:text-white transition">
+              {usuarioLogado ? usuarioLogado.nome.slice(0, 2).toUpperCase() : 'AD'}
+            </div>
+            <div className="flex flex-col text-right text-xs leading-none">
+              <span className="font-bold text-slate-800 text-[11px] truncate max-w-[130px]">
+                {usuarioLogado ? usuarioLogado.nome : 'Eng. Marcos Medrade'}
+              </span>
+              <span className="text-[10px] text-slate-500 font-mono mt-0.5">
+                {usuarioLogado ? `${usuarioLogado.login} (${usuarioLogado.perfil})` : 'ADM - MEDRADE'}
+              </span>
+            </div>
+          </button>
         </div>
 
-        {/* Botão de Sair com ícone solicitado */}
+        {/* Botão de Trocar / Sair */}
         <button
           onClick={() => {
-            if (confirm('Deseja realmente encerrar a sessão do ERP MFx Tecnologia?')) {
+            if (onAbrirLogin) {
+              onAbrirLogin();
+            } else if (confirm('Deseja realmente encerrar a sessão do ERP MFx Tecnologia?')) {
               onSelectModule('abertura');
             }
           }}
-          className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition"
-          title="Encerrar sessão"
+          className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer"
+          title="Encerrar sessão ou trocar operador"
         >
           <i className="fa-solid fa-right-from-bracket"></i>
-          <span className="hidden sm:inline">Sair</span>
+          <span className="hidden sm:inline">Sair / Login</span>
         </button>
 
       </div>

@@ -41,6 +41,12 @@ export const EstoqueView: React.FC<EstoqueViewProps> = ({
   // Estado local com persistência no localStorage
   const [localItens, setLocalItens] = useState<ItemEstoque[]>(() => {
     try {
+      const resetFeito = localStorage.getItem('mfx_estoque_limpo_modelo_v2');
+      if (!resetFeito) {
+        localStorage.setItem('mfx_estoque_limpo_modelo_v2', 'true');
+        localStorage.setItem('mfx_estoque_itens', JSON.stringify(ESTOQUE_INICIAL));
+        return ESTOQUE_INICIAL;
+      }
       const salvo = localStorage.getItem('mfx_estoque_itens');
       if (salvo) {
         const parsed = JSON.parse(salvo);
@@ -379,8 +385,8 @@ export const EstoqueView: React.FC<EstoqueViewProps> = ({
             <Sparkles className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-xs text-slate-200 mt-1 space-y-0.5">
-            <div>• <strong>NFS-e:</strong> LC 116 / ISS Agudos 3%</div>
-            <div>• <strong>NF-e:</strong> NCM Peças / CSOSN 0102</div>
+            <div>• <strong>NFS-e:</strong> LC 116: 14.01 / ISS Agudos 2%</div>
+            <div>• <strong>NF-e:</strong> NCM Peças / CSOSN 0102 / CFOP 5102</div>
           </div>
           <div className="text-[10px] text-amber-400 font-medium mt-2">
             Pronto para split automático na OS

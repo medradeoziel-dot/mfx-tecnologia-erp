@@ -672,20 +672,14 @@ INSERT INTO \`clientes\` (\`documento\`, \`nome\`, \`nome_fantasia\`, \`logradou
 VALUES 
 ('52.148.963/0001-44', 'Metalúrgica Corte & Conformação Paulista Ltda', 'Metalúrgica Paulista', 'Avenida das Indústrias', '1450', 'Distrito Industrial', 'Bauru', 'SP', '17034-290', '(14) 3104-5000', '(14) 99712-4488', 'manutencao@metalurgicapaulista.com.br', 'Cliente possui 2 máquinas Laser Fibra 3kW Raycus.');
 
--- Inserção de Produtos e Serviços Padrão com Especificações Fiscais
+-- Inserção de Produtos e Serviços Padrão com Especificações Fiscais (Apenas 2 Exemplos Modelo)
 INSERT INTO \`produtos_servicos\` 
 (\`tipo\`, \`codigo\`, \`descricao\`, \`categoria\`, \`unidade_medida\`, \`preco_venda\`, \`estoque_atual\`, \`estoque_minimo\`, \`ncm\`, \`cst_csosn\`, \`cfop_produto\`, \`origem\`, \`codigo_servico_lc116\`, \`codigo_tributacao_municipal\`, \`aliquota_iss\`, \`cfop_servico\`, \`observacoes_fiscais\`)
 VALUES
--- Produtos (NF-e)
-('produto', 'MFX-LP30-15', 'Lente de Proteção Laser Fibra D30 x 1.5mm Quartzo Fundido 1064nm', 'Consumíveis', 'UN', 120.00, 34, 10, '9027.90.99', '0102', '5102', '1', NULL, NULL, NULL, NULL, 'Importação direta, quartzo JGS1.'),
-('produto', 'MFX-BD-15', 'Bico Laser Duplo Cromado D32 H15 Calibre 1.5mm', 'Consumíveis', 'UN', 85.00, 22, 8, '8466.93.30', '0102', '5102', '0', NULL, NULL, NULL, NULL, 'Bico duplo para oxigênio.'),
-('produto', 'MFX-BP-105', 'Bico de Plasma Alta Definição 105A', 'Consumíveis', 'UN', 95.00, 40, 12, '8466.93.30', '0102', '5102', '0', NULL, NULL, NULL, NULL, 'Compatível Powermax 105.'),
-('produto', 'MFX-EP-100', 'Eletrodo de Plasma Híbrido Cobre/Háfnio 100A', 'Consumíveis', 'UN', 110.00, 28, 10, '8466.93.30', '0102', '5102', '0', NULL, NULL, NULL, NULL, 'Inserto central de háfnio.'),
--- Serviços e Mão de Obra (NFS-e Municipal)
-('servico', 'MFX-SRV-LASER-01', 'Alinhamento Óptico do Feixe Laser Fibra, Colimação e Foco', 'Serviços Laser', 'UN', 650.00, 0, 0, NULL, NULL, NULL, NULL, '14.01', '1401-0/01-88', 3.00, '5933', 'NFS-e Prefeitura Municipal de Agudos.'),
-('servico', 'MFX-MO-HORA', 'Hora Técnica de Manutenção Mecânica, Elétrica e CNC', 'Mão de Obra', 'HR', 100.00, 0, 0, NULL, NULL, NULL, NULL, '14.01', '1401-0/02-00', 3.00, '5933', 'Apuração por hora técnica em campo.'),
-('servico', 'MFX-MO-DIARIA', 'Diária Técnica de Especialista em Campo / Retrofit CNC', 'Mão de Obra', 'DIA', 800.00, 0, 0, NULL, NULL, NULL, NULL, '14.01', '1401-0/04-00', 3.00, '5933', 'Diária técnica de 8 horas.'),
-('servico', 'MFX-SRV-OXI-01', 'Revisão Geral do Maçarico de Oxicorte, Troca de Gaxetas e Calibração', 'Serviços Oxicorte', 'UN', 350.00, 0, 0, NULL, NULL, NULL, NULL, '14.01', '1401-0/03-55', 2.50, '5933', 'Revisão de maçarico pantográfico.');
+-- 1. Exemplo de Produto/Consumível Modelo (NF-e Mod. 55)
+('produto', 'MFX-LP30-15', 'Lente de Proteção Laser Fibra D30 x 1.5mm Quartzo Fundido 1064nm', 'Consumíveis', 'UN', 120.00, 10, 5, '9027.90.99', '0102', '5102', '1', NULL, NULL, NULL, NULL, 'Importação direta, quartzo grau ótico JGS1 para alta potência.'),
+-- 2. Exemplo de Serviço / Mão de Obra Modelo (NFS-e Municipal)
+('servico', 'MFX-SRV-LASER-01', 'Alinhamento Óptico do Feixe Laser Fibra, Colimação e Foco', 'Serviços Laser', 'UN', 650.00, 0, 0, NULL, NULL, NULL, NULL, '14.01', '1401-0/01-88', 2.00, '5933', 'LC 116: 14.01 - Manutenção / ISS: 2%. NFS-e Prefeitura Municipal de Agudos.');
 
 -- 5. Tabela de Compras / Notas Fiscais de Entrada (Entrada Física de Estoque)
 CREATE TABLE IF NOT EXISTS \`compras\` (
@@ -717,15 +711,11 @@ CREATE TABLE IF NOT EXISTS \`itens_compra\` (
 -- Inserção de Compras de Exemplo
 INSERT INTO \`compras\` (\`numero_nota\`, \`fornecedor\`, \`data_compra\`, \`observacoes\`, \`valor_total\`)
 VALUES 
-('NF-e 048.912', 'Raytools Laser Optics & Consumables Co.', '2026-10-14', 'Importação direta via despachante Santos. Consumíveis Raytools BM111.', 5850.00),
-('NF-e 119.450', 'Hypertherm do Brasil Sistemas Térmicos', '2026-10-18', 'Consumíveis originais para tochas Powermax 105A.', 4200.00);
+('NF-e 048.912', 'Raytools Laser Optics & Consumables Co.', '2026-10-14', 'Importação direta via despachante Santos. Consumíveis Raytools BM111.', 550.00);
 
 INSERT INTO \`itens_compra\` (\`compra_id\`, \`produto_id\`, \`codigo\`, \`descricao\`, \`unidade_medida\`, \`quantidade\`, \`preco_custo_unitario\`, \`valor_total\`)
 VALUES 
-(1, 1, 'MFX-LP30-15', 'Lente de Proteção Laser Fibra D30 x 1.5mm Quartzo Fundido 1064nm', 'UN', 30.00, 55.00, 1650.00),
-(1, 2, 'MFX-BD-15', 'Bico Laser Duplo Cromado D32 H15 Calibre 1.5mm', 'UN', 40.00, 42.50, 1700.00),
-(2, 3, 'MFX-BP-105', 'Bico de Plasma Alta Definição 105A', 'UN', 25.00, 52.00, 1300.00),
-(2, 4, 'MFX-EP-100', 'Eletrodo de Plasma Híbrido Cobre/Háfnio 100A', 'UN', 30.00, 58.00, 1740.00);
+(1, 1, 'MFX-LP30-15', 'Lente de Proteção Laser Fibra D30 x 1.5mm Quartzo Fundido 1064nm', 'UN', 10.00, 55.00, 550.00);
 
 -- 7. Tabela de Vendas de Balcão e Faturamento PDV
 CREATE TABLE IF NOT EXISTS \`vendas\` (
@@ -792,6 +782,41 @@ INSERT INTO \`movimentos_caixa\` (\`tipo\`, \`origem\`, \`referencia_id\`, \`des
 VALUES 
 ('ENTRADA', 'PDV', 'VND-2026-0042', 'Recebimento Venda Balcão VND-2026-0042 - Metalúrgica Paulista', 'PIX', 850.00, '2026-10-18 10:45:00', 'ADM - MEDRADE'),
 ('ENTRADA', 'PDV', 'VND-2026-0043', 'Recebimento Venda Balcão VND-2026-0043 - Consumidor Final', 'CARTAO_CREDITO', 680.00, '2026-10-19 08:30:00', 'ADM - MEDRADE');
+
+-- 10. Tabela de Gestão de Acessos e Usuários do Sistema ERP
+CREATE TABLE IF NOT EXISTS \`usuarios\` (
+  \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+  \`nome\` VARCHAR(120) NOT NULL,
+  \`login\` VARCHAR(50) NOT NULL UNIQUE,
+  \`email\` VARCHAR(120) NOT NULL UNIQUE,
+  \`senha\` VARCHAR(255) NOT NULL COMMENT 'Senha criptografada ou padrão admin123',
+  \`perfil\` ENUM('Administrador', 'Operador/Técnico', 'Vendas/Financeiro') NOT NULL DEFAULT 'Operador/Técnico',
+  \`status\` ENUM('Ativo', 'Inativo') NOT NULL DEFAULT 'Ativo',
+  
+  -- Permissões Granulares por Módulo (1=Permitido, 0=Negado)
+  \`perm_clientes\` TINYINT(1) NOT NULL DEFAULT 1,
+  \`perm_os\` TINYINT(1) NOT NULL DEFAULT 1,
+  \`perm_estoque\` TINYINT(1) NOT NULL DEFAULT 1,
+  \`perm_compras\` TINYINT(1) NOT NULL DEFAULT 0,
+  \`perm_pdv\` TINYINT(1) NOT NULL DEFAULT 1,
+  \`perm_financeiro\` TINYINT(1) NOT NULL DEFAULT 0,
+  \`perm_fiscal\` TINYINT(1) NOT NULL DEFAULT 0,
+  \`perm_acesso\` TINYINT(1) NOT NULL DEFAULT 0,
+  
+  \`ultimo_login\` DATETIME NULL,
+  \`data_cadastro\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX \`idx_login\` (\`login\`),
+  INDEX \`idx_perfil\` (\`perfil\`),
+  INDEX \`idx_status\` (\`status\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Inserção de Usuários Padrão (Administrador Solicitado: medrade / admin123)
+INSERT INTO \`usuarios\` 
+(\`nome\`, \`login\`, \`email\`, \`senha\`, \`perfil\`, \`status\`, \`perm_clientes\`, \`perm_os\`, \`perm_estoque\`, \`perm_compras\`, \`perm_pdv\`, \`perm_financeiro\`, \`perm_fiscal\`, \`perm_acesso\`, \`ultimo_login\`)
+VALUES
+('Eng. Marcos Medrade (Administrador)', 'medrade', 'medrade@mfxindustrial.com.br', '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', 'Administrador', 'Ativo', 1, 1, 1, 1, 1, 1, 1, 1, '2026-10-20 08:15:00'),
+('Carlos Eduardo Silveira - Técnico Laser', 'carlos.laser', 'carlos@mfxindustrial.com.br', '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', 'Operador/Técnico', 'Ativo', 1, 1, 1, 0, 1, 0, 0, 0, '2026-10-19 17:40:00'),
+('Ana Paula Ferreira - Vendas & Balcão', 'ana.vendas', 'ana.vendas@mfxindustrial.com.br', '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', 'Vendas/Financeiro', 'Ativo', 1, 1, 1, 1, 1, 1, 1, 0, '2026-10-20 09:10:00');
 `
   },
   {
@@ -1931,13 +1956,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
                         <label class="form-label small fw-bold mb-1">Código</label>
                         <input type="text" class="form-control form-control-sm font-monospace fw-bold" id="novo_codigo" placeholder="Ex: MFX-LP30" list="listaSugestoesPhp" onkeydown="adicionarLinhaComEnter(event, this)">
                         <datalist id="listaSugestoesPhp">
-                            <option value="MFX-LP30-15">Lente Proteção D30 Laser</option>
-                            <option value="MFX-BD-15">Bico Laser Duplo 1.5mm</option>
-                            <option value="MFX-BS-20">Bico Laser Simples 2.0mm</option>
-                            <option value="MFX-AC-28">Anel Cerâmico D28mm</option>
-                            <option value="MFX-CC-01">Cabo Sensor Capacitivo</option>
-                            <option value="MFX-SRV-LASER-01">Alinhamento Óptico Laser</option>
-                            <option value="MFX-SRV-REV-01">Revisão Preventiva CNC</option>
+                            <option value="MFX-LP30-15">Lente Proteção D30 Laser (NF-e)</option>
+                            <option value="MFX-SRV-LASER-01">Alinhamento Óptico Laser (NFS-e)</option>
                         </datalist>
                     </div>
                     <div class="col-md-4">
@@ -2055,15 +2075,10 @@ function formatMoeda(val) {
     return 'R$ ' + (Number(val) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// Catálogo rápido de sugestões para autofill ao digitar o código
+// Catálogo rápido de sugestões para autofill ao digitar o código (Apenas os 2 modelos)
 const CATALOGO_PHP = {
-    'MFX-LP30-15': { desc: 'Lente de Proteção Laser Fibra D30 x 1.5mm', preco: 120.00, un: 'UN', tipo: 'produto' },
-    'MFX-BD-15': { desc: 'Bico Laser Duplo Cromado D32 H15 Calibre 1.5mm', preco: 85.00, un: 'UN', tipo: 'produto' },
-    'MFX-BS-20': { desc: 'Bico Laser Simples Cromado D32 H15 Calibre 2.0mm', preco: 85.00, un: 'UN', tipo: 'produto' },
-    'MFX-AC-28': { desc: 'Anel Cerâmico para Cabeçote Raytools D28mm', preco: 220.00, un: 'UN', tipo: 'produto' },
-    'MFX-CC-01': { desc: 'Cabo Sensor Capacitivo SMA x BNC BCS100', preco: 340.00, un: 'UN', tipo: 'produto' },
-    'MFX-SRV-LASER-01': { desc: 'Alinhamento Óptico do Feixe Laser Fibra', preco: 650.00, un: 'HR', tipo: 'servico' },
-    'MFX-SRV-REV-01': { desc: 'Revisão Preventiva Mecânica e Pneumática CNC', preco: 800.00, un: 'HR', tipo: 'servico' }
+    'MFX-LP30-15': { desc: 'Lente de Proteção Laser Fibra D30 x 1.5mm Quartzo Fundido 1064nm', preco: 120.00, un: 'UN', tipo: 'produto' },
+    'MFX-SRV-LASER-01': { desc: 'Alinhamento Óptico do Feixe Laser Fibra, Colimação e Foco', preco: 650.00, un: 'UN', tipo: 'servico' }
 };
 
 document.getElementById('novo_codigo')?.addEventListener('input', function(e) {
@@ -2963,7 +2978,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao'])) {
     $descricao_lc116             = $tipo === 'servico' ? trim($_POST['descricao_lc116'] ?? '') : null;
     $codigo_tributacao_municipal = $tipo === 'servico' ? trim($_POST['codigo_tributacao_municipal'] ?? '') : null;
     $item_lc116                  = $tipo === 'servico' ? trim($_POST['item_lc116'] ?? '14.01') : null;
-    $aliquota_iss                = $tipo === 'servico' ? (float)str_replace(',', '.', $_POST['aliquota_iss'] ?? '3.00') : null;
+    $aliquota_iss                = $tipo === 'servico' ? (float)str_replace(',', '.', $_POST['aliquota_iss'] ?? '2.00') : null;
     $exigibilidade_iss           = $tipo === 'servico' ? trim($_POST['exigibilidade_iss'] ?? '1') : null;
     $retencao_iss                = $tipo === 'servico' && isset($_POST['retencao_iss']) && $_POST['retencao_iss'] == '1' ? 1 : 0;
     $cfop_servico                = $tipo === 'servico' ? trim($_POST['cfop_servico'] ?? '5933') : null;
@@ -3173,8 +3188,8 @@ $itens = $stmt->fetchAll();
             <div class="card card-custom p-3 text-white" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
                 <span class="small text-uppercase fw-bold text-warning">Regras Fiscais MFx</span>
                 <div class="small mt-1 text-light">
-                    • NFS-e: LC 116 / ISS Agudos 3%<br>
-                    • NF-e: NCM Peças / CSOSN 0102
+                    • NFS-e: LC 116: 14.01 / ISS Agudos 2%<br>
+                    • NF-e: NCM Peças / CSOSN 0102 / CFOP 5102
                 </div>
             </div>
         </div>
@@ -3372,7 +3387,7 @@ $itens = $stmt->fetchAll();
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">Alíquota ISS (%) *</label>
-                                <input type="number" step="0.01" class="form-control font-monospace" name="aliquota_iss" id="aliquota_iss" value="3.00">
+                                <input type="number" step="0.01" class="form-control font-monospace" name="aliquota_iss" id="aliquota_iss" value="2.00">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">Exigibilidade do ISS</label>
@@ -3719,20 +3734,6 @@ $historicoCompras = $stmtHist->fetchAll();
             color: #34d399;
             font-family: monospace;
         }
-        .btn-preset {
-            font-size: 11px;
-            padding: 3px 8px;
-            border-radius: 6px;
-            border: 1px solid #cbd5e1;
-            background: #ffffff;
-            color: #334155;
-            transition: all 0.15s;
-        }
-        .btn-preset:hover {
-            background: #ecfdf5;
-            border-color: #10b981;
-            color: #065f46;
-        }
     </style>
 </head>
 <body>
@@ -3817,16 +3818,6 @@ $historicoCompras = $stmtHist->fetchAll();
                             <option value="Precitec Lentes & Sensores Brasil">
                             <option value="Belms Bicos & Cerâmicas Laser">
                         </datalist>
-                        
-                        <!-- Pílulas de seleção rápida de fornecedores -->
-                        <div class="d-flex flex-wrap gap-1 mt-2 align-items-center">
-                            <span class="text-muted small fw-bold">Rápido:</span>
-                            <button type="button" class="btn btn-preset" onclick="selecionarFornecedor('Raytools Laser Optics & Consumables Co.')">Raytools</button>
-                            <button type="button" class="btn btn-preset" onclick="selecionarFornecedor('Hypertherm do Brasil Sistemas Térmicos')">Hypertherm</button>
-                            <button type="button" class="btn btn-preset" onclick="selecionarFornecedor('WSX Laser Heads Industrial')">WSX</button>
-                            <button type="button" class="btn btn-preset" onclick="selecionarFornecedor('Oxicorte Brasil Peças & Tochas')">Oxicorte Brasil</button>
-                            <button type="button" class="btn btn-preset" onclick="selecionarFornecedor('Precitec Lentes & Sensores')">Precitec</button>
-                        </div>
                     </div>
 
                     <!-- Número da Nota Fiscal -->
@@ -3866,21 +3857,8 @@ $historicoCompras = $stmtHist->fetchAll();
                     <small class="text-light opacity-75 ms-2">O estoque físico será somado automaticamente</small>
                 </div>
                 <button type="button" class="btn btn-success btn-sm fw-bold" onclick="adicionarLinhaItem()">
-                    <i class="fa-solid fa-plus me-1"></i> + Adicionar Item à Compra
+                    <i class="fa-solid fa-plus me-1"></i> + Adicionar Item
                 </button>
-            </div>
-
-            <!-- Inserção rápida por itens de alto giro -->
-            <div class="p-3 bg-light border-bottom">
-                <div class="d-flex flex-wrap align-items-center gap-2">
-                    <span class="small fw-bold text-dark"><i class="fa-solid fa-bolt text-warning me-1"></i> Itens Frequentes (Clique para incluir):</span>
-                    <button type="button" class="btn btn-preset" onclick="adicionarPresetItem('MFX-LP30-15', 'Lente de Proteção Laser Fibra D30 x 1.5mm Quartzo', 'UN', 55.00)">+ Lente D30x1.5 (Laser)</button>
-                    <button type="button" class="btn btn-preset" onclick="adicionarPresetItem('MFX-BD-15', 'Bico Laser Duplo Cromado D32 H15 1.5mm', 'UN', 42.50)">+ Bico Laser Duplo 1.5mm</button>
-                    <button type="button" class="btn btn-preset" onclick="adicionarPresetItem('MFX-BP-105', 'Bico de Plasma Alta Definição 105A', 'UN', 52.00)">+ Bico Plasma 105A</button>
-                    <button type="button" class="btn btn-preset" onclick="adicionarPresetItem('MFX-EP-100', 'Eletrodo de Plasma Híbrido Cobre/Háfnio 100A', 'UN', 58.00)">+ Eletrodo Plasma 100A</button>
-                    <button type="button" class="btn btn-preset" onclick="adicionarPresetItem('MFX-BO-1502', 'Bico de Corte Oxicorte 1502 GLP/Oxigênio nº 02', 'UN', 38.00)">+ Bico Oxicorte 1502</button>
-                    <button type="button" class="btn btn-preset" onclick="adicionarPresetItem('MFX-CABO-SEN', 'Cabo Sensor de Altura Capacitivo SMA/BNC', 'UN', 250.00)">+ Cabo Sensor Laser</button>
-                </div>
             </div>
 
             <div class="table-responsive">
@@ -3917,10 +3895,7 @@ $historicoCompras = $stmtHist->fetchAll();
             <!-- 3. PAINEL DE CONCLUSÃO & ATUALIZAÇÃO DE ESTOQUE -->
             <div class="p-4 bg-light border-top d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adicionarLinhaItem()">
-                        <i class="fa-solid fa-plus me-1"></i> + Adicionar Mais Um Item
-                    </button>
-                    <span class="text-muted small" id="contadorItens">1 item lançado</span>
+                    <span class="text-muted small" id="contadorItens">0 itens lançados</span>
                 </div>
 
                 <div class="d-flex align-items-center gap-3">
@@ -3984,10 +3959,6 @@ $historicoCompras = $stmtHist->fetchAll();
 <script>
 const PRODUTOS_ESTOQUE = <?= json_encode($produtosEstoque, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
-function selecionarFornecedor(nome) {
-    document.getElementById('fornecedor').value = nome;
-}
-
 let contadorLinhas = 0;
 
 function formatarMoeda(valor) {
@@ -4000,19 +3971,19 @@ function adicionarLinhaItem(dados = {}) {
     const tr = document.createElement('tr');
     tr.id = 'linha_item_' + contadorLinhas;
 
-    const prodIdDef  = dados.produto_id || (PRODUTOS_ESTOQUE.length > 0 ? PRODUTOS_ESTOQUE[0].id : '');
-    const codigoDef  = dados.codigo || (PRODUTOS_ESTOQUE.length > 0 ? PRODUTOS_ESTOQUE[0].codigo : 'MFX-LP30-15');
-    const descDef    = dados.descricao || (PRODUTOS_ESTOQUE.length > 0 ? PRODUTOS_ESTOQUE[0].descricao : 'Lente de Proteção Laser D30');
-    const unidDef    = dados.unidade || (PRODUTOS_ESTOQUE.length > 0 ? PRODUTOS_ESTOQUE[0].unidade_medida : 'UN');
-    const qtdDef     = dados.quantidade || 10;
-    const custoDef   = dados.preco_custo || 55.00;
-    const totalDef   = (qtdDef * custoDef).toFixed(2);
+    const prodIdDef  = dados.produto_id || '';
+    const codigoDef  = dados.codigo || '';
+    const descDef    = dados.descricao || '';
+    const unidDef    = dados.unidade || 'UN';
+    const qtdDef     = dados.quantidade !== undefined ? dados.quantidade : '';
+    const custoDef   = dados.preco_custo !== undefined ? dados.preco_custo : '';
+    const totalDef   = (parseFloat(qtdDef) || 0) * (parseFloat(custoDef) || 0);
 
     // Encontrar saldo atual
-    const prodEncontrado = PRODUTOS_ESTOQUE.find(p => p.id == prodIdDef || p.codigo === codigoDef);
+    const prodEncontrado = PRODUTOS_ESTOQUE.find(p => p.id == prodIdDef || (codigoDef && p.codigo === codigoDef));
     const saldoAtual = prodEncontrado ? prodEncontrado.estoque_atual : 0;
 
-    let optionsProdutos = '<option value="">-- Selecione ou digite manualmente --</option>';
+    let optionsProdutos = '<option value="" disabled' + (!prodIdDef ? ' selected' : '') + '>-- Selecione o Produto / Insumo --</option>';
     PRODUTOS_ESTOQUE.forEach(p => {
         const selected = (p.id == prodIdDef) ? 'selected' : '';
         optionsProdutos += \`<option value="\${p.id}" data-codigo="\${p.codigo}" data-desc="\${p.descricao}" data-unid="\${p.unidade_medida}" data-saldo="\${p.estoque_atual}" data-preco="\${p.preco_venda}" \${selected}>\${p.codigo} - \${p.descricao.substring(0, 36)}... (Saldo: \${p.estoque_atual} \${p.unidade_medida})</option>\`;
@@ -4026,10 +3997,10 @@ function adicionarLinhaItem(dados = {}) {
             </select>
         </td>
         <td>
-            <input type="text" class="form-control form-control-sm font-monospace fw-bold" name="item_codigo[]" id="item_codigo_\${contadorLinhas}" value="\${codigoDef}" required>
+            <input type="text" class="form-control form-control-sm font-monospace fw-bold" name="item_codigo[]" id="item_codigo_\${contadorLinhas}" value="\${codigoDef}" placeholder="Ex: MFX-LP30-15" required>
         </td>
         <td>
-            <input type="text" class="form-control form-control-sm" name="item_descricao[]" id="item_descricao_\${contadorLinhas}" value="\${descDef}" required>
+            <input type="text" class="form-control form-control-sm" name="item_descricao[]" id="item_descricao_\${contadorLinhas}" value="\${descDef}" placeholder="Descrição completa conforme NF-e..." required>
         </td>
         <td>
             <select class="form-select form-select-sm font-monospace text-center fw-bold" name="item_unidade[]" id="item_unidade_\${contadorLinhas}">
@@ -4041,13 +4012,13 @@ function adicionarLinhaItem(dados = {}) {
             </select>
         </td>
         <td class="text-center">
-            <span class="badge bg-secondary font-monospace" id="item_saldo_\${contadorLinhas}">\${saldoAtual} \${unidDef}</span>
+            <span class="badge bg-secondary font-monospace" id="item_saldo_\${contadorLinhas}">\${prodEncontrado ? saldoAtual + ' ' + unidDef : '-'}</span>
         </td>
         <td>
-            <input type="number" min="1" step="1" class="form-control form-control-sm text-center font-monospace fw-bold border-success" name="item_quantidade[]" id="item_qtd_\${contadorLinhas}" value="\${qtdDef}" oninput="recalcularTotais()" required>
+            <input type="number" min="1" step="1" class="form-control form-control-sm text-center font-monospace fw-bold border-success" name="item_quantidade[]" id="item_qtd_\${contadorLinhas}" value="\${qtdDef}" placeholder="0" oninput="recalcularTotais()" required>
         </td>
         <td>
-            <input type="number" min="0" step="0.01" class="form-control form-control-sm text-end font-monospace fw-bold" name="item_preco_custo[]" id="item_custo_\${contadorLinhas}" value="\${custoDef}" oninput="recalcularTotais()" required>
+            <input type="number" min="0" step="0.01" class="form-control form-control-sm text-end font-monospace fw-bold" name="item_preco_custo[]" id="item_custo_\${contadorLinhas}" value="\${custoDef}" placeholder="0,00" oninput="recalcularTotais()" required>
         </td>
         <td class="text-end font-monospace fw-bold text-dark" id="item_total_\${contadorLinhas}">
             \${formatarMoeda(totalDef)}
@@ -4086,28 +4057,16 @@ function selecionarProdutoLinha(linhaIdx, selectEl) {
     recalcularTotais();
 }
 
-function adicionarPresetItem(codigo, descricao, unidade, custo) {
-    const prod = PRODUTOS_ESTOQUE.find(p => p.codigo === codigo);
-    adicionarLinhaItem({
-        produto_id: prod ? prod.id : '',
-        codigo: codigo,
-        descricao: descricao,
-        unidade: unidade,
-        quantidade: 20,
-        preco_custo: custo
-    });
-}
-
 function removerLinhaItem(linhaIdx) {
     const linha = document.getElementById('linha_item_' + linhaIdx);
     const tbody = document.getElementById('corpoItensCompra');
-    if (tbody.children.length <= 1) {
-        alert('A nota fiscal de compra deve conter ao menos um item.');
-        return;
-    }
     if (linha) {
         linha.remove();
-        recalcularTotais();
+        if (tbody.children.length === 0) {
+            adicionarLinhaItem();
+        } else {
+            recalcularTotais();
+        }
     }
 }
 
@@ -4137,15 +4096,19 @@ function recalcularTotais() {
         }
     });
 
-    document.getElementById('totalQtdPecas').textContent = '+' + totalPecas.toLocaleString('pt-BR') + ' un';
+    document.getElementById('totalQtdPecas').textContent = totalPecas + ' un';
     document.getElementById('valorTotalGeralTexto').textContent = formatarMoeda(valorTotal);
     document.getElementById('badgeTotalDestaque').textContent = formatarMoeda(valorTotal);
     document.getElementById('contadorItens').textContent = linhas.length + (linhas.length === 1 ? ' item lançado' : ' itens lançados');
 }
 
-// Inicializar com uma primeira linha padrão
+// Inicializar com uma primeira linha 100% limpa e foco no Fornecedor
 document.addEventListener('DOMContentLoaded', function() {
     adicionarLinhaItem();
+    const fornecedorEl = document.getElementById('fornecedor');
+    if (fornecedorEl) {
+        fornecedorEl.focus();
+    }
 });
 </script>
 

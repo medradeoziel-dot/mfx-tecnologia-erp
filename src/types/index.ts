@@ -213,3 +213,29 @@ export interface MovimentoCaixa {
   dataHora: string;
   operador: string;
 }
+
+export type PerfilUsuario = 'Administrador' | 'Operador/Técnico' | 'Vendas/Financeiro';
+
+export interface PermissoesModulos {
+  clientes: boolean;
+  os: boolean;
+  estoque: boolean;
+  compras: boolean;
+  pdv: boolean;
+  financeiro: boolean;
+  fiscal: boolean;
+  acesso: boolean;
+}
+
+export interface Usuario {
+  id: string;
+  nome: string;
+  login: string;
+  email: string;
+  senha?: string;
+  perfil: PerfilUsuario;
+  status: 'Ativo' | 'Inativo';
+  permissoes: PermissoesModulos;
+  ultimoAcesso?: string;
+  dataCadastro: string;
+}
