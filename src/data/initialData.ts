@@ -569,29 +569,7 @@ export const ESTOQUE_INICIAL: ItemEstoque[] = [
   },
 ];
 
-export const COMPRAS_INICIAIS: Compra[] = [
-  {
-    id: 'cmp-01',
-    numeroNota: 'NF-e 048.912',
-    fornecedor: 'Raytools Laser Optics & Consumables Co.',
-    dataCompra: '2026-10-14',
-    observacoes: 'Importação direta via despachante Santos. Consumíveis modelo Raytools BM111.',
-    valorTotal: 550.00,
-    itens: [
-      {
-        id: 'it-cmp-1',
-        produtoId: 'est-01',
-        codigo: 'MFX-LP30-15',
-        descricao: 'Lente de Proteção Laser Fibra D30 x 1.5mm Quartzo Fundido 1064nm',
-        categoria: 'Consumíveis',
-        unidadeMedida: 'UN',
-        quantidade: 10,
-        precoCustoUnitario: 55.00,
-        valorTotal: 550.00,
-      },
-    ],
-  },
-];
+export const COMPRAS_INICIAIS: Compra[] = [];
 
 export const VENDAS_INICIAIS: Venda[] = [
   {

@@ -261,17 +261,16 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
   const totalAdmins = usuarios.filter((u) => u.perfil === 'Administrador').length;
   const totalTecnicos = usuarios.filter((u) => u.perfil === 'Operador/Técnico').length;
   const totalVendas = usuarios.filter((u) => u.perfil === 'Vendas/Financeiro').length;
-  const totalAtivos = usuarios.filter((u) => u.status === 'Ativo').length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Toast Notification */}
       {toastMsg && (
         <div
-          className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold flex items-center gap-2 border transition transform animate-bounce ${
+          className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-2xl text-xs font-semibold flex items-center gap-2 border transition ${
             toastMsg.tipo === 'sucesso'
-              ? 'bg-emerald-950/95 border-emerald-600 text-emerald-200'
-              : 'bg-red-950/95 border-red-600 text-red-200'
+              ? 'bg-slate-900 border-slate-700 text-slate-200'
+              : 'bg-red-950/95 border-red-800 text-red-200'
           }`}
         >
           <i
@@ -283,25 +282,14 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
         </div>
       )}
 
-      {/* Cabeçalho do Módulo de Acesso */}
-      <div className="bg-[#1c2128] rounded-xl p-5 sm:p-6 border border-slate-700 shadow-md flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      {/* 1. Cabeçalho Minimalista e Limpo */}
+      <div className="bg-[#1c2128] rounded-xl p-5 border border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="text-xs font-bold font-mono uppercase bg-red-950/80 text-red-400 border border-red-800/60 px-2 py-0.5 rounded">
-              Módulo: Acesso & Permissões
-            </span>
-            <span className="text-xs text-slate-400 font-mono">
-              acesso.php • Banco: mfx_sistema
-            </span>
-            <span className="text-xs text-slate-500 font-medium">| MFx Tecnologia Industrial</span>
-          </div>
-
-          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
-            <i className="fa-solid fa-user-shield text-red-500"></i>
-            Gestão de Acessos, Usuários & Permissões
+          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+            Gestão de Usuários
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Cadastre funcionários e operadores técnicos com restrições granulares por módulo (Clientes, OS, Estoque, Compras, PDV, Financeiro, Fiscal).
+          <p className="text-xs text-slate-400 mt-1">
+            Controle de operadores, acessos e permissões do sistema.
           </p>
         </div>
 
@@ -309,122 +297,98 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
         <div className="flex items-center gap-2.5 flex-wrap">
           <button
             onClick={onAbrirLogin}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold px-3.5 py-2.5 rounded-lg text-xs flex items-center gap-2 transition"
-            title="Abrir tela completa de login (login.php)"
+            className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 font-medium px-3.5 py-2 rounded-lg text-xs flex items-center gap-2 transition cursor-pointer"
+            title="Abrir tela completa de login"
           >
-            <i className="fa-solid fa-arrow-right-to-bracket text-red-400"></i>
+            <i className="fa-solid fa-arrow-right-to-bracket text-slate-400"></i>
             <span>Ver Tela de Login</span>
           </button>
 
           <button
             onClick={onIrParaCodigoPhp}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold px-3.5 py-2.5 rounded-lg text-xs flex items-center gap-2 transition"
+            className="bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 font-medium px-3.5 py-2 rounded-lg text-xs flex items-center gap-2 transition cursor-pointer"
             title="Visualizar código acesso.php e login.php"
           >
-            <i className="fa-solid fa-code text-emerald-400"></i>
+            <i className="fa-solid fa-code text-slate-400"></i>
             <span>Código PHP</span>
           </button>
 
           <button
             onClick={abrirModalNovo}
-            className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold px-4 py-2.5 rounded-lg text-xs flex items-center gap-2 shadow-lg shadow-red-950/50 transition cursor-pointer"
+            className="bg-red-600 hover:bg-red-500 text-white font-semibold px-4 py-2 rounded-lg text-xs flex items-center gap-2 shadow-sm transition cursor-pointer"
           >
-            <i className="fa-solid fa-user-plus text-sm"></i>
-            <span>+ Novo Usuário / Operador</span>
+            <i className="fa-solid fa-plus text-xs"></i>
+            <span>Novo Usuário</span>
           </button>
         </div>
       </div>
 
-      {/* Cards de Métricas e Sessão Ativa */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+      {/* 2. Cards de Estatísticas com Design Neutro e Sutil (4 colunas) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Total Usuários */}
-        <div className="bg-[#1c2128] p-4 rounded-xl border border-slate-800 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">
-              Total Usuários
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center text-xs">
-              <i className="fa-solid fa-users"></i>
+        <div className="bg-[#1c2128] p-4 rounded-xl border border-slate-800 shadow-sm flex items-center justify-between">
+          <div>
+            <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">
+              Total de Usuários
+            </div>
+            <div className="text-2xl font-bold text-slate-100 font-mono mt-1">
+              {totalUsuarios}
             </div>
           </div>
-          <div className="mt-2">
-            <span className="text-2xl font-black text-white font-mono">{totalUsuarios}</span>
-            <span className="text-[11px] text-slate-500 ml-1.5 font-medium">cadastrados</span>
+          <div className="w-9 h-9 rounded-lg bg-slate-800/70 border border-slate-700/60 text-slate-400 flex items-center justify-center text-sm">
+            <i className="fa-solid fa-users"></i>
           </div>
         </div>
 
         {/* Administradores */}
-        <div className="bg-[#1c2128] p-4 rounded-xl border border-slate-800 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">
+        <div className="bg-[#1c2128] p-4 rounded-xl border border-slate-800 shadow-sm flex items-center justify-between">
+          <div>
+            <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">
               Administradores
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center text-xs">
-              <i className="fa-solid fa-shield-halved"></i>
+            </div>
+            <div className="text-2xl font-bold text-slate-100 font-mono mt-1">
+              {totalAdmins}
             </div>
           </div>
-          <div className="mt-2">
-            <span className="text-2xl font-black text-red-400 font-mono">{totalAdmins}</span>
-            <span className="text-[11px] text-slate-500 ml-1.5 font-medium">total acesso</span>
+          <div className="w-9 h-9 rounded-lg bg-slate-800/70 border border-slate-700/60 text-slate-400 flex items-center justify-center text-sm">
+            <i className="fa-solid fa-shield-halved"></i>
           </div>
         </div>
 
         {/* Operadores / Técnicos */}
-        <div className="bg-[#1c2128] p-4 rounded-xl border border-slate-800 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">
+        <div className="bg-[#1c2128] p-4 rounded-xl border border-slate-800 shadow-sm flex items-center justify-between">
+          <div>
+            <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">
               Técnicos & OS
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xs">
-              <i className="fa-solid fa-screwdriver-wrench"></i>
+            </div>
+            <div className="text-2xl font-bold text-slate-100 font-mono mt-1">
+              {totalTecnicos}
             </div>
           </div>
-          <div className="mt-2">
-            <span className="text-2xl font-black text-amber-400 font-mono">{totalTecnicos}</span>
-            <span className="text-[11px] text-slate-500 ml-1.5 font-medium">em campo</span>
+          <div className="w-9 h-9 rounded-lg bg-slate-800/70 border border-slate-700/60 text-slate-400 flex items-center justify-center text-sm">
+            <i className="fa-solid fa-screwdriver-wrench"></i>
           </div>
         </div>
 
         {/* Vendas & Balcão */}
-        <div className="bg-[#1c2128] p-4 rounded-xl border border-slate-800 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">
+        <div className="bg-[#1c2128] p-4 rounded-xl border border-slate-800 shadow-sm flex items-center justify-between">
+          <div>
+            <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">
               Vendas & PDV
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">
-              <i className="fa-solid fa-cash-register"></i>
+            </div>
+            <div className="text-2xl font-bold text-slate-100 font-mono mt-1">
+              {totalVendas}
             </div>
           </div>
-          <div className="mt-2">
-            <span className="text-2xl font-black text-emerald-400 font-mono">{totalVendas}</span>
-            <span className="text-[11px] text-slate-500 ml-1.5 font-medium">balcão / caixa</span>
-          </div>
-        </div>
-
-        {/* Sessão Ativa Atual */}
-        <div className="col-span-2 sm:col-span-2 lg:col-span-1 bg-gradient-to-br from-[#1c2128] to-[#252b36] p-4 rounded-xl border border-red-500/30 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              Sessão Ativa
-            </span>
-            <span className="text-[10px] bg-red-950 text-red-300 font-mono font-bold px-1.5 py-0.5 rounded border border-red-800/50">
-              PHP SESSION
-            </span>
-          </div>
-          <div className="mt-2">
-            <div className="text-xs font-bold text-white truncate">{usuarioLogado.nome}</div>
-            <div className="text-[10px] text-slate-400 font-mono flex items-center justify-between mt-0.5">
-              <span>Login: {usuarioLogado.login}</span>
-              <span className="text-amber-400">{usuarioLogado.perfil}</span>
-            </div>
+          <div className="w-9 h-9 rounded-lg bg-slate-800/70 border border-slate-700/60 text-slate-400 flex items-center justify-center text-sm">
+            <i className="fa-solid fa-cash-register"></i>
           </div>
         </div>
       </div>
 
-      {/* Barra de Filtros, Busca e Troca Rápida de Usuário */}
-      <div className="bg-[#1c2128] p-4 rounded-xl border border-slate-800 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-        <div className="flex-1 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+      {/* 3. Filtros e Troca Rápida de Usuário */}
+      <div className="bg-[#1c2128] p-3.5 rounded-xl border border-slate-800 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+        <div className="flex-1 flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
           {/* Campo de Busca */}
           <div className="relative flex-1">
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
@@ -434,17 +398,17 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
               type="text"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar por nome, login ou e-mail corporativo..."
-              className="w-full bg-[#111418] border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500 transition"
+              placeholder="Buscar por nome, login ou e-mail..."
+              className="w-full bg-[#111418] border border-slate-700/80 rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-slate-500 transition"
             />
           </div>
 
           {/* Filtro Perfil */}
-          <div className="sm:w-48">
+          <div className="sm:w-44">
             <select
               value={filtroPerfil}
               onChange={(e) => setFiltroPerfil(e.target.value)}
-              className="w-full bg-[#111418] border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-red-500 transition cursor-pointer"
+              className="w-full bg-[#111418] border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-slate-500 transition cursor-pointer"
             >
               <option value="todos">Todos os Cargos</option>
               <option value="Administrador">Administrador</option>
@@ -458,9 +422,9 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
             <select
               value={filtroStatus}
               onChange={(e) => setFiltroStatus(e.target.value)}
-              className="w-full bg-[#111418] border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-red-500 transition cursor-pointer"
+              className="w-full bg-[#111418] border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-slate-500 transition cursor-pointer"
             >
-              <option value="todos">Todos Status</option>
+              <option value="todos">Todos os Status</option>
               <option value="Ativo">Apenas Ativos</option>
               <option value="Inativo">Apenas Inativos</option>
             </select>
@@ -469,8 +433,8 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
 
         {/* Troca Rápida de Sessão Simulada */}
         <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800">
-          <span className="text-[11px] text-slate-400 font-bold uppercase whitespace-nowrap">
-            Simular Acesso Como:
+          <span className="text-[11px] text-slate-400 font-medium uppercase whitespace-nowrap">
+            Simular acesso:
           </span>
           <select
             value={usuarioLogado.id}
@@ -481,7 +445,7 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                 exibirToast(`Sessão alternada para: ${u.nome} (${u.perfil})`);
               }
             }}
-            className="bg-[#111418] border border-red-500/50 rounded-lg px-2.5 py-1.5 text-xs text-amber-300 font-mono font-bold focus:outline-none focus:border-red-500 cursor-pointer"
+            className="bg-[#111418] border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-slate-500 cursor-pointer"
           >
             {usuarios.map((u) => (
               <option key={u.id} value={u.id}>
@@ -492,47 +456,45 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
         </div>
       </div>
 
-      {/* Tabela de Usuários e Permissões */}
-      <div className="bg-[#1c2128] rounded-xl border border-slate-800 shadow-md overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-slate-800 bg-[#161b22] flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <i className="fa-solid fa-list-check text-red-500 text-xs"></i>
-            <span className="text-xs font-bold text-white uppercase tracking-wider">
-              Usuários e Operadores Cadastrados no Sistema
-            </span>
-          </div>
+      {/* 4. Tabela de Usuários Limpa e Espaçada */}
+      <div className="bg-[#1c2128] rounded-xl border border-slate-800 shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-slate-800/80 bg-[#161b22] flex items-center justify-between">
+          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+            Operadores Cadastrados
+          </span>
           <span className="text-[11px] font-mono text-slate-400">
-            Exibindo {usuariosFiltrados.length} de {usuarios.length} registros
+            {usuariosFiltrados.length} {usuariosFiltrados.length === 1 ? 'registro' : 'registros'}
           </span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#111418] text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-800">
+            <thead className="bg-[#111418] text-slate-400 uppercase text-[10px] font-semibold tracking-wider border-b border-slate-800">
               <tr>
-                <th className="py-3 px-4">Usuário / Operador</th>
-                <th className="py-3 px-4">E-mail Corporativo</th>
-                <th className="py-3 px-4">Cargo / Perfil</th>
-                <th className="py-3 px-4">Permissões nos Módulos</th>
-                <th className="py-3 px-4 text-center">Status</th>
-                <th className="py-3 px-4">Último Acesso</th>
-                <th className="py-3 px-4 text-right">Ações</th>
+                <th className="py-3.5 px-4">Operador</th>
+                <th className="py-3.5 px-4">E-mail Corporativo</th>
+                <th className="py-3.5 px-4">Cargo / Perfil</th>
+                <th className="py-3.5 px-4">Permissões</th>
+                <th className="py-3.5 px-4 text-center">Status</th>
+                <th className="py-3.5 px-4">Último Acesso</th>
+                <th className="py-3.5 px-4 text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/80">
+            <tbody className="divide-y divide-slate-800/60">
               {usuariosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500">
-                    <i className="fa-solid fa-user-slash text-2xl mb-2 block text-slate-600"></i>
+                  <td colSpan={7} className="py-10 text-center text-slate-500">
+                    <i className="fa-solid fa-user-slash text-xl mb-2 block text-slate-600"></i>
                     Nenhum usuário encontrado com os filtros selecionados.
                   </td>
                 </tr>
               ) : (
                 usuariosFiltrados.map((u) => {
-                  const isAdmin = u.perfil === 'Administrador';
-                  const isTecnico = u.perfil === 'Operador/Técnico';
-                  const isVendas = u.perfil === 'Vendas/Financeiro';
                   const isSessaoAtual = u.id === usuarioLogado.id;
+
+                  // Quantidade de permissões ativas
+                  const modulosAtivos = Object.entries(u.permissoes).filter(([_, v]) => v);
+                  const isTotal = modulosAtivos.length === 8;
 
                   // Iniciais
                   const iniciais = u.nome
@@ -545,173 +507,115 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                   return (
                     <tr
                       key={u.id}
-                      className={`hover:bg-[#21262d]/70 transition ${
-                        isSessaoAtual ? 'bg-red-950/20 border-l-2 border-red-500' : ''
+                      className={`hover:bg-slate-800/30 transition ${
+                        isSessaoAtual ? 'bg-slate-800/20' : ''
                       }`}
                     >
                       {/* Usuário / Operador */}
-                      <td className="py-3 px-4">
+                      <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
-                          <div
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
-                              isAdmin
-                                ? 'bg-red-500/20 text-red-400 border border-red-500/40'
-                                : isTecnico
-                                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                                : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                            }`}
-                          >
+                          <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700/80 text-slate-300 flex items-center justify-center font-bold text-xs shrink-0">
                             {iniciais}
                           </div>
                           <div>
-                            <div className="font-bold text-white flex items-center gap-1.5">
+                            <div className="font-semibold text-slate-100 flex items-center gap-1.5">
                               <span>{u.nome}</span>
                               {isSessaoAtual && (
-                                <span className="text-[9px] bg-red-600 text-white font-mono font-bold px-1.5 py-0.2 rounded-full">
-                                  VOCÊ
+                                <span className="text-[10px] text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded font-mono font-medium">
+                                  (Você)
                                 </span>
                               )}
                             </div>
                             <div className="text-[11px] font-mono text-slate-400">
-                              login: <strong className="text-slate-300">{u.login}</strong>
+                              @{u.login}
                             </div>
                           </div>
                         </div>
                       </td>
 
                       {/* E-mail */}
-                      <td className="py-3 px-4 font-mono text-slate-300 text-[11px]">
+                      <td className="py-3.5 px-4 text-slate-300 text-xs font-mono">
                         {u.email}
                       </td>
 
-                      {/* Cargo / Perfil */}
-                      <td className="py-3 px-4">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold font-mono uppercase border ${
-                            isAdmin
-                              ? 'bg-red-950/80 text-red-300 border-red-800'
-                              : isTecnico
-                              ? 'bg-amber-950/80 text-amber-300 border-amber-800'
-                              : 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
-                          }`}
-                        >
-                          <i
-                            className={`fa-solid ${
-                              isAdmin
-                                ? 'fa-shield'
-                                : isTecnico
-                                ? 'fa-wrench'
-                                : 'fa-receipt'
-                            } text-[9px]`}
-                          ></i>
+                      {/* Cargo / Perfil - Badge Neutro e Padronizado */}
+                      <td className="py-3.5 px-4">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700/60 font-mono">
+                          <i className="fa-solid fa-user-gear text-[10px] text-slate-400"></i>
                           {u.perfil}
                         </span>
                       </td>
 
-                      {/* Permissões nos Módulos */}
-                      <td className="py-3 px-4">
-                        <div className="flex flex-wrap gap-1 max-w-xs">
-                          {u.permissoes.clientes && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-950/80 text-blue-300 border border-blue-900/60" title="Clientes & Fornecedores">
-                              Clientes
-                            </span>
-                          )}
-                          {u.permissoes.os && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-950/80 text-red-300 border border-red-900/60" title="Ordens de Serviço">
-                              OS
-                            </span>
-                          )}
-                          {u.permissoes.estoque && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/80 text-amber-300 border border-amber-900/60" title="Estoque & Consumíveis">
-                              Estoque
-                            </span>
-                          )}
-                          {u.permissoes.compras && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-900/60" title="Compras & NF Entrada">
-                              Compras
-                            </span>
-                          )}
-                          {u.permissoes.pdv && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950/80 text-amber-300 border border-amber-900/60" title="PDV - Vendas Balcão">
-                              PDV
-                            </span>
-                          )}
-                          {u.permissoes.financeiro && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-900/60" title="Financeiro & Caixa">
-                              Financeiro
-                            </span>
-                          )}
-                          {u.permissoes.fiscal && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-950/80 text-indigo-300 border border-indigo-900/60" title="Fiscal (NF-e/NFS-e)">
-                              Fiscal
-                            </span>
-                          )}
-                          {u.permissoes.acesso && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-950/80 text-purple-300 border border-purple-900/60" title="Gestão de Acessos">
-                              Acesso
-                            </span>
-                          )}
-                        </div>
+                      {/* Permissões - Substituído por texto/badge discreto */}
+                      <td className="py-3.5 px-4">
+                        {isTotal ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-800/90 text-slate-200 border border-slate-700/60">
+                            <i className="fa-solid fa-check text-[10px] text-emerald-400"></i>
+                            Acesso Total
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-800/50 text-slate-400 border border-slate-700/50">
+                            Acesso Personalizado ({modulosAtivos.length} módulos)
+                          </span>
+                        )}
                       </td>
 
-                      {/* Status */}
-                      <td className="py-3 px-4 text-center">
+                      {/* Status - Indicador Sutil e Limpo */}
+                      <td className="py-3.5 px-4 text-center">
                         <button
                           type="button"
                           onClick={() => handleToggleStatus(u)}
-                          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border transition ${
-                            u.status === 'Ativo'
-                              ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800 hover:bg-emerald-900/60'
-                              : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
-                          }`}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border border-slate-700/60 hover:bg-slate-800 transition cursor-pointer"
                           title={`Clique para ${u.status === 'Ativo' ? 'Desativar' : 'Ativar'}`}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${
-                              u.status === 'Ativo' ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'
+                              u.status === 'Ativo' ? 'bg-emerald-400' : 'bg-slate-500'
                             }`}
                           ></span>
-                          <span>{u.status}</span>
+                          <span className={u.status === 'Ativo' ? 'text-slate-300' : 'text-slate-500'}>
+                            {u.status}
+                          </span>
                         </button>
                       </td>
 
                       {/* Último Acesso */}
-                      <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">
+                      <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">
                         {u.ultimoAcesso || 'Nunca'}
                       </td>
 
                       {/* Ações */}
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           {/* Alterar Senha */}
                           <button
                             type="button"
                             onClick={() => abrirModalSenha(u)}
-                            className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 flex items-center justify-center transition"
-                            title="Alterar Senha do Usuário"
+                            className="w-7 h-7 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700/70 flex items-center justify-center transition cursor-pointer"
+                            title="Alterar Senha"
                           >
                             <i className="fa-solid fa-key text-xs"></i>
                           </button>
 
-                          {/* Editar Usuário & Permissões */}
+                          {/* Editar */}
                           <button
                             type="button"
                             onClick={() => abrirModalEditar(u)}
-                            className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 flex items-center justify-center transition"
-                            title="Editar Dados e Permissões"
+                            className="w-7 h-7 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700/70 flex items-center justify-center transition cursor-pointer"
+                            title="Editar Usuário"
                           >
                             <i className="fa-solid fa-pen-to-square text-xs"></i>
                           </button>
 
-                          {/* Excluir Usuário */}
+                          {/* Excluir */}
                           <button
                             type="button"
                             onClick={() => handleExcluirUsuario(u)}
                             disabled={u.login === 'medrade' || isSessaoAtual}
-                            className={`w-7 h-7 rounded-lg flex items-center justify-center border transition ${
+                            className={`w-7 h-7 rounded-md flex items-center justify-center border transition ${
                               u.login === 'medrade' || isSessaoAtual
-                                ? 'bg-slate-800/40 text-slate-600 border-slate-800 cursor-not-allowed'
-                                : 'bg-slate-800 hover:bg-red-950/70 text-red-400 border-slate-700 hover:border-red-800'
+                                ? 'bg-slate-800/30 text-slate-600 border-slate-800 cursor-not-allowed'
+                                : 'bg-slate-800/80 hover:bg-red-950/60 text-slate-400 hover:text-red-400 border-slate-700/70 hover:border-red-900 cursor-pointer'
                             }`}
                             title={
                               u.login === 'medrade'
@@ -734,53 +638,26 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
         </div>
       </div>
 
-      {/* Informativo de Segurança da Matriz de Permissões */}
-      <div className="bg-[#161b22] p-4 rounded-xl border border-slate-800 text-xs text-slate-400 flex flex-col md:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-red-600/10 border border-red-500/20 text-red-500 flex items-center justify-center shrink-0">
-            <i className="fa-solid fa-shield-cat text-sm"></i>
-          </div>
-          <div>
-            <div className="font-bold text-white">Controle de Segurança de Sessão PHP (RBAC)</div>
-            <div className="text-[11px] text-slate-500">
-              As permissões controlam visibilidade de rotas, gravação de dados em MySQL e exportação de notas fiscais.
-            </div>
-          </div>
-        </div>
-
-        <div className="font-mono text-[11px] text-slate-400 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
-          $_SESSION['perfil'] = <span className="text-amber-400">'{usuarioLogado.perfil}'</span>
-        </div>
-      </div>
-
       {/* ========================================================
           MODAL: CADASTRAR / EDITAR USUÁRIO & PERMISSÕES
          ======================================================== */}
       {modalNovoAberto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-[#1c2128] border border-slate-700 rounded-2xl shadow-2xl max-w-2xl w-full p-6 text-white my-8 relative overflow-hidden animate-in fade-in duration-200">
-            {/* Top Accent Line */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-600 via-amber-500 to-red-600" />
-
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-[#1c2128] border border-slate-700 rounded-xl shadow-2xl max-w-2xl w-full p-6 text-white my-8 relative overflow-hidden">
             <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-red-600/20 text-red-500 border border-red-500/30 flex items-center justify-center">
-                  <i className={`fa-solid ${usuarioEmEdicao ? 'fa-user-pen' : 'fa-user-plus'}`}></i>
-                </div>
-                <div>
-                  <h3 className="font-bold text-base text-white">
-                    {usuarioEmEdicao ? 'Editar Usuário & Permissões' : 'Cadastrar Novo Usuário / Operador'}
-                  </h3>
-                  <span className="text-[11px] text-slate-400">
-                    Defina dados de acesso e permissões de acesso por módulo
-                  </span>
-                </div>
+              <div>
+                <h3 className="font-bold text-base text-white">
+                  {usuarioEmEdicao ? 'Editar Usuário & Permissões' : 'Cadastrar Novo Usuário'}
+                </h3>
+                <span className="text-xs text-slate-400">
+                  Defina os dados de identificação e permissões de acesso
+                </span>
               </div>
 
               <button
                 type="button"
                 onClick={() => setModalNovoAberto(false)}
-                className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition"
+                className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer"
               >
                 <i className="fa-solid fa-xmark"></i>
               </button>
@@ -790,7 +667,7 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
               {/* Linha 1: Nome Completo & Login */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1 uppercase tracking-wide">
+                  <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wide">
                     Nome Completo *
                   </label>
                   <input
@@ -799,12 +676,12 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                     value={formNome}
                     onChange={(e) => setFormNome(e.target.value)}
                     placeholder="Ex: Carlos Eduardo Silveira"
-                    className="w-full bg-[#111418] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500"
+                    className="w-full bg-[#111418] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-slate-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1 uppercase tracking-wide">
+                  <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wide">
                     Login de Usuário *
                   </label>
                   <input
@@ -813,7 +690,7 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                     value={formLogin}
                     onChange={(e) => setFormLogin(e.target.value)}
                     placeholder="Ex: carlos.laser"
-                    className="w-full bg-[#111418] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-red-500"
+                    className="w-full bg-[#111418] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-slate-500"
                   />
                 </div>
               </div>
@@ -821,7 +698,7 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
               {/* Linha 2: E-mail Corporativo & Cargo/Perfil */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1 uppercase tracking-wide">
+                  <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wide">
                     E-mail Corporativo *
                   </label>
                   <input
@@ -830,18 +707,18 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                     value={formEmail}
                     onChange={(e) => setFormEmail(e.target.value)}
                     placeholder="carlos@mfxindustrial.com.br"
-                    className="w-full bg-[#111418] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500"
+                    className="w-full bg-[#111418] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-slate-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1 uppercase tracking-wide">
+                  <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wide">
                     Cargo / Perfil de Acesso *
                   </label>
                   <select
                     value={formPerfil}
                     onChange={(e) => aplicarTemplatePerfil(e.target.value as PerfilUsuario)}
-                    className="w-full bg-[#111418] border border-slate-700 rounded-lg px-3 py-2 text-xs text-amber-300 font-bold focus:outline-none focus:border-red-500 cursor-pointer"
+                    className="w-full bg-[#111418] border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 font-medium focus:outline-none focus:border-slate-500 cursor-pointer"
                   >
                     <option value="Administrador">Administrador Geral</option>
                     <option value="Operador/Técnico">Operador / Técnico (Laser/Plasma)</option>
@@ -850,11 +727,11 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                 </div>
               </div>
 
-              {/* Linha 3: Senha Inicial (apenas no cadastro novo ou se quiser alterar) */}
+              {/* Linha 3: Senha Inicial (apenas no cadastro novo) */}
               {!usuarioEmEdicao && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-[#111418] rounded-xl border border-slate-800">
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1 uppercase tracking-wide">
+                    <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wide">
                       Senha Inicial *
                     </label>
                     <input
@@ -863,12 +740,12 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                       value={formSenha}
                       onChange={(e) => setFormSenha(e.target.value)}
                       placeholder="Mínimo 6 caracteres"
-                      className="w-full bg-[#161b22] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-red-500"
+                      className="w-full bg-[#161b22] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-slate-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1 uppercase tracking-wide">
+                    <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wide">
                       Confirmar Senha *
                     </label>
                     <input
@@ -877,7 +754,7 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                       value={formConfirmaSenha}
                       onChange={(e) => setFormConfirmaSenha(e.target.value)}
                       placeholder="Repita a senha"
-                      className="w-full bg-[#161b22] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-red-500"
+                      className="w-full bg-[#161b22] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-slate-500"
                     />
                   </div>
                 </div>
@@ -885,7 +762,7 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
 
               {/* Status */}
               <div className="flex items-center gap-4">
-                <span className="text-xs font-bold text-slate-300 uppercase">Status da Conta:</span>
+                <span className="text-xs font-semibold text-slate-300 uppercase">Status da Conta:</span>
                 <label className="flex items-center gap-1.5 cursor-pointer text-xs">
                   <input
                     type="radio"
@@ -893,9 +770,9 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                     value="Ativo"
                     checked={formStatus === 'Ativo'}
                     onChange={() => setFormStatus('Ativo')}
-                    className="text-emerald-500 focus:ring-emerald-500"
+                    className="text-emerald-500 focus:ring-emerald-500 cursor-pointer"
                   />
-                  <span className="text-emerald-400 font-bold">Ativo</span>
+                  <span className="text-slate-200 font-medium">Ativo</span>
                 </label>
                 <label className="flex items-center gap-1.5 cursor-pointer text-xs">
                   <input
@@ -904,21 +781,20 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                     value="Inativo"
                     checked={formStatus === 'Inativo'}
                     onChange={() => setFormStatus('Inativo')}
-                    className="text-slate-500 focus:ring-slate-500"
+                    className="text-slate-500 focus:ring-slate-500 cursor-pointer"
                   />
                   <span className="text-slate-400">Inativo</span>
                 </label>
               </div>
 
-              {/* Matriz de Permissões Modulares Solicitadas */}
+              {/* Matriz de Permissões Modulares */}
               <div className="pt-2">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
-                    <i className="fa-solid fa-key text-amber-500"></i>
-                    Permissões por Módulo do Sistema ERP
+                  <label className="text-xs font-semibold text-slate-200 uppercase tracking-wide">
+                    Permissões por Módulo do ERP
                   </label>
 
-                  <div className="flex items-center gap-1 text-[10px]">
+                  <div className="flex items-center gap-1 text-[11px]">
                     <button
                       type="button"
                       onClick={() =>
@@ -933,7 +809,7 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                           acesso: true,
                         })
                       }
-                      className="text-blue-400 hover:underline px-1"
+                      className="text-slate-300 hover:text-white hover:underline px-1 cursor-pointer"
                     >
                       Marcar Todos
                     </button>
@@ -952,23 +828,17 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                           acesso: false,
                         })
                       }
-                      className="text-slate-400 hover:underline px-1"
+                      className="text-slate-400 hover:text-slate-200 hover:underline px-1 cursor-pointer"
                     >
                       Desmarcar Todos
                     </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-[#111418] p-3.5 rounded-xl border border-slate-800">
-                  {/* 1. Clientes */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-[#111418] p-3 rounded-xl border border-slate-800">
+                  {/* Clientes */}
                   <label className="flex items-center justify-between p-2 rounded-lg bg-[#161b22] border border-slate-800 hover:border-slate-700 cursor-pointer transition">
-                    <div className="flex items-center gap-2">
-                      <i className="fa-solid fa-users text-blue-400 text-xs w-4"></i>
-                      <div>
-                        <div className="text-xs font-bold text-slate-200">Clientes & Fornecedores</div>
-                        <div className="text-[10px] text-slate-500">Visualizar, cadastrar e editar</div>
-                      </div>
-                    </div>
+                    <span className="text-xs text-slate-300">Clientes & Fornecedores</span>
                     <input
                       type="checkbox"
                       checked={formPermissoes.clientes}
@@ -979,15 +849,9 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                     />
                   </label>
 
-                  {/* 2. OS */}
+                  {/* OS */}
                   <label className="flex items-center justify-between p-2 rounded-lg bg-[#161b22] border border-slate-800 hover:border-slate-700 cursor-pointer transition">
-                    <div className="flex items-center gap-2">
-                      <i className="fa-solid fa-wrench text-red-500 text-xs w-4"></i>
-                      <div>
-                        <div className="text-xs font-bold text-slate-200">Ordens de Serviço (OS)</div>
-                        <div className="text-[10px] text-slate-500">Abertura e manutenção técnica</div>
-                      </div>
-                    </div>
+                    <span className="text-xs text-slate-300">Ordens de Serviço (OS)</span>
                     <input
                       type="checkbox"
                       checked={formPermissoes.os}
@@ -998,15 +862,9 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                     />
                   </label>
 
-                  {/* 3. Estoque */}
+                  {/* Estoque */}
                   <label className="flex items-center justify-between p-2 rounded-lg bg-[#161b22] border border-slate-800 hover:border-slate-700 cursor-pointer transition">
-                    <div className="flex items-center gap-2">
-                      <i className="fa-solid fa-boxes-stacked text-amber-500 text-xs w-4"></i>
-                      <div>
-                        <div className="text-xs font-bold text-slate-200">Estoque & Consumíveis</div>
-                        <div className="text-[10px] text-slate-500">Saldos de lentes, bicos e peças</div>
-                      </div>
-                    </div>
+                    <span className="text-xs text-slate-300">Estoque & Consumíveis</span>
                     <input
                       type="checkbox"
                       checked={formPermissoes.estoque}
@@ -1017,15 +875,9 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                     />
                   </label>
 
-                  {/* 4. Compras */}
+                  {/* Compras */}
                   <label className="flex items-center justify-between p-2 rounded-lg bg-[#161b22] border border-slate-800 hover:border-slate-700 cursor-pointer transition">
-                    <div className="flex items-center gap-2">
-                      <i className="fa-solid fa-cart-flatbed text-emerald-400 text-xs w-4"></i>
-                      <div>
-                        <div className="text-xs font-bold text-slate-200">Compras & Notas de Entrada</div>
-                        <div className="text-[10px] text-slate-500">Lançamento de compras e insumos</div>
-                      </div>
-                    </div>
+                    <span className="text-xs text-slate-300">Compras & Entrada</span>
                     <input
                       type="checkbox"
                       checked={formPermissoes.compras}
@@ -1036,15 +888,9 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                     />
                   </label>
 
-                  {/* 5. PDV */}
+                  {/* PDV */}
                   <label className="flex items-center justify-between p-2 rounded-lg bg-[#161b22] border border-slate-800 hover:border-slate-700 cursor-pointer transition">
-                    <div className="flex items-center gap-2">
-                      <i className="fa-solid fa-cash-register text-amber-400 text-xs w-4"></i>
-                      <div>
-                        <div className="text-xs font-bold text-slate-200">PDV - Vendas Balcão</div>
-                        <div className="text-[10px] text-slate-500">Faturamento e baixa física de saldo</div>
-                      </div>
-                    </div>
+                    <span className="text-xs text-slate-300">PDV - Vendas Balcão</span>
                     <input
                       type="checkbox"
                       checked={formPermissoes.pdv}
@@ -1055,15 +901,9 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                     />
                   </label>
 
-                  {/* 6. Financeiro */}
+                  {/* Financeiro */}
                   <label className="flex items-center justify-between p-2 rounded-lg bg-[#161b22] border border-slate-800 hover:border-slate-700 cursor-pointer transition">
-                    <div className="flex items-center gap-2">
-                      <i className="fa-solid fa-hand-holding-dollar text-emerald-500 text-xs w-4"></i>
-                      <div>
-                        <div className="text-xs font-bold text-slate-200">Financeiro & Caixa</div>
-                        <div className="text-[10px] text-slate-500">Fluxo, movimentações e contas</div>
-                      </div>
-                    </div>
+                    <span className="text-xs text-slate-300">Financeiro & Caixa</span>
                     <input
                       type="checkbox"
                       checked={formPermissoes.financeiro}
@@ -1074,15 +914,9 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                     />
                   </label>
 
-                  {/* 7. Fiscal */}
+                  {/* Fiscal */}
                   <label className="flex items-center justify-between p-2 rounded-lg bg-[#161b22] border border-slate-800 hover:border-slate-700 cursor-pointer transition">
-                    <div className="flex items-center gap-2">
-                      <i className="fa-solid fa-file-contract text-indigo-400 text-xs w-4"></i>
-                      <div>
-                        <div className="text-xs font-bold text-slate-200">Fiscal (NF-e / NFS-e)</div>
-                        <div className="text-[10px] text-slate-500">Emissão e tributos LC 116 / NCM</div>
-                      </div>
-                    </div>
+                    <span className="text-xs text-slate-300">Fiscal (NF-e / NFS-e)</span>
                     <input
                       type="checkbox"
                       checked={formPermissoes.fiscal}
@@ -1093,15 +927,9 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                     />
                   </label>
 
-                  {/* 8. Acesso & Gestão */}
+                  {/* Acesso */}
                   <label className="flex items-center justify-between p-2 rounded-lg bg-[#161b22] border border-slate-800 hover:border-slate-700 cursor-pointer transition">
-                    <div className="flex items-center gap-2">
-                      <i className="fa-solid fa-user-shield text-purple-400 text-xs w-4"></i>
-                      <div>
-                        <div className="text-xs font-bold text-slate-200">Gestão de Acessos</div>
-                        <div className="text-[10px] text-slate-500">Cadastrar e alterar permissões</div>
-                      </div>
-                    </div>
+                    <span className="text-xs text-slate-300">Gestão de Acessos</span>
                     <input
                       type="checkbox"
                       checked={formPermissoes.acesso}
@@ -1115,20 +943,19 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
               </div>
 
               {/* Botões do Rodapé do Modal */}
-              <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+              <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={() => setModalNovoAberto(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold transition"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium transition cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white rounded-lg text-xs font-bold transition shadow-md shadow-red-950/40 flex items-center gap-2"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-semibold transition cursor-pointer"
                 >
-                  <i className="fa-solid fa-check"></i>
-                  <span>{usuarioEmEdicao ? 'Salvar Alterações' : 'Cadastrar Usuário'}</span>
+                  {usuarioEmEdicao ? 'Salvar Alterações' : 'Cadastrar Usuário'}
                 </button>
               </div>
             </form>
@@ -1140,35 +967,27 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
           MODAL: ALTERAR SENHA DO USUÁRIO
          ======================================================== */}
       {modalSenhaAberto && usuarioParaSenha && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#1c2128] border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full p-6 text-white relative overflow-hidden animate-in fade-in duration-200">
-            {/* Top Accent Line */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500" />
-
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+          <div className="bg-[#1c2128] border border-slate-700 rounded-xl shadow-2xl max-w-md w-full p-5 text-white">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center">
-                  <i className="fa-solid fa-key"></i>
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-white">Alterar Senha de Acesso</h3>
-                  <span className="text-[11px] text-slate-400 font-mono">
-                    Usuário: {usuarioParaSenha.login} ({usuarioParaSenha.nome})
-                  </span>
-                </div>
+              <div>
+                <h3 className="font-bold text-sm text-white">Alterar Senha de Acesso</h3>
+                <span className="text-[11px] text-slate-400 font-mono">
+                  {usuarioParaSenha.login} ({usuarioParaSenha.nome})
+                </span>
               </div>
               <button
                 type="button"
                 onClick={() => setModalSenhaAberto(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-white cursor-pointer"
               >
                 <i className="fa-solid fa-xmark"></i>
               </button>
             </div>
 
-            <form onSubmit={handleSalvarNovaSenha} className="mt-4 space-y-4">
+            <form onSubmit={handleSalvarNovaSenha} className="mt-4 space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1 uppercase">
+                <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase">
                   Nova Senha *
                 </label>
                 <input
@@ -1177,12 +996,12 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                   value={novaSenha}
                   onChange={(e) => setNovaSenha(e.target.value)}
                   placeholder="Digite a nova senha"
-                  className="w-full bg-[#111418] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500"
+                  className="w-full bg-[#111418] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-slate-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1 uppercase">
+                <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase">
                   Confirmar Nova Senha *
                 </label>
                 <input
@@ -1191,15 +1010,15 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                   value={confirmaNovaSenha}
                   onChange={(e) => setConfirmaNovaSenha(e.target.value)}
                   placeholder="Repita a nova senha"
-                  className="w-full bg-[#111418] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500"
+                  className="w-full bg-[#111418] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-slate-500"
                 />
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between text-[11px]">
                 <button
                   type="button"
                   onClick={() => setMostrarSenhas(!mostrarSenhas)}
-                  className="text-[11px] text-slate-400 hover:text-slate-200 flex items-center gap-1.5"
+                  className="text-slate-400 hover:text-slate-200 flex items-center gap-1.5 cursor-pointer"
                 >
                   <i className={`fa-solid ${mostrarSenhas ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                   <span>{mostrarSenhas ? 'Ocultar' : 'Exibir senhas'}</span>
@@ -1211,7 +1030,7 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                     setNovaSenha('admin123');
                     setConfirmaNovaSenha('admin123');
                   }}
-                  className="text-[11px] text-amber-400 hover:underline font-mono"
+                  className="text-slate-400 hover:text-slate-200 hover:underline font-mono cursor-pointer"
                 >
                   Usar "admin123"
                 </button>
@@ -1221,13 +1040,13 @@ export const AcessoView: React.FC<AcessoViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setModalSenhaAberto(false)}
-                  className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold"
+                  className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-bold transition shadow-sm"
+                  className="px-4 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-semibold transition cursor-pointer"
                 >
                   Confirmar Nova Senha
                 </button>

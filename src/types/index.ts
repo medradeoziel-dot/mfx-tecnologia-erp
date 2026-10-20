@@ -239,3 +239,55 @@ export interface Usuario {
   ultimoAcesso?: string;
   dataCadastro: string;
 }
+
+export interface ConfiguracaoEmitente {
+  // a) Dados do Emitente
+  razaoSocial: string;
+  nomeFantasia: string;
+  cnpj: string;
+  inscricaoEstadual: string;
+  inscricaoMunicipal: string;
+  cnaePrincipal: string;
+  logradouro: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  cep: string;
+  telefone: string;
+  whatsapp: string;
+  email: string;
+  emailFinanceiro: string;
+  website: string;
+
+  // b) Sequências e Numeração
+  proximaOsNumero: number;
+  proximaCotacaoNumero: number;
+  proximaVendaNumero: number;
+  proximaNfeNumero: number;
+  proximaNfseNumero: number;
+  serieNfe: string;
+  serieNfse: string;
+
+  // c) Dados Bancários & PIX
+  tipoChavePix: 'CNPJ' | 'E-mail' | 'Telefone' | 'Aleatória';
+  chavePix: string;
+  bancoCodigo: string;
+  bancoNome: string;
+  agencia: string;
+  contaCorrente: string;
+  favorecidoNome: string;
+  instrucoesBoleto: string;
+
+  // d) Regras Tributárias e Fiscais
+  regimeTributario: 'Simples Nacional' | 'Simples Nacional - Excesso de Sublimite' | 'Regime Normal (Lucro Presumido)' | 'Regime Normal (Lucro Real)';
+  csosnPadrao: string;
+  aliquotaIss: number;
+  codigoServicoLc116: string;
+  descricaoServicoLc116: string;
+  ncmPadrao: string;
+  cfopProdutoPadrao: string;
+  cfopServicoPadrao: string;
+  informacoesFisco: string;
+}

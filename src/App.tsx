@@ -23,6 +23,7 @@ import { PdvView } from './components/PdvView';
 import { FinanceiroView } from './components/FinanceiroView';
 import { AcessoView } from './components/AcessoView';
 import { LoginView } from './components/LoginView';
+import { ConfiguracoesView } from './components/ConfiguracoesView';
 
 export default function App() {
   // Estado de Clientes com persistência em localStorage
@@ -70,6 +71,12 @@ export default function App() {
   // Estado de Compras / Notas Fiscais de Entrada com persistência
   const [compras, setCompras] = useState<Compra[]>(() => {
     try {
+      const resetFeito = localStorage.getItem('mfx_compras_limpo_v1');
+      if (!resetFeito) {
+        localStorage.setItem('mfx_compras_limpo_v1', 'true');
+        localStorage.setItem('mfx_compras', JSON.stringify([]));
+        return [];
+      }
       const salvo = localStorage.getItem('mfx_compras');
       if (salvo) return JSON.parse(salvo);
     } catch (e) {
@@ -609,9 +616,9 @@ export default function App() {
               />
             )}
 
-            {(currentModule === 'fiscal' ||
-              currentModule === 'configuracoes' ||
-              currentModule === 'ajuda') && (
+            {currentModule === 'configuracoes' && <ConfiguracoesView />}
+
+            {(currentModule === 'fiscal' || currentModule === 'ajuda') && (
               <ErpModuleWorkspace
                 module={currentModule}
                 onNavigate={(mod) => setCurrentModule(mod)}

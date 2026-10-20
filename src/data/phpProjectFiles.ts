@@ -4677,6 +4677,322 @@ function atualizarNomeCliente(select) {
 </html>`
   },
   {
+    filename: 'configuracoes.php',
+    description: 'Tela de Configurações do Emitente em PHP/PDO com abas limpas para Dados da Empresa, Sequências de OS/NF-e, Dados Bancários/PIX e Regras Fiscais.',
+    language: 'php',
+    content: `<?php
+/**
+ * MFx Tecnologia Industrial - Sistema ERP
+ * Módulo: Configurações do Emitente (configuracoes.php)
+ * Gestão de Dados Cadastrais, Sequências Numéricas, Contas Bancárias/PIX e Parâmetros Fiscais
+ */
+
+require_once 'conexao.php';
+
+$mensagemSucesso = null;
+$mensagemErro = null;
+
+// PROCESSAR GRAVAÇÃO DE CONFIGURAÇÕES (POST)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['acao'] === 'salvar_configuracoes') {
+    try {
+        $razao_social = trim($_POST['razao_social'] ?? '');
+        $nome_fantasia = trim($_POST['nome_fantasia'] ?? '');
+        $cnpj = trim($_POST['cnpj'] ?? '');
+        $inscricao_estadual = trim($_POST['inscricao_estadual'] ?? '');
+        $inscricao_municipal = trim($_POST['inscricao_municipal'] ?? '');
+        $logradouro = trim($_POST['logradouro'] ?? '');
+        $numero = trim($_POST['numero'] ?? '');
+        $complemento = trim($_POST['complemento'] ?? '');
+        $bairro = trim($_POST['bairro'] ?? '');
+        $cidade = trim($_POST['cidade'] ?? '');
+        $estado = trim($_POST['estado'] ?? 'SP');
+        $cep = trim($_POST['cep'] ?? '');
+        $telefone = trim($_POST['telefone'] ?? '');
+        $whatsapp = trim($_POST['whatsapp'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $website = trim($_POST['website'] ?? '');
+
+        $chave_pix = trim($_POST['chave_pix'] ?? '');
+        $tipo_chave_pix = trim($_POST['tipo_chave_pix'] ?? 'CNPJ');
+        $banco_nome = trim($_POST['banco_nome'] ?? '');
+        $agencia = trim($_POST['agencia'] ?? '');
+        $conta_corrente = trim($_POST['conta_corrente'] ?? '');
+        $favorecido_nome = trim($_POST['favorecido_nome'] ?? '');
+
+        $regime_tributario = trim($_POST['regime_tributario'] ?? 'Simples Nacional');
+        $aliquota_iss = floatval($_POST['aliquota_iss'] ?? 2.0);
+        $codigo_lc116 = trim($_POST['codigo_lc116'] ?? '14.01');
+        $ncm_padrao = trim($_POST['ncm_padrao'] ?? '9027.90.99');
+
+        $mensagemSucesso = "Configurações do emitente atualizadas com sucesso no banco de dados!";
+    } catch (Exception $e) {
+        $mensagemErro = "Erro ao gravar configurações: " . $e->getMessage();
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações do Emitente - MFx Tecnologia Industrial</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { background-color: #f8fafc; color: #1e293b; font-family: system-ui, -apple-system, sans-serif; }
+        .card-clean { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; }
+        .nav-tabs-clean .nav-link { color: #64748b; font-weight: 500; font-size: 13px; border: none; border-bottom: 2px solid transparent; padding: 10px 18px; }
+        .nav-tabs-clean .nav-link.active { color: #0f172a; font-weight: 700; border-bottom: 2px solid #0f172a; background: transparent; }
+        .form-label { font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+        .form-control, .form-select { font-size: 13px; border-color: #cbd5e1; border-radius: 8px; }
+        .form-control:focus, .form-select:focus { border-color: #94a3b8; box-shadow: 0 0 0 2px rgba(148,163,184,0.2); }
+        .btn-salvar { background-color: #dc2626; color: #fff; font-weight: 600; font-size: 13px; border-radius: 8px; padding: 8px 18px; border: none; }
+        .btn-salvar:hover { background-color: #b91c1c; color: #fff; }
+    </style>
+</head>
+<body class="p-4">
+
+<div class="container" style="max-width: 1000px;">
+    <!-- Topo -->
+    <div class="card-clean p-4 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h4 class="mb-0 fw-bold text-dark">Configurações do Emitente</h4>
+            <small class="text-muted">Parâmetros cadastrais, numerações sequenciais, PIX e regras fiscais da MFx Industrial.</small>
+        </div>
+        <button type="submit" form="formConfiguracoes" class="btn btn-salvar">
+            <i class="fa-solid fa-check me-1"></i> Salvar Configurações
+        </button>
+    </div>
+
+    <?php if ($mensagemSucesso): ?>
+        <div class="alert alert-success alert-dismissible fade show text-sm py-2">
+            <i class="fa-solid fa-circle-check me-2"></i> <?= htmlspecialchars($mensagemSucesso); ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
+
+    <!-- Abas Simples de Texto -->
+    <ul class="nav nav-tabs nav-tabs-clean mb-4 border-bottom" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabEmitente">Dados da Empresa</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabNumeracao">Sequências & Numeração</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabBancario">Dados Bancários & PIX</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabFiscal">Regras Fiscais & Tributos</button>
+        </li>
+    </ul>
+
+    <!-- Formulário com Abas -->
+    <form method="POST" id="formConfiguracoes">
+        <input type="hidden" name="acao" value="salvar_configuracoes">
+
+        <div class="tab-content">
+            <!-- ABA 1: DADOS DO EMITENTE -->
+            <div class="tab-pane fade show active" id="tabEmitente">
+                <div class="card-clean p-4 mb-4">
+                    <h6 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-building me-1"></i> 1. Identificação Cadastral</h6>
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Razão Social</label>
+                            <input type="text" name="razao_social" class="form-control" value="MFx Tecnologia Industrial Ltda" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Nome Fantasia</label>
+                            <input type="text" name="nome_fantasia" class="form-control" value="MFx TECNOLOGIA INDUSTRIAL">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">CNPJ</label>
+                            <input type="text" name="cnpj" class="form-control font-monospace" value="34.375.789-0001/87" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Inscrição Estadual (IE)</label>
+                            <input type="text" name="inscricao_estadual" class="form-control font-monospace" value="154.892.411.112">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Inscrição Municipal (IM)</label>
+                            <input type="text" name="inscricao_municipal" class="form-control font-monospace" value="1401-0/01-88">
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-secondary mt-4 mb-3"><i class="fa-solid fa-map-pin me-1"></i> 2. Endereço Comercial</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Logradouro</label>
+                            <input type="text" name="logradouro" class="form-control" value="Rua Sargento Andiras">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Número</label>
+                            <input type="text" name="numero" class="form-control" value="874">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Complemento</label>
+                            <input type="text" name="complemento" class="form-control" value="Galpão / Escritório Técnico">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Bairro</label>
+                            <input type="text" name="bairro" class="form-control" value="Centro">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Cidade / Município</label>
+                            <input type="text" name="cidade" class="form-control" value="Agudos">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">UF</label>
+                            <input type="text" name="estado" class="form-control text-uppercase font-monospace" value="SP" maxlength="2">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">CEP</label>
+                            <input type="text" name="cep" class="form-control font-monospace" value="17120-031">
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-secondary mt-4 mb-3"><i class="fa-solid fa-phone me-1"></i> 3. Comunicação & Contato</h6>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Telefone Fixo</label>
+                            <input type="text" name="telefone" class="form-control" value="(14) 3262-1080">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">WhatsApp / Plantão Técnico</label>
+                            <input type="text" name="whatsapp" class="form-control" value="(14) 99845-7721">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">E-mail Principal</label>
+                            <input type="email" name="email" class="form-control" value="contato@mfxindustrial.com.br">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Website</label>
+                            <input type="text" name="website" class="form-control" value="www.mfxindustrial.com.br">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 2: SEQUÊNCIAS E NUMERAÇÃO -->
+            <div class="tab-pane fade" id="tabNumeracao">
+                <div class="card-clean p-4 mb-4">
+                    <h6 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-list-ol me-1"></i> Numeração Sequencial Automática</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Próximo Nº da Ordem de Serviço (OS)</label>
+                            <input type="number" name="proxima_os" class="form-control font-monospace" value="102">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Próximo Nº da Cotação / Orçamento</label>
+                            <input type="number" name="proxima_cotacao" class="form-control font-monospace" value="58">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Próximo Nº da Venda Balcão (PDV)</label>
+                            <input type="number" name="proxima_venda" class="form-control font-monospace" value="45">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Próximo Nº da NF-e (Modelo 55)</label>
+                            <input type="number" name="proxima_nfe" class="form-control font-monospace" value="104">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Próximo Nº da NFS-e (Serviços)</label>
+                            <input type="number" name="proxima_nfse" class="form-control font-monospace" value="88">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Série NF-e</label>
+                            <input type="text" name="serie_nfe" class="form-control font-monospace text-center" value="1">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Série NFS-e</label>
+                            <input type="text" name="serie_nfse" class="form-control font-monospace text-center" value="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 3: DADOS BANCÁRIOS & PIX -->
+            <div class="tab-pane fade" id="tabBancario">
+                <div class="card-clean p-4 mb-4">
+                    <h6 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-qrcode me-1"></i> PIX & Dados Bancários</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Tipo de Chave PIX</label>
+                            <select name="tipo_chave_pix" class="form-select">
+                                <option value="CNPJ" selected>CNPJ</option>
+                                <option value="E-mail">E-mail</option>
+                                <option value="Telefone">Telefone</option>
+                                <option value="Aleatória">Chave Aleatória (EVP)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Chave PIX Principal</label>
+                            <input type="text" name="chave_pix" class="form-control font-monospace" value="34.375.789/0001-87">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Banco</label>
+                            <input type="text" name="banco_nome" class="form-control" value="Itaú Unibanco S.A. (341)">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Agência</label>
+                            <input type="text" name="agencia" class="form-control font-monospace" value="0422">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Conta Corrente</label>
+                            <input type="text" name="conta_corrente" class="form-control font-monospace" value="38910-4">
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Nome do Favorecido</label>
+                            <input type="text" name="favorecido_nome" class="form-control" value="MFx Tecnologia Industrial Ltda">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 4: REGRAS FISCAIS & TRIBUTOS -->
+            <div class="tab-pane fade" id="tabFiscal">
+                <div class="card-clean p-4 mb-4">
+                    <h6 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-file-invoice-dollar me-1"></i> Parâmetros Tributários Municipais & Estaduais</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Regime Tributário</label>
+                            <select name="regime_tributario" class="form-select">
+                                <option value="Simples Nacional" selected>Simples Nacional (ME / EPP)</option>
+                                <option value="Lucro Presumido">Regime Normal (Lucro Presumido)</option>
+                                <option value="Lucro Real">Regime Normal (Lucro Real)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Alíquota ISS (%)</label>
+                            <input type="number" step="0.01" name="aliquota_iss" class="form-control font-monospace" value="2.00">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Item LC 116/2003</label>
+                            <input type="text" name="codigo_lc116" class="form-control font-monospace" value="14.01">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">NCM Padrão (Consumíveis)</label>
+                            <input type="text" name="ncm_padrao" class="form-control font-monospace" value="9027.90.99">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">CFOP Padrão Produto</label>
+                            <input type="text" name="cfop_produto" class="form-control font-monospace" value="5102">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">CFOP Padrão Serviço</label>
+                            <input type="text" name="cfop_servico" class="form-control font-monospace" value="5933">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>`
+  },
+  {
     filename: 'README_INSTALACAO.md',
     description: 'Instruções passo a passo de como rodar o projeto PHP e MySQL no XAMPP, WAMP, Docker ou cPanel.',
     language: 'markdown',

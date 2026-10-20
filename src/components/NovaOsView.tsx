@@ -119,6 +119,9 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
     setNovoItemQuantidade(1);
     setNovoItemPreco('');
 
+    // Observações e recomendações
+    setObservacoesGerais('');
+
     // 1.f) Painel "TOTAL DA OS" no topo é derivado e volta para R$ 0,00 automaticamente
 
     // 2. FOCO INICIAL APÓS LIMPEZA: Reposicione o foco do cursor no primeiro campo ("CLIENTE CADASTRADO")
@@ -131,9 +134,7 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
   const [condicoesPagamento, setCondicoesPagamento] = useState('28 DDL Boleto Bancário Faturado PJ');
   const [prazoGarantia, setPrazoGarantia] = useState('90 dias para serviços técnicos / Garantia fabril para consumíveis');
   const [tecnicoResponsavel, setTecnicoResponsavel] = useState('Oziel Medrade - Especialista Técnico MFx');
-  const [observacoesGerais, setObservacoesGerais] = useState(
-    'Alinhamento de feixe óptico, inspeção da gaveta de lentes, calibração do sensor capacitivo de altura e teste de corte em chapa de aço carbono 6.35mm.'
-  );
+  const [observacoesGerais, setObservacoesGerais] = useState('');
 
   // Selecionar cliente passado por props se mudar
   useEffect(() => {
@@ -339,7 +340,7 @@ export const NovaOsView: React.FC<NovaOsViewProps> = ({
       outrasDespesas,
       descricaoDespesas,
 
-      itens,
+      itens: itensParaSalvar,
 
       condicoesPagamento,
       prazoGarantia,

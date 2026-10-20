@@ -254,3 +254,55 @@ export const CATALOGO_PREDEFINIDO: ItemPredefinido[] = [
     origem: '0',
   },
 ];
+
+export const CONFIGURACOES_EMITENTE_INICIAIS = {
+  // a) Dados do Emitente
+  razaoSocial: 'MFx Tecnologia Industrial Ltda',
+  nomeFantasia: 'MFx TECNOLOGIA INDUSTRIAL',
+  cnpj: '34.375.789-0001/87',
+  inscricaoEstadual: '154.892.411.112',
+  inscricaoMunicipal: '1401-0/01-88',
+  cnaePrincipal: '3314-7/10 - Manutenção e reparação de máquinas e equipamentos para uso industrial',
+  logradouro: 'Rua Sargento Andiras',
+  numero: '874',
+  complemento: 'Galpão / Escritório Técnico',
+  bairro: 'Centro',
+  cidade: 'Agudos',
+  estado: 'SP',
+  cep: '17120-031',
+  telefone: '(14) 3262-1080',
+  whatsapp: '(14) 99845-7721',
+  email: 'contato@mfxindustrial.com.br',
+  emailFinanceiro: 'comercial@mfxindustrial.com.br',
+  website: 'www.mfxindustrial.com.br',
+
+  // b) Sequências e Numeração
+  proximaOsNumero: 102,
+  proximaCotacaoNumero: 58,
+  proximaVendaNumero: 45,
+  proximaNfeNumero: 104,
+  proximaNfseNumero: 88,
+  serieNfe: '1',
+  serieNfse: '1',
+
+  // c) Dados Bancários & PIX
+  tipoChavePix: 'CNPJ' as const,
+  chavePix: '34.375.789/0001-87',
+  bancoCodigo: '341',
+  bancoNome: 'Itaú Unibanco S.A.',
+  agencia: '0422',
+  contaCorrente: '38910-4',
+  favorecidoNome: 'MFx Tecnologia Industrial Ltda',
+  instrucoesBoleto: 'Após o vencimento cobrar multa de 2% e juros de 1% ao mês. Protesto após 10 dias úteis.',
+
+  // d) Regras Tributárias e Fiscais
+  regimeTributario: 'Simples Nacional' as const,
+  csosnPadrao: '0102',
+  aliquotaIss: 2.00,
+  codigoServicoLc116: '14.01',
+  descricaoServicoLc116: 'Lubrificação, limpeza, revisão, conserto, restauração, blindagem, manutenção e conservação de máquinas, veículos, aparelhos, equipamentos, motores, elevadores ou de qualquer objeto.',
+  ncmPadrao: '9027.90.99',
+  cfopProdutoPadrao: '5102',
+  cfopServicoPadrao: '5933',
+  informacoesFisco: 'Documento emitido por ME ou EPP optante pelo Simples Nacional. Não gera direito a crédito fiscal de IPI.',
+};
